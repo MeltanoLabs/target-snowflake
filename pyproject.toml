@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "target-snowflake"
+version = "0.0.1"
+description = "`target-snowflake` is a Singer target for Snowflake, built with the Meltano SDK for Singer Targets."
+authors = ["Ken Payne"]
+keywords = [
+    "ELT",
+    "Snowflake",
+]
+license = "Apache 2.0"
+
+[tool.poetry.dependencies]
+python = "<3.11,>=3.7.1"
+requests = "^2.25.1"
+singer-sdk = "^0.10.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+tox = "^3.24.4"
+flake8 = "^3.9.2"
+black = "^21.9b0"
+pydocstyle = "^6.1.1"
+mypy = "^0.910"
+types-requests = "^2.26.1"
+isort = "^5.10.1"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3 # Vertical Hanging Indent
+src_paths = "target_snowflake"
+
+[build-system]
+requires = ["poetry-core>=1.0.8"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+# CLI declaration
+target-snowflake = 'target_snowflake.target:TargetSnowflake.cli'
