@@ -55,11 +55,13 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "add_record_metadata",
             th.BooleanType,
+            default=True,
             description="Whether to add metadata columns.",
         ),
         th.Property(
             "clean_up_batch_files",
             th.BooleanType,
+            default=True,
             description="Whether to remove batch files after processing.",
         ),
     ).to_dict()

@@ -1,8 +1,9 @@
 """Snowflake target sink class, which handles writing streams."""
-
 from __future__ import annotations
 
+import os
 from typing import Optional, Sequence, Tuple, cast
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import snowflake.sqlalchemy.custom_types as sct
@@ -36,10 +37,9 @@ class SnowflakeConnector(SQLConnector):
             "account": config["account"],
             "user": config["user"],
             "password": config["password"],
-            "schema": config["schema"],
         }
 
-        for option in ["database", "warehouse", "role"]:
+        for option in ["database", "schema", "warehouse", "role"]:
             if config.get(option):
                 params[option] = config.get(option)
 
@@ -103,13 +103,7 @@ class SnowflakeConnector(SQLConnector):
     def to_sql_type(jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
         """Return a JSON Schema representation of the provided type.
 
-        By default will call `typing.to_sql_type()`.
-
-        Developers may override this method to accept additional input argument types,
-        to support non-standard types, or to provide custom typing logic.
-
-        If overriding this method, developers should call the default implementation
-        from the base class for all unhandled cases.
+        Uses custom Snowflake types from [snowflake-sqlalchemy](https://github.com/snowflakedb/snowflake-sqlalchemy/blob/main/src/snowflake/sqlalchemy/custom_types.py)
 
         Args:
             jsonschema_type: The JSON Schema representation of the source type.
@@ -142,7 +136,7 @@ class SnowflakeConnector(SQLConnector):
             return cast(sqlalchemy.types.TypeEngine, sct.VARIANT())
 
         # fall back on default implementation
-        return th.to_sql_type(jsonschema_type)
+        return super().to_sql_type(jsonschema_type)
 
 
 class SnowflakeSink(SQLSink):
@@ -152,6 +146,7 @@ class SnowflakeSink(SQLSink):
 
     @property
     def full_table_name(self) -> str:
+        """Returns just the table name, as schema and database come from the Connection."""
         return self.table_name
 
     @property
@@ -268,4 +263,8 @@ class SnowflakeSink(SQLSink):
                 text(f"remove '@~/target-snowflake/{sync_id}/'")
             )
             # clean up local files
-            # TODO
+            if self.config.get("clean_up_batch_files"):
+                for file_url in files:
+                    file_path = urlparse(file_url).path
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
