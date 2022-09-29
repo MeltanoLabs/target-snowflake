@@ -38,6 +38,7 @@ class SnowflakeConnector(SQLConnector):
             "user": config["user"],
             "password": config["password"],
             "database": config["database"],
+            "schema": config["schema"],
         }
 
         for option in ["warehouse", "role"]:
@@ -45,6 +46,25 @@ class SnowflakeConnector(SQLConnector):
                 params[option] = config.get(option)
 
         return URL(**params)
+
+    def create_sqlalchemy_engine(self) -> sqlalchemy.engine.Engine:
+        """Return a new SQLAlchemy engine using the provided config.
+
+        Developers can generally override just one of the following:
+        `sqlalchemy_engine`, sqlalchemy_url`.
+
+        Returns:
+            A newly created SQLAlchemy engine object.
+        """
+        return sqlalchemy.create_engine(
+            url=self.sqlalchemy_url,
+            connect_args={
+                "session_parameters": {
+                    "QUOTED_IDENTIFIERS_IGNORE_CASE": "FALSE",
+                }
+            },
+            echo=False,
+        )
 
     # Overridden here as Snowflake ALTER syntax for columns is different than that implemented in the SDK
     # https://docs.snowflake.com/en/sql-reference/sql/alter-table-column.html
@@ -138,6 +158,63 @@ class SnowflakeConnector(SQLConnector):
 
         # fall back on default implementation
         return SQLConnector.to_sql_type(jsonschema_type)
+
+    def create_empty_table(
+        self,
+        full_table_name: str,
+        schema: dict,
+        primary_keys: list[str] | None = None,
+        partition_keys: list[str] | None = None,
+        as_temp_table: bool = False,
+    ) -> None:
+        """Create an empty target table.
+
+        Args:
+            full_table_name: the target table name.
+            schema: the JSON schema for the new table.
+            primary_keys: list of key properties.
+            partition_keys: list of partition keys.
+            as_temp_table: True to create a temp table.
+
+        Raises:
+            NotImplementedError: if temp tables are unsupported and as_temp_table=True.
+            RuntimeError: if a variant schema is passed with no properties defined.
+        """
+        if as_temp_table:
+            raise NotImplementedError("Temporary tables are not supported.")
+
+        _ = partition_keys  # Not supported in generic implementation.
+        database_name, schema_name, table_name = self.parse_full_table_name(
+            full_table_name
+        )
+
+        meta = sqlalchemy.MetaData()
+        columns: list[sqlalchemy.Column] = []
+        primary_keys = primary_keys or []
+        try:
+            properties: dict = schema["properties"]
+        except KeyError:
+            raise RuntimeError(
+                f"Schema for '{full_table_name}' does not define properties: {schema}"
+            )
+        for property_name, property_jsonschema in properties.items():
+            is_primary_key = property_name in primary_keys
+            columns.append(
+                sqlalchemy.Column(
+                    property_name,
+                    self.to_sql_type(property_jsonschema),
+                    primary_key=is_primary_key,
+                )
+            )
+
+        _ = sqlalchemy.Table(table_name, meta, *columns)
+
+        # create schema and use it to create table
+        self.connection.execute(
+            text(f"create schema if not exists {database_name}.{schema_name}")
+        )
+        self.connection.execute(text(f"use schema {database_name}.{schema_name}"))
+        meta.create_all(self._engine)
 
 
 class SnowflakeSink(SQLSink):
