@@ -35,6 +35,7 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "database",
             th.StringType,
+            required=True,
             description="The initial database for the Snowflake session.",
         ),
         th.Property(

@@ -37,9 +37,10 @@ class SnowflakeConnector(SQLConnector):
             "account": config["account"],
             "user": config["user"],
             "password": config["password"],
+            "database": config["database"],
         }
 
-        for option in ["database", "schema", "warehouse", "role"]:
+        for option in ["warehouse", "role"]:
             if config.get(option):
                 params[option] = config.get(option)
 
@@ -145,37 +146,18 @@ class SnowflakeSink(SQLSink):
     connector_class = SnowflakeConnector
 
     @property
-    def full_table_name(self) -> str:
-        """Returns just the table name, as schema and database come from the Connection."""
-        return self.table_name
-
-    @property
-    def table_name(self) -> str:
-        """Returns the table name, with no schema or database part.
-
-        Returns:
-            The target table name.
-        """
-        table = super().table_name
-        if table:
-            return table.upper()
-
-    @property
     def schema_name(self) -> Optional[str]:
-        """Returns the schema name or `None` if using names with no schema part.
+        return super().schema_name or self.config.get("schema")
 
-        Returns:
-            The target schema name.
-        """
-        schema = self.config.get("schema")
-        if schema:
-            return schema.upper()
+    @property
+    def database_name(self) -> Optional[str]:
+        return super().database_name or self.config.get("database")
 
     def _get_put_statement(self, sync_id: str, file_uri: str) -> Tuple[text, dict]:
         """Get Snowflake PUT statement."""
         return (text(f"put '{file_uri}' '@~/target-snowflake/{sync_id}'"), {})
 
-    def _get_merge_statement(self, table_name, sync_id, file_format):
+    def _get_merge_statement(self, full_table_name, sync_id, file_format):
         """Get Snowflake MERGE statement."""
         column_selections = [
             f"$1:{property_name}::{self.connector.to_sql_type(property_def)} as {property_name}"
@@ -191,9 +173,9 @@ class SnowflakeSink(SQLSink):
         )
         return (
             text(
-                f'merge into "{table_name}" d using '
+                f"merge into {full_table_name} d using "
                 + f"(select {', '.join(column_selections)} from '@~/target-snowflake/{sync_id}'"
-                + f'(file_format => "{file_format}")) s '
+                + f"(file_format => {file_format})) s "
                 + f"on {join_expr} "
                 + f"when matched then update set {matched_clause} "
                 + f"when not matched then insert ({not_matched_insert_cols}) "
@@ -202,10 +184,10 @@ class SnowflakeSink(SQLSink):
             {},
         )
 
-    def _get_file_format_statement(self, sync_id):
+    def _get_file_format_statement(self, file_format):
         return (
             text(
-                f'create or replace file format "{sync_id}" '
+                f"create or replace file format {file_format}"
                 + "type = 'JSON' compression = 'GZIP'"
             ),
             {},
@@ -222,8 +204,10 @@ class SnowflakeSink(SQLSink):
             encoding: The batch file encoding.
             files: The batch files to process.
         """
+        self.logger.info(f"Processing batch of {len(files)} files")
         try:
             sync_id = f"{self.stream_name}-{uuid4()}"
+            file_format = f'{self.database_name}.{self.schema_name}."{sync_id}"'
             # PUT batches to remote stage
             for file_uri in files:
                 put_statement, kwargs = self._get_put_statement(
@@ -231,32 +215,37 @@ class SnowflakeSink(SQLSink):
                 )
                 self.connector.connection.execute(put_statement, **kwargs)
             # create schema
+            self.logger.debug("Preparing target schema")
             self.connector.connection.execute(
-                text(f'create schema if not exists "{self.schema_name}"')
+                text(
+                    f"create schema if not exists {self.database_name}.{self.schema_name}"
+                )
             )
-            self.connector.connection.execute(text(f'use schema "{self.schema_name}"'))
-            # create file format
+            # create file format in new schema
             file_format_statement, kwargs = self._get_file_format_statement(
-                sync_id=sync_id
+                file_format=file_format
             )
+            self.logger.debug(f"Creating file format with SQL: {file_format_statement}")
             self.connector.connection.execute(file_format_statement, **kwargs)
             # merge into destination table
             merge_statement, kwargs = self._get_merge_statement(
-                table_name=self.table_name,  # database and schema come from the Connection
+                full_table_name=self.full_table_name,
                 sync_id=sync_id,
-                file_format=sync_id,
+                file_format=file_format,
             )
             self.connector.prepare_table(
-                full_table_name=self.table_name,  # database and schema come from the Connection
+                full_table_name=self.full_table_name,
                 schema=self.schema,
                 primary_keys=self.key_properties,
                 as_temp_table=False,
             )
+            self.logger.info(f"Merging batch with SQL: {merge_statement}")
             self.connector.connection.execute(merge_statement, **kwargs)
         finally:
             # clean up file format
+            self.logger.debug("Cleaning up after batch processing")
             self.connector.connection.execute(
-                text(f'drop file format if exists "{sync_id}"')
+                text(f"drop file format if exists {file_format}")
             )
             # clean up staged files
             self.connector.connection.execute(
