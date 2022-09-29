@@ -136,7 +136,7 @@ class SnowflakeConnector(SQLConnector):
             return cast(sqlalchemy.types.TypeEngine, sct.VARIANT())
 
         # fall back on default implementation
-        return super().to_sql_type(jsonschema_type)
+        return SQLConnector.to_sql_type(jsonschema_type)
 
 
 class SnowflakeSink(SQLSink):
