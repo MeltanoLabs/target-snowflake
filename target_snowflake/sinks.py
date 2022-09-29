@@ -1,16 +1,21 @@
 """Snowflake target sink class, which handles writing streams."""
 from __future__ import annotations
 
+import gzip
+import json
 import os
-from typing import Optional, Sequence, Tuple, cast
+from gzip import open as gzip_open
+from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple, cast
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk import typing as th
-from singer_sdk.helpers._batch import BaseBatchFileEncoding
+from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
+from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLConnector, SQLSink
+from singer_sdk.streams.core import lazy_chunked_generator
 from snowflake.sqlalchemy import URL
 from sqlalchemy.sql import text
 
@@ -334,3 +339,82 @@ class SnowflakeSink(SQLSink):
                     file_path = urlparse(file_url).path
                     if os.path.exists(file_path):
                         os.remove(file_path)
+
+    def bulk_insert_records(
+        self,
+        full_table_name: str,
+        schema: dict,
+        records: Iterable[Dict[str, Any]],
+    ) -> Optional[int]:
+        """Bulk insert records to an existing destination table.
+
+        The default implementation uses a generic SQLAlchemy bulk insert operation.
+        This method may optionally be overridden by developers in order to provide
+        faster, native bulk uploads.
+
+        Args:
+            full_table_name: the target table name.
+            schema: the JSON schema for the new table, to be used when inferring column
+                names.
+            records: the input records.
+
+        Returns:
+            True if table exists, False if not, None if unsure or undetectable.
+        """
+        # prepare records for serialization
+        processed_records = (
+            conform_record_data_types(
+                stream_name=self.stream_name,
+                record=rcd,
+                schema=schema,
+                logger=self.logger,
+            )
+            for rcd in records
+        )
+        # serialize to batch files
+        encoding, files = self.get_batches(
+            batch_config=self.batch_config, records=processed_records
+        )
+        self.process_batch_files(encoding=encoding, files=files)
+        # if records list, we can quickly return record count.
+        return len(records) if isinstance(records, list) else None
+
+    # Copied and modified from `singer_sdk.streams.core.Stream`
+    def get_batches(
+        self,
+        batch_config: BatchConfig,
+        records: Iterable[Dict[str, Any]],
+    ) -> Iterable[tuple[BaseBatchFileEncoding, list[str]]]:
+        """Batch generator function.
+
+        Developers are encouraged to override this method to customize batching
+        behavior for databases, bulk APIs, etc.
+
+        Args:
+            batch_config: Batch config for this stream.
+            context: Stream partition or context dictionary.
+
+        Yields:
+            A tuple of (encoding, manifest) for each batch.
+        """
+        sync_id = f"target-snowflake--{self.stream_name}-{uuid4()}"
+        prefix = batch_config.storage.prefix or ""
+        file_urls = []
+        for i, chunk in enumerate(
+            lazy_chunked_generator(
+                records,
+                self.MAX_SIZE_DEFAULT,  # no point being larger than the sink max size, as thats the max number of records that will arrive
+            ),
+            start=1,
+        ):
+            filename = f"{prefix}{sync_id}-{i}.json.gz"
+            with batch_config.storage.fs() as fs:
+                with fs.open(filename, "wb") as f:
+                    # TODO: Determine compression from config.
+                    with gzip.GzipFile(fileobj=f, mode="wb") as gz:
+                        gz.writelines(
+                            (json.dumps(record) + "\n").encode() for record in chunk
+                        )
+                file_urls.append(fs.geturl(filename))
+
+        return batch_config.encoding, file_urls
