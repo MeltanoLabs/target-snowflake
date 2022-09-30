@@ -286,16 +286,22 @@ class SnowflakeSink(SQLSink):
         """Get Snowflake MERGE statement."""
         # convert from case in JSON to UPPER column name
         column_selections = [
-            f'$1:{property_name}::{self.connector.to_sql_type(property_def)} as "{property_name.upper()"}'
+            f'$1:{property_name}::{self.connector.to_sql_type(property_def)} as "{property_name.upper()}"'
             for property_name, property_def in self.schema["properties"].items()
         ]
         # use UPPER from here onwards
         upper_properties = [col.upper() for col in self.schema["properties"].keys()]
         upper_key_properties = [col.upper() for col in self.key_properties]
-        join_expr = " and ".join([f'd."{key}" = s."{key}"' for key in upper_key_properties])
-        matched_clause = ", ".join([f'd."{col}" = s."{col}"' for col in upper_properties])
+        join_expr = " and ".join(
+            [f'd."{key}" = s."{key}"' for key in upper_key_properties]
+        )
+        matched_clause = ", ".join(
+            [f'd."{col}" = s."{col}"' for col in upper_properties]
+        )
         not_matched_insert_cols = ", ".join(upper_properties)
-        not_matched_insert_values = ", ".join([f's."{col}"' for col in upper_properties])
+        not_matched_insert_values = ", ".join(
+            [f's."{col}"' for col in upper_properties]
+        )
         return (
             text(
                 f"merge into {full_table_name} d using "
