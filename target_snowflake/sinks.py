@@ -65,7 +65,7 @@ class SnowflakeConnector(SQLConnector):
             url=self.sqlalchemy_url,
             connect_args={
                 "session_parameters": {
-                    "QUOTED_IDENTIFIERS_IGNORE_CASE": "FALSE",
+                    "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
                 }
             },
             echo=False,
@@ -164,6 +164,7 @@ class SnowflakeConnector(SQLConnector):
         # fall back on default implementation
         return SQLConnector.to_sql_type(jsonschema_type)
 
+    # overridden to make columns UPPER, and to handle schema creation if not exists
     def create_empty_table(
         self,
         full_table_name: str,
@@ -206,7 +207,7 @@ class SnowflakeConnector(SQLConnector):
             is_primary_key = property_name in primary_keys
             columns.append(
                 sqlalchemy.Column(
-                    property_name,
+                    property_name.upper(),
                     self.to_sql_type(property_jsonschema),
                     primary_key=is_primary_key,
                 )
@@ -216,10 +217,50 @@ class SnowflakeConnector(SQLConnector):
 
         # create schema and use it to create table
         self.connection.execute(
-            text(f"create schema if not exists {database_name}.{schema_name}")
+            text(
+                f"create schema if not exists {database_name.upper()}.{schema_name.upper()}"
+            )
         )
-        self.connection.execute(text(f"use schema {database_name}.{schema_name}"))
+        self.connection.execute(
+            text(f"use schema {database_name.upper()}.{schema_name.upper()}")
+        )
         meta.create_all(self._engine)
+
+    # overridden to make column name UPPER
+    def _create_empty_column(
+        self,
+        full_table_name: str,
+        column_name: str,
+        sql_type: sqlalchemy.types.TypeEngine,
+    ) -> None:
+        """Create a new column.
+
+        Args:
+            full_table_name: The target table name.
+            column_name: The name of the new column.
+            sql_type: SQLAlchemy type engine to be used in creating the new column.
+
+        Raises:
+            NotImplementedError: if adding columns is not supported.
+        """
+        if not self.allow_column_add:
+            raise NotImplementedError("Adding columns is not supported.")
+
+        create_column_clause = sqlalchemy.schema.CreateColumn(
+            sqlalchemy.Column(
+                column_name.upper(),
+                sql_type,
+            )
+        )
+        self.connection.execute(
+            sqlalchemy.DDL(
+                "ALTER TABLE %(table)s ADD COLUMN %(create_column)s",
+                {
+                    "table": full_table_name,
+                    "create_column": create_column_clause,
+                },
+            )
+        )
 
 
 class SnowflakeSink(SQLSink):
@@ -229,11 +270,13 @@ class SnowflakeSink(SQLSink):
 
     @property
     def schema_name(self) -> Optional[str]:
-        return super().schema_name or self.config.get("schema")
+        schema = super().schema_name or self.config.get("schema")
+        return schema.upper() if schema else None
 
     @property
     def database_name(self) -> Optional[str]:
-        return super().database_name or self.config.get("database")
+        db = super().database_name or self.config.get("database")
+        return db.upper() if db else None
 
     def _get_put_statement(self, sync_id: str, file_uri: str) -> Tuple[text, dict]:
         """Get Snowflake PUT statement."""
@@ -241,18 +284,18 @@ class SnowflakeSink(SQLSink):
 
     def _get_merge_statement(self, full_table_name, sync_id, file_format):
         """Get Snowflake MERGE statement."""
+        # convert from case in JSON to UPPER column name
         column_selections = [
-            f"$1:{property_name}::{self.connector.to_sql_type(property_def)} as {property_name}"
+            f'$1:{property_name}::{self.connector.to_sql_type(property_def)} as "{property_name.upper()"}'
             for property_name, property_def in self.schema["properties"].items()
         ]
-        join_expr = " and ".join([f"d.{key} = s.{key}" for key in self.key_properties])
-        matched_clause = ", ".join(
-            [f"d.{col} = s.{col}" for col in self.schema["properties"].keys()]
-        )
-        not_matched_insert_cols = ", ".join(self.schema["properties"].keys())
-        not_matched_insert_values = ", ".join(
-            [f"s.{col}" for col in self.schema["properties"].keys()]
-        )
+        # use UPPER from here onwards
+        upper_properties = [col.upper() for col in self.schema["properties"].keys()]
+        upper_key_properties = [col.upper() for col in self.key_properties]
+        join_expr = " and ".join([f'd."{key}" = s."{key}"' for key in upper_key_properties])
+        matched_clause = ", ".join([f'd."{col}" = s."{col}"' for col in upper_properties])
+        not_matched_insert_cols = ", ".join(upper_properties)
+        not_matched_insert_values = ", ".join([f's."{col}"' for col in upper_properties])
         return (
             text(
                 f"merge into {full_table_name} d using "
