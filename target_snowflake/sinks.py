@@ -43,7 +43,6 @@ class SnowflakeConnector(SQLConnector):
             "user": config["user"],
             "password": config["password"],
             "database": config["database"],
-            "schema": config["schema"],
         }
 
         for option in ["warehouse", "role"]:
