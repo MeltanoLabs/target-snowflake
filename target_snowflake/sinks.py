@@ -335,11 +335,13 @@ class SnowflakeSink(SQLSink):
         """
         # prepare records for serialization
         processed_records = (
-            conform_record_data_types(
-                stream_name=self.stream_name,
-                record=rcd,
-                schema=schema,
-                logger=self.logger,
+            self.conform_record(
+                conform_record_data_types(
+                    stream_name=self.stream_name,
+                    record=rcd,
+                    schema=schema,
+                    logger=self.logger,
+                )
             )
             for rcd in records
         )
