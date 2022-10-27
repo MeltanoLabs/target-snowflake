@@ -5,6 +5,7 @@ import gzip
 import json
 import os
 from gzip import open as gzip_open
+from operator import contains, eq, truth
 from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple, cast
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -18,6 +19,28 @@ from singer_sdk.sinks import SQLConnector, SQLSink
 from singer_sdk.streams.core import lazy_chunked_generator
 from snowflake.sqlalchemy import URL
 from sqlalchemy.sql import text
+
+
+class TypeMap:
+    def __init__(self, operator, map_value, match_value=None):
+        self.operator = operator
+        self.map_value = map_value
+        self.match_value = match_value
+
+    def match(self, compare_value):
+        try:
+            if self.match_value:
+                return self.operator(compare_value, self.match_value)
+            return self.operator(compare_value)
+        except TypeError:
+            return False
+
+
+def evaluate_typemaps(type_maps, compare_value, unmatched_value):
+    for type_map in type_maps:
+        if type_map.match(compare_value):
+            return type_map.map_value
+    return unmatched_value
 
 
 class SnowflakeConnector(SQLConnector):
@@ -72,6 +95,7 @@ class SnowflakeConnector(SQLConnector):
 
     # Overridden here as Snowflake ALTER syntax for columns is different than that implemented in the SDK
     # https://docs.snowflake.com/en/sql-reference/sql/alter-table-column.html
+    # TODO: update once https://github.com/meltano/sdk/pull/1114 merges
     def _adapt_column_type(
         self,
         full_table_name: str,
@@ -136,130 +160,31 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             The SQLAlchemy type representation of the data type.
         """
+        # start with default implementation
+        target_type = SQLConnector.to_sql_type(jsonschema_type)
+        # snowflake max and default varchar length
+        # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
+        maxlength = jsonschema_type.get("maxLength", 16777216)
+        # define type maps
+        sting_submaps = [
+            TypeMap(eq, sct.TIMESTAMP_NTZ(), "date-time"),
+            TypeMap(contains, sqlalchemy.types.TIME(), "time"),
+            TypeMap(eq, sqlalchemy.types.DATE(), "date"),
+            TypeMap(eq, sqlalchemy.types.VARCHAR(maxlength), None),
+        ]
+        type_maps = [
+            TypeMap(th._jsonschema_type_check, sct.NUMBER(), ("integer",)),
+            TypeMap(th._jsonschema_type_check, sct.VARIANT(), ("object",)),
+            TypeMap(th._jsonschema_type_check, sct.VARIANT(), ("array",)),
+        ]
+        # apply type maps
         if th._jsonschema_type_check(jsonschema_type, ("string",)):
             datelike_type = th.get_datelike_property_type(jsonschema_type)
-            if datelike_type:
-                if datelike_type == "date-time":
-                    return cast(sqlalchemy.types.TypeEngine, sct.TIMESTAMP_NTZ())
-                if datelike_type in "time":
-                    return cast(sqlalchemy.types.TypeEngine, sqlalchemy.types.TIME())
-                if datelike_type == "date":
-                    return cast(sqlalchemy.types.TypeEngine, sqlalchemy.types.DATE())
+            target_type = evaluate_typemaps(sting_submaps, datelike_type, target_type)
+        else:
+            target_type = evaluate_typemaps(type_maps, jsonschema_type, target_type)
 
-            # snowflake max and default varchar length
-            # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
-            maxlength = jsonschema_type.get("maxLength", 16777216)
-            return cast(
-                sqlalchemy.types.TypeEngine, sqlalchemy.types.VARCHAR(maxlength)
-            )
-
-        if th._jsonschema_type_check(jsonschema_type, ("integer",)):
-            return cast(sqlalchemy.types.TypeEngine, sct.NUMBER())
-        if th._jsonschema_type_check(jsonschema_type, ("object",)):
-            return cast(sqlalchemy.types.TypeEngine, sct.VARIANT())
-        if th._jsonschema_type_check(jsonschema_type, ("array",)):
-            return cast(sqlalchemy.types.TypeEngine, sct.VARIANT())
-
-        # fall back on default implementation
-        return SQLConnector.to_sql_type(jsonschema_type)
-
-    # overridden to make columns UPPER, and to handle schema creation if not exists
-    def create_empty_table(
-        self,
-        full_table_name: str,
-        schema: dict,
-        primary_keys: list[str] | None = None,
-        partition_keys: list[str] | None = None,
-        as_temp_table: bool = False,
-    ) -> None:
-        """Create an empty target table.
-
-        Args:
-            full_table_name: the target table name.
-            schema: the JSON schema for the new table.
-            primary_keys: list of key properties.
-            partition_keys: list of partition keys.
-            as_temp_table: True to create a temp table.
-
-        Raises:
-            NotImplementedError: if temp tables are unsupported and as_temp_table=True.
-            RuntimeError: if a variant schema is passed with no properties defined.
-        """
-        if as_temp_table:
-            raise NotImplementedError("Temporary tables are not supported.")
-
-        _ = partition_keys  # Not supported in generic implementation.
-        database_name, schema_name, table_name = self.parse_full_table_name(
-            full_table_name
-        )
-
-        meta = sqlalchemy.MetaData()
-        columns: list[sqlalchemy.Column] = []
-        primary_keys = primary_keys or []
-        try:
-            properties: dict = schema["properties"]
-        except KeyError:
-            raise RuntimeError(
-                f"Schema for '{full_table_name}' does not define properties: {schema}"
-            )
-        for property_name, property_jsonschema in properties.items():
-            is_primary_key = property_name in primary_keys
-            columns.append(
-                sqlalchemy.Column(
-                    property_name.upper(),
-                    self.to_sql_type(property_jsonschema),
-                    primary_key=is_primary_key,
-                )
-            )
-
-        _ = sqlalchemy.Table(table_name, meta, *columns)
-
-        # create schema and use it to create table
-        self.connection.execute(
-            text(
-                f"create schema if not exists {database_name.upper()}.{schema_name.upper()}"
-            )
-        )
-        self.connection.execute(
-            text(f"use schema {database_name.upper()}.{schema_name.upper()}")
-        )
-        meta.create_all(self._engine)
-
-    # overridden to make column name UPPER
-    def _create_empty_column(
-        self,
-        full_table_name: str,
-        column_name: str,
-        sql_type: sqlalchemy.types.TypeEngine,
-    ) -> None:
-        """Create a new column.
-
-        Args:
-            full_table_name: The target table name.
-            column_name: The name of the new column.
-            sql_type: SQLAlchemy type engine to be used in creating the new column.
-
-        Raises:
-            NotImplementedError: if adding columns is not supported.
-        """
-        if not self.allow_column_add:
-            raise NotImplementedError("Adding columns is not supported.")
-
-        create_column_clause = sqlalchemy.schema.CreateColumn(
-            sqlalchemy.Column(
-                column_name.upper(),
-                sql_type,
-            )
-        )
-        self.connection.execute(
-            sqlalchemy.DDL(
-                "ALTER TABLE %(table)s ADD COLUMN %(create_column)s",
-                {
-                    "table": full_table_name,
-                    "create_column": create_column_clause,
-                },
-            )
-        )
+        return cast(sqlalchemy.types.TypeEngine, target_type)
 
 
 class SnowflakeSink(SQLSink):
@@ -277,19 +202,23 @@ class SnowflakeSink(SQLSink):
         db = super().database_name or self.config.get("database")
         return db.upper() if db else None
 
+    @property
+    def table_name(self) -> str:
+        return super().table_name.upper()
+
     def _get_put_statement(self, sync_id: str, file_uri: str) -> Tuple[text, dict]:
         """Get Snowflake PUT statement."""
         return (text(f"put '{file_uri}' '@~/target-snowflake/{sync_id}'"), {})
 
-    def _get_merge_statement(self, full_table_name, sync_id, file_format):
+    def _get_merge_statement(self, full_table_name, schema, sync_id, file_format):
         """Get Snowflake MERGE statement."""
         # convert from case in JSON to UPPER column name
         column_selections = [
-            f'$1:{property_name}::{self.connector.to_sql_type(property_def)} as "{property_name.upper()}"'
-            for property_name, property_def in self.schema["properties"].items()
+            f"$1:{property_name}::{self.connector.to_sql_type(property_def)} as {property_name.upper()}"
+            for property_name, property_def in schema["properties"].items()
         ]
         # use UPPER from here onwards
-        upper_properties = [col.upper() for col in self.schema["properties"].keys()]
+        upper_properties = [col.upper() for col in schema["properties"].keys()]
         upper_key_properties = [col.upper() for col in self.key_properties]
         join_expr = " and ".join(
             [f'd."{key}" = s."{key}"' for key in upper_key_properties]
@@ -360,14 +289,9 @@ class SnowflakeSink(SQLSink):
             # merge into destination table
             merge_statement, kwargs = self._get_merge_statement(
                 full_table_name=self.full_table_name,
+                schema=self.conform_schema(self.schema),
                 sync_id=sync_id,
                 file_format=file_format,
-            )
-            self.connector.prepare_table(
-                full_table_name=self.full_table_name,
-                schema=self.schema,
-                primary_keys=self.key_properties,
-                as_temp_table=False,
             )
             self.logger.info(f"Merging batch with SQL: {merge_statement}")
             self.connector.connection.execute(merge_statement, **kwargs)
