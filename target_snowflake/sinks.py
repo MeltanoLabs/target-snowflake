@@ -166,7 +166,7 @@ class SnowflakeConnector(SQLConnector):
         # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
         maxlength = jsonschema_type.get("maxLength", 16777216)
         # define type maps
-        sting_submaps = [
+        string_submaps = [
             TypeMap(eq, sct.TIMESTAMP_NTZ(), "date-time"),
             TypeMap(contains, sqlalchemy.types.TIME(), "time"),
             TypeMap(eq, sqlalchemy.types.DATE(), "date"),
@@ -180,7 +180,7 @@ class SnowflakeConnector(SQLConnector):
         # apply type maps
         if th._jsonschema_type_check(jsonschema_type, ("string",)):
             datelike_type = th.get_datelike_property_type(jsonschema_type)
-            target_type = evaluate_typemaps(sting_submaps, datelike_type, target_type)
+            target_type = evaluate_typemaps(string_submaps, datelike_type, target_type)
         else:
             target_type = evaluate_typemaps(type_maps, jsonschema_type, target_type)
 
