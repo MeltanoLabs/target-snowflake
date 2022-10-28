@@ -92,9 +92,6 @@ class SnowflakeConnector(SQLConnector):
             echo=False,
         )
 
-    # Overridden here as Snowflake ALTER syntax for columns is different than that implemented in the SDK
-    # https://docs.snowflake.com/en/sql-reference/sql/alter-table-column.html
-    # TODO: update once https://github.com/meltano/sdk/pull/1114 merges
     def _adapt_column_type(
         self,
         full_table_name: str,
@@ -102,6 +99,10 @@ class SnowflakeConnector(SQLConnector):
         sql_type: sqlalchemy.types.TypeEngine,
     ) -> None:
         """Adapt table column type to support the new JSON schema type.
+
+        Overridden here as Snowflake ALTER syntax for columns is different than that implemented in the SDK
+        https://docs.snowflake.com/en/sql-reference/sql/alter-table-column.html
+        TODO: update once https://github.com/meltano/sdk/pull/1114 merges
 
         Args:
             full_table_name: The target table name.
