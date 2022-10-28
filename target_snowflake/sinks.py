@@ -4,7 +4,6 @@ from __future__ import annotations
 import gzip
 import json
 import os
-from gzip import open as gzip_open
 from operator import contains, eq, truth
 from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple, cast
 from urllib.parse import urlparse
