@@ -18,5 +18,19 @@ plugins:
     - name: username
     - name: password
       kind: password
-    - name: start_date
-      value: '2010-01-01T00:00:00Z'
+    - name: user
+    - name: password
+      kind: password
+    - name: account
+      kind: password
+    - name: role
+    - name: database
+    - name: schema
+      required: false
+    - name: warehouse
+    - name: add_record_metadata
+      kind: bool
+      value: true
+    - name: clean_up_batch_files
+      kind: bool
+      value: true

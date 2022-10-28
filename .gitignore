@@ -1,9 +1,15 @@
 # Secrets and internal config files
 .secrets/*
 
-# Ignore meltano internal cache and sqlite systemdb
 
+# Ignore meltano internal cache and sqlite systemdb
 .meltano/
+
+# IDE
+.vscode/
+
+#macOS
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
