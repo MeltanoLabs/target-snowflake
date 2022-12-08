@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "target-snowflake"
+name = "meltanolabs-target-snowflake"
 version = "0.0.0"
 description = "`target-snowflake` is a Singer target for Snowflake, built with the Meltano SDK for Singer Targets."
 readme = "README.md"
@@ -41,3 +41,8 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry.scripts]
 # CLI declaration
 target-snowflake = 'target_snowflake.target:TargetSnowflake.cli'
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "semver"
