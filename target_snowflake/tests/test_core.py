@@ -1,27 +1,40 @@
 """Tests standard target features using the built-in SDK tests library."""
 
 import datetime
+import os
+from typing import Any, Dict
 
-from typing import Dict, Any
-
-from singer_sdk.testing import get_standard_target_tests
+import pytest
+from singer_sdk.testing import StandardSqlTargetTests
 
 from target_snowflake.target import TargetSnowflake
 
 SAMPLE_CONFIG: Dict[str, Any] = {
-    # TODO: Initialize minimal target config
+    "user": os.environ["SF_USER"],
+    "password": os.environ["SF_PASSWORD"],
+    "account": os.environ["SF_ACCOUNT"],
+    "database": os.getenv("SF_DATABASE"),
+    "warehouse": os.getenv("SF_WAREHOUSE"),
+    "role": os.getenv("SF_ROLE"),
+    "schema": "PYTEST_SCHEMA",
+    "add_record_metadata": False,
 }
 
 
-# Run standard built-in target tests from the SDK:
-def test_standard_target_tests():
-    """Run standard target tests from the SDK."""
-    tests = get_standard_target_tests(
-        TargetSnowflake,
-        config=SAMPLE_CONFIG,
-    )
-    for test in tests:
-        test()
+@pytest.fixture(scope="class")
+def config():
+    return SAMPLE_CONFIG
 
 
-# TODO: Create additional tests as appropriate for your target.
+@pytest.fixture(scope="class")
+def Target():
+    return TargetSnowflake
+
+
+@pytest.fixture(scope="class")
+def sqlalchemy_connection(Target, config):
+    return Target.default_sink_class.connector_class(config=config).connection
+
+
+class TestTargetSnowflake(StandardSqlTargetTests):
+    """Test Snowlflake using the standard SDK Target Tests."""

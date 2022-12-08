@@ -662,32 +662,37 @@ version = "0.13.0"
 description = "A framework for building Singer taps"
 category = "main"
 optional = false
-python-versions = ">=3.7.1,<3.11"
+python-versions = "<3.11,>=3.7.1"
+develop = true
 
 [package.dependencies]
 backoff = ">=2.0.0,<3.0"
-click = ">=8.0,<9.0"
+click = "~=8.0"
 cryptography = ">=3.4.6,<39.0.0"
-fs = ">=2.4.16,<3.0.0"
+fs = "^2.4.16"
 importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
-importlib-resources = {version = ">=5.9.0,<6.0.0", markers = "python_version < \"3.9\""}
-inflection = ">=0.5.1,<0.6.0"
-joblib = ">=1.0.1,<2.0.0"
-jsonpath-ng = ">=1.5.3,<2.0.0"
-jsonschema = ">=4.16.0,<5.0.0"
+importlib-resources = {version = "^5.9.0", markers = "python_version < \"3.9\""}
+inflection = "^0.5.1"
+joblib = "^1.0.1"
+jsonpath-ng = "^1.5.3"
+jsonschema = "^4.16.0"
 memoization = ">=0.3.2,<0.5.0"
-pendulum = ">=2.1.0,<3.0.0"
-PyJWT = ">=2.4,<3.0"
+pendulum = "^2.1.0"
+PyJWT = "~=2.4"
 python-dotenv = ">=0.20,<0.22"
-pytz = ">=2022.2.1,<2023.0.0"
-PyYAML = ">=6.0,<7.0"
-requests = ">=2.25.1,<3.0.0"
-simplejson = ">=3.17.6,<4.0.0"
-sqlalchemy = ">=1.4,<2.0"
-typing-extensions = ">=4.2.0,<5.0.0"
+pytz = "^2022.2.1"
+PyYAML = "^6.0"
+requests = "^2.25.1"
+simplejson = "^3.17.6"
+sqlalchemy = "^1.4"
+typing-extensions = "^4.2.0"
 
 [package.extras]
 docs = ["myst-parser (>=0.17.2,<0.19.0)", "sphinx (>=4.5,<6.0)", "sphinx-autobuild (>=2021.3.14,<2022.0.0)", "sphinx-copybutton (>=0.3.1,<0.6.0)", "sphinx-rtd-theme (>=0.5.2,<1.1.0)"]
+
+[package.source]
+type = "directory"
+url = "../../sdk"
 
 [[package]]
 name = "six"
@@ -906,7 +911,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "<3.11,>=3.7.1"
-content-hash = "1f8aff606cab0148f892021d2dd0ca731ebe4f467e2c30fb56a876a3f2831954"
+content-hash = "957d5878d8d9f817bc302eafa8c9938946ca49bc7ac14b938ae9feba46b3f1b9"
 
 [metadata.files]
 appdirs = [
@@ -1468,10 +1473,7 @@ simplejson = [
     {file = "simplejson-3.17.6-cp39-cp39-win_amd64.whl", hash = "sha256:3fe87570168b2ae018391e2b43fbf66e8593a86feccb4b0500d134c998983ccc"},
     {file = "simplejson-3.17.6.tar.gz", hash = "sha256:cf98038d2abf63a1ada5730e91e84c642ba6c225b0198c3684151b1f80c5f8a6"},
 ]
-singer-sdk = [
-    {file = "singer_sdk-0.13.0-py3-none-any.whl", hash = "sha256:5e32c0f8cb7c7f3f80a6d8da5c6bec8ace0315f04da80f51fd9827d8a9d28e36"},
-    {file = "singer_sdk-0.13.0.tar.gz", hash = "sha256:6b29e3b7daa328386dc70fc0c39e6314a610598ab20986eaa80e0a17fd584b44"},
-]
+singer-sdk = []
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
     {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
