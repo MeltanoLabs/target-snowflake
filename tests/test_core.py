@@ -19,6 +19,6 @@ SAMPLE_CONFIG: Dict[str, Any] = {
 }
 
 
-StandardSnowflakeTests = get_standard_target_tests(
+TestStandardSnowflakeTests = get_standard_target_tests(
     target_class=TargetSnowflake, config=SAMPLE_CONFIG
 )
