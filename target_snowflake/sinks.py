@@ -79,7 +79,7 @@ class SnowflakeConnector(SQLConnector):
         """Return a new SQLAlchemy engine using the provided config.
 
         Developers can generally override just one of the following:
-        `get_sqlalchemy_engine`, `get_sqlalchemy_url`.
+        `sqlalchemy_engine`, sqlalchemy_url`.
 
         Returns:
             A newly created SQLAlchemy engine object.
