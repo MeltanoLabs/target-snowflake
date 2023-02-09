@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "meltanolabs-target-snowflake"
-version = "0.0.0"
+version = "0.0.2-post.1+c7a6cf3"
 description = "`target-snowflake` is a Singer target for Snowflake, built with the Meltano SDK for Singer Targets."
 readme = "README.md"
 authors = ["Ken Payne"]
@@ -16,11 +16,10 @@ packages = [
 [tool.poetry.dependencies]
 python = "<3.11,>=3.7.1"
 requests = "^2.25.1"
-singer-sdk = "0.17.0"
+singer-sdk = {extras = ["testing"], version = "^0.19.0"}
 snowflake-sqlalchemy = "^1.4.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
 tox = "^3.24.4"
 flake8 = "^3.9.2"
 black = "^21.9b0"
@@ -43,6 +42,6 @@ build-backend = "poetry_dynamic_versioning.backend"
 target-snowflake = 'target_snowflake.target:TargetSnowflake.cli'
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 vcs = "git"
 style = "semver"
