@@ -207,8 +207,8 @@ class SnowflakeSink(SQLSink):
         Returns:
             A frozen (read-only) config dictionary map.
         """
-        raw = self.config.get("batch_config")
-        return BatchConfig.from_dict(raw) if raw else DEFAULT_BATCH_CONFIG
+        raw = self.config.get("batch_config", DEFAULT_BATCH_CONFIG)
+        return BatchConfig.from_dict(raw)
     
     @property
     def schema_name(self) -> Optional[str]:
@@ -332,7 +332,7 @@ class SnowflakeSink(SQLSink):
                 self.logger.info(f"Merging batch with SQL: {merge_statement}")
                 self.connector.connection.execute(merge_statement, **kwargs)
             else:
-                copy_statement, kwargs = self._get_merge_statement(
+                copy_statement, kwargs = self._get_copy_statement(
                     full_table_name=self.full_table_name,
                     schema=self.conform_schema(self.schema),
                     sync_id=sync_id,
