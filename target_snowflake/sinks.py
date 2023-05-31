@@ -54,6 +54,35 @@ class SnowflakeConnector(SQLConnector):
     allow_column_alter: bool = True  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
+    column_cache = {}
+
+    def column_exists(self, full_table_name: str, column_name: str) -> bool:
+        """Determine if the target table already exists.
+
+        Args:
+            full_table_name: the target table name.
+            column_name: the target column name.
+
+        Returns:
+            True if table exists, False if not.
+        """
+        if full_table_name not in self.column_cache:
+            self.column_cache[full_table_name] = self.get_table_columns(
+                full_table_name
+            )
+        return column_name in self.column_cache[full_table_name]
+    
+    def schema_exists(self, schema_name: str) -> bool:
+        """Determine if the target database schema already exists.
+
+        Args:
+            schema_name: The target database schema name.
+
+        Returns:
+            True if the database schema exists, False if not.
+        """
+        schema_names = sqlalchemy.inspect(self._engine).get_schema_names()
+        return schema_name.lower() in schema_names
 
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
@@ -288,14 +317,25 @@ class SnowflakeSink(SQLSink):
             self.logger.debug(f"Creating file format with SQL: {file_format_statement}")
             self.connector.connection.execute(file_format_statement, **kwargs)
             # merge into destination table
-            merge_statement, kwargs = self._get_merge_statement(
-                full_table_name=self.full_table_name,
-                schema=self.conform_schema(self.schema),
-                sync_id=sync_id,
-                file_format=file_format,
-            )
-            self.logger.info(f"Merging batch with SQL: {merge_statement}")
-            self.connector.connection.execute(merge_statement, **kwargs)
+            if self.key_properties:
+                merge_statement, kwargs = self._get_merge_statement(
+                    full_table_name=self.full_table_name,
+                    schema=self.conform_schema(self.schema),
+                    sync_id=sync_id,
+                    file_format=file_format,
+                )
+                self.logger.info(f"Merging batch with SQL: {merge_statement}")
+                self.connector.connection.execute(merge_statement, **kwargs)
+            else:
+                column_selections = [
+                    f"$1:{property_name}::{self.connector.to_sql_type(property_def)} as {property_name.upper()}"
+                    for property_name, property_def in self.schema["properties"].items()
+                ]
+                sql = f"COPY INTO {self.full_table_name} FROM " \
+                f"(select {', '.join(column_selections)} from '@~/target-snowflake/{sync_id}')" \
+                f"FILE_FORMAT = (format_name='{file_format}')"
+                self.connector.connection.execute(sql, **kwargs)
+
         finally:
             # clean up file format
             self.logger.debug("Cleaning up after batch processing")
@@ -340,6 +380,7 @@ class SnowflakeSink(SQLSink):
                 stream_name=self.stream_name,
                 record=rcd,
                 schema=schema,
+                level="RECURSIVE",
                 logger=self.logger,
             )
             for rcd in records
@@ -371,7 +412,7 @@ class SnowflakeSink(SQLSink):
             A tuple of (encoding, manifest) for each batch.
         """
         sync_id = f"target-snowflake--{self.stream_name}-{uuid4()}"
-        prefix = batch_config.storage.prefix or ""
+        prefix = batch_config.storage.prefix if batch_config else ""
         file_urls = []
         for i, chunk in enumerate(
             lazy_chunked_generator(
