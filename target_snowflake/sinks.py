@@ -12,9 +12,10 @@ from uuid import uuid4
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk import typing as th
+from singer_sdk.connectors import SQLConnector
 from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
 from singer_sdk.helpers._typing import conform_record_data_types
-from singer_sdk.sinks import SQLConnector, SQLSink
+from singer_sdk.sinks import SQLSink
 from singer_sdk.streams.core import lazy_chunked_generator
 from snowflake.sqlalchemy import URL
 from sqlalchemy.sql import text
