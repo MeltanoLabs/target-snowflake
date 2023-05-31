@@ -122,60 +122,29 @@ class SnowflakeConnector(SQLConnector):
             echo=False,
         )
 
-    def _adapt_column_type(
-        self,
-        full_table_name: str,
-        column_name: str,
-        sql_type: sqlalchemy.types.TypeEngine,
-    ) -> None:
-        """Adapt table column type to support the new JSON schema type.
+    @staticmethod
+    def get_column_alter_ddl(
+        table_name: str, column_name: str, column_type: sqlalchemy.types.TypeEngine
+    ) -> sqlalchemy.DDL:
+        """Get the alter column DDL statement.
 
-        Overridden here as Snowflake ALTER syntax for columns is different than that implemented in the SDK
-        https://docs.snowflake.com/en/sql-reference/sql/alter-table-column.html
-        TODO: update once https://github.com/meltano/sdk/pull/1114 merges
+        Override this if your database uses a different syntax for altering columns.
 
         Args:
-            full_table_name: The target table name.
-            column_name: The target column name.
-            sql_type: The new SQLAlchemy type.
+            table_name: Fully qualified table name of column to alter.
+            column_name: Column name to alter.
+            column_type: New column type string.
 
-        Raises:
-            NotImplementedError: if altering columns is not supported.
+        Returns:
+            A sqlalchemy DDL instance.
         """
-        current_type: sqlalchemy.types.TypeEngine = self._get_column_type(
-            full_table_name, column_name
-        )
-
-        # Check if the existing column type and the sql type are the same
-        if str(sql_type) == str(current_type):
-            # The current column and sql type are the same
-            # Nothing to do
-            return
-
-        # Not the same type, generic type or compatible types
-        # calling merge_sql_types for assistnace
-        compatible_sql_type = self.merge_sql_types([current_type, sql_type])
-
-        if str(compatible_sql_type) == str(current_type):
-            # Nothing to do
-            return
-
-        if not self.allow_column_alter:
-            raise NotImplementedError(
-                "Altering columns is not supported. "
-                f"Could not convert column '{full_table_name}.{column_name}' "
-                f"from '{current_type}' to '{compatible_sql_type}'."
-            )
-
-        self.connection.execute(
-            sqlalchemy.DDL(
-                "ALTER TABLE %(table)s ALTER COLUMN %(col_name)s SET DATA TYPE %(col_type)s",
-                {
-                    "table": full_table_name,
-                    "col_name": column_name,
-                    "col_type": compatible_sql_type,
-                },
-            )
+        return sqlalchemy.DDL(
+            "ALTER TABLE %(table_name)s ALTER COLUMN %(column_name)s SET DATA TYPE %(column_type)s",
+            {
+                "table": table_name,
+                "col_name": column_name,
+                "col_type": column_type,
+            },
         )
 
     @staticmethod
