@@ -273,6 +273,23 @@ class SnowflakeSink(SQLSink):
             {},
         )
 
+    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):
+        """Get Snowflake COPY statement."""
+        # convert from case in JSON to UPPER column name
+        column_selections = [
+            f"$1:{property_name}::{self.connector.to_sql_type(property_def)} as {property_name.upper()}"
+            for property_name, property_def in schema["properties"].items()
+        ]
+        return (
+            text(
+                f"copy into {full_table_name} from " +
+                f"(select {', '.join(column_selections)} from " +
+                f"'@~/target-snowflake/{sync_id}')" +
+                f"file_format = (format_name='{file_format}')"
+            ),
+            {},
+        )
+
     def _get_file_format_statement(self, file_format):
         return (
             text(
@@ -316,8 +333,8 @@ class SnowflakeSink(SQLSink):
             )
             self.logger.debug(f"Creating file format with SQL: {file_format_statement}")
             self.connector.connection.execute(file_format_statement, **kwargs)
-            # merge into destination table
             if self.key_properties:
+                # merge into destination table
                 merge_statement, kwargs = self._get_merge_statement(
                     full_table_name=self.full_table_name,
                     schema=self.conform_schema(self.schema),
@@ -327,14 +344,14 @@ class SnowflakeSink(SQLSink):
                 self.logger.info(f"Merging batch with SQL: {merge_statement}")
                 self.connector.connection.execute(merge_statement, **kwargs)
             else:
-                column_selections = [
-                    f"$1:{property_name}::{self.connector.to_sql_type(property_def)} as {property_name.upper()}"
-                    for property_name, property_def in self.schema["properties"].items()
-                ]
-                sql = f"COPY INTO {self.full_table_name} FROM " \
-                f"(select {', '.join(column_selections)} from '@~/target-snowflake/{sync_id}')" \
-                f"FILE_FORMAT = (format_name='{file_format}')"
-                self.connector.connection.execute(sql, **kwargs)
+                copy_statement, kwargs = self._get_merge_statement(
+                    full_table_name=self.full_table_name,
+                    schema=self.conform_schema(self.schema),
+                    sync_id=sync_id,
+                    file_format=file_format,
+                )
+                self.logger.info(f"Copying batch with SQL: {copy_statement}")
+                self.connector.connection.execute(copy_statement, **kwargs)
 
         finally:
             # clean up file format
