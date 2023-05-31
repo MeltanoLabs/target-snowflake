@@ -4,8 +4,8 @@ from __future__ import annotations
 import gzip
 import json
 import os
-from operator import contains, eq, truth
-from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple, cast
+from operator import contains, eq
+from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, cast
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -20,6 +20,15 @@ from singer_sdk.streams.core import lazy_chunked_generator
 from snowflake.sqlalchemy import URL
 from sqlalchemy.sql import text
 
+DEFAULT_BATCH_CONFIG = {
+    "encoding": {
+        "format": "jsonl",
+        "compression": "gzip"
+    },
+    "storage": {
+        "root": "file://"
+    }
+}
 
 class TypeMap:
     def __init__(self, operator, map_value, match_value=None):
@@ -141,9 +150,9 @@ class SnowflakeConnector(SQLConnector):
         return sqlalchemy.DDL(
             "ALTER TABLE %(table_name)s ALTER COLUMN %(column_name)s SET DATA TYPE %(column_type)s",
             {
-                "table": table_name,
-                "col_name": column_name,
-                "col_type": column_type,
+                "table_name": table_name,
+                "column_name": column_name,
+                "column_type": column_type,
             },
         )
 
@@ -191,6 +200,16 @@ class SnowflakeSink(SQLSink):
 
     connector_class = SnowflakeConnector
 
+    @property
+    def batch_config(self) -> BatchConfig | None:
+        """Get batch configuration.
+
+        Returns:
+            A frozen (read-only) config dictionary map.
+        """
+        raw = self.config.get("batch_config")
+        return BatchConfig.from_dict(raw) if raw else DEFAULT_BATCH_CONFIG
+    
     @property
     def schema_name(self) -> Optional[str]:
         schema = super().schema_name or self.config.get("schema")
