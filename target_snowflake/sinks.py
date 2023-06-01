@@ -12,12 +12,13 @@ from uuid import uuid4
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk import typing as th
+from singer_sdk.batch import lazy_chunked_generator
 from singer_sdk.connectors import SQLConnector
 from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLSink
-from singer_sdk.streams.core import lazy_chunked_generator
 from snowflake.sqlalchemy import URL
+from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
 
 DEFAULT_BATCH_CONFIG = {
@@ -112,17 +113,22 @@ class SnowflakeConnector(SQLConnector):
 
         return URL(**params)
 
-    def create_sqlalchemy_engine(self) -> sqlalchemy.engine.Engine:
-        """Return a new SQLAlchemy engine using the provided config.
+    def create_engine(self) -> Engine:
+        """Creates and returns a new engine. Do not call outside of _engine.
 
-        Developers can generally override just one of the following:
-        `sqlalchemy_engine`, sqlalchemy_url`.
+        NOTE: Do not call this method. The only place that this method should
+        be called is inside the self._engine method. If you'd like to access
+        the engine on a connector, use self._engine.
+
+        This method exists solely so that tap/target developers can override it
+        on their subclass of SQLConnector to perform custom engine creation
+        logic.
 
         Returns:
-            A newly created SQLAlchemy engine object.
+            A new SQLAlchemy Engine.
         """
         return sqlalchemy.create_engine(
-            url=self.sqlalchemy_url,
+            self.sqlalchemy_url,
             connect_args={
                 "session_parameters": {
                     "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
