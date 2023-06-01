@@ -9,7 +9,7 @@ from target_snowflake.sinks import SnowflakeSink
 
 
 class TargetSnowflake(SQLTarget):
-    """Sample target for Snowflake."""
+    """Target for Snowflake."""
 
     name = "target-snowflake"
     # From https://docs.snowflake.com/en/user-guide/sqlalchemy.html#connection-parameters
