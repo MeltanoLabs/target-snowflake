@@ -2,14 +2,25 @@
 
 from __future__ import annotations
 
+import os
 import typing as t
+from typing import Any, Dict
 
 import pytest
 from singer_sdk.testing import get_target_test_class
 
 from target_snowflake.target import TargetSnowflake
 
-SAMPLE_CONFIG: dict[str, t.Any] = {}
+SAMPLE_CONFIG: Dict[str, Any] = {
+    "user": os.environ["TARGET_SNOWFLAKE_USER"],
+    "password": os.environ["TARGET_SNOWFLAKE_PASSWORD"],
+    "account": os.environ["TARGET_SNOWFLAKE_ACCOUNT"],
+    "database": os.environ["TARGET_SNOWFLAKE_DATABASE"],
+    "warehouse": os.environ["TARGET_SNOWFLAKE_WAREHOUSE"],
+    "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
+    "schema": "PYTEST_SCHEMA",
+    "default_target_schema": "PYTEST_SCHEMA",
+}
 
 
 # Run standard built-in target tests from the SDK:
