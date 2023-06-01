@@ -16,8 +16,8 @@ packages = [
 [tool.poetry.dependencies]
 python = "<3.11,>=3.7.1"
 requests = "^2.25.1"
-singer-sdk = "0.17.0"
 snowflake-sqlalchemy = "^1.4.1"
+singer-sdk = "^0.27.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
