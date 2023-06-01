@@ -423,7 +423,7 @@ class SnowflakeSink(SQLSink):
             A tuple of (encoding, manifest) for each batch.
         """
         sync_id = f"target-snowflake--{self.stream_name}-{uuid4()}"
-        prefix = batch_config.storage.prefix if batch_config else ""
+        prefix = batch_config.storage.prefix or ""
         file_urls = []
         for i, chunk in enumerate(
             lazy_chunked_generator(
