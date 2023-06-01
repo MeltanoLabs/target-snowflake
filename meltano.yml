@@ -8,29 +8,74 @@ plugins:
     namespace: "target_snowflake"
     pip_url: -e .
     capabilities:
-    - state
-    - catalog
-    - discover
+    - about
+    - schema-flattening
+    - stream-maps
     config:
       start_date: '2010-01-01T00:00:00Z'
     settings:
-    # TODO: To configure using Meltano, declare settings and their types here:
-    - name: username
-    - name: password
-      kind: password
-    - name: user
-    - name: password
-      kind: password
-    - name: account
-      kind: password
-    - name: role
-    - name: database
-    - name: schema
-      required: false
-    - name: warehouse
-    - name: add_record_metadata
-      kind: bool
+    - description: Your account identifier. See [Account Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html).
+      kind: string
+      label: Account
+      name: account
+    - description: Whether to add metadata columns.
+      kind: boolean
+      label: Add Record Metadata
+      name: add_record_metadata
       value: true
-    - name: clean_up_batch_files
-      kind: bool
+    - description: Whether to remove batch files after processing.
+      kind: boolean
+      label: Clean Up Batch Files
+      name: clean_up_batch_files
       value: true
+    - description: The initial database for the Snowflake session.
+      kind: string
+      label: Database
+      name: database
+    - description: The default target database schema name to use for all streams.
+      kind: string
+      label: Default Target Schema
+      name: default_target_schema
+    - description: "'True' to enable schema flattening and automatically expand nested\
+        \ properties."
+      kind: boolean
+      label: Flattening Enabled
+      name: flattening_enabled
+    - description: The max depth to flatten schemas.
+      kind: integer
+      label: Flattening Max Depth
+      name: flattening_max_depth
+    - description: The password for your Snowflake user.
+      kind: password
+      label: Password
+      name: password
+    - description: The initial role for the session.
+      kind: string
+      label: Role
+      name: role
+    - description: The initial schema for the Snowflake session.
+      kind: string
+      label: Schema
+      name: schema
+    - description: User-defined config values to be used within map expressions.
+      kind: object
+      label: Stream Map Config
+      name: stream_map_config
+    - description: Config object for stream maps capability. For more information check
+        out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html).
+      kind: object
+      label: Stream Maps
+      name: stream_maps
+    - description: The login name for your Snowflake user.
+      kind: string
+      label: User
+      name: user
+    - description: The initial warehouse for the session.
+      kind: string
+      label: Warehouse
+      name: warehouse
+    settings_group_validation:
+    - - account
+      - database
+      - password
+      - user
