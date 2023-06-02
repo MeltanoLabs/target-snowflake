@@ -1,3 +1,4 @@
+import snowflake.sqlalchemy.custom_types as sct
 from singer_sdk.testing.suites import TestSuite
 from singer_sdk.testing.target_tests import (
     TargetArrayData,
@@ -15,7 +16,6 @@ from singer_sdk.testing.target_tests import (
     TargetSchemaUpdates,
     TargetSpecialCharsInAttributes,
 )
-import snowflake.sqlalchemy.custom_types as sct
 
 
 class SnowflakeTargetArrayData(TargetArrayData):
@@ -23,7 +23,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}"
         result = connector.connection.execute(
-            f"select * from {table}"
+            f"select * from {table}",
         )
         assert result.rowcount == 4
         row = result.first()
@@ -47,8 +47,9 @@ class SnowflakeTargetArrayData(TargetArrayData):
     def teardown(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         connector.connection.execute(
-            f"drop schema {self.target.config['database']}.{self.target.config['default_target_schema']}"
+            f"drop schema {self.target.config['database']}.{self.target.config['default_target_schema']}",
         )
+
 
 target_tests = TestSuite(
     kind="target",

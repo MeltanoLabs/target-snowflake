@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import pytest
-from singer_sdk.testing import get_test_class
-from singer_sdk.testing import TargetTestRunner
+from singer_sdk.testing import TargetTestRunner, get_test_class
 
 from target_snowflake.target import TargetSnowflake
 from tests.test_impl import target_tests
 
-
-SAMPLE_CONFIG: Dict[str, Any] = {
+SAMPLE_CONFIG: dict[str, Any] = {
     "user": os.environ["TARGET_SNOWFLAKE_USER"],
     "password": os.environ["TARGET_SNOWFLAKE_PASSWORD"],
     "account": os.environ["TARGET_SNOWFLAKE_ACCOUNT"],
