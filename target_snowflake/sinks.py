@@ -4,22 +4,32 @@ from __future__ import annotations
 import gzip
 import json
 import os
-from operator import contains, eq, truth
-from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple, cast
+from operator import contains, eq
+from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, cast
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk import typing as th
+from singer_sdk.batch import lazy_chunked_generator
 from singer_sdk.connectors import SQLConnector
 from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLSink
-from singer_sdk.streams.core import lazy_chunked_generator
 from snowflake.sqlalchemy import URL
+from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
 
+DEFAULT_BATCH_CONFIG = {
+    "encoding": {
+        "format": "jsonl",
+        "compression": "gzip"
+    },
+    "storage": {
+        "root": "file://"
+    }
+}
 
 class TypeMap:
     def __init__(self, operator, map_value, match_value=None):
@@ -54,6 +64,35 @@ class SnowflakeConnector(SQLConnector):
     allow_column_alter: bool = True  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
+    column_cache = {}
+
+    def column_exists(self, full_table_name: str, column_name: str) -> bool:
+        """Determine if the target table already exists.
+
+        Args:
+            full_table_name: the target table name.
+            column_name: the target column name.
+
+        Returns:
+            True if table exists, False if not.
+        """
+        if full_table_name not in self.column_cache:
+            self.column_cache[full_table_name] = self.get_table_columns(
+                full_table_name
+            )
+        return column_name in self.column_cache[full_table_name]
+    
+    def schema_exists(self, schema_name: str) -> bool:
+        """Determine if the target database schema already exists.
+
+        Args:
+            schema_name: The target database schema name.
+
+        Returns:
+            True if the database schema exists, False if not.
+        """
+        schema_names = sqlalchemy.inspect(self._engine).get_schema_names()
+        return schema_name.lower() in schema_names
 
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
@@ -74,17 +113,22 @@ class SnowflakeConnector(SQLConnector):
 
         return URL(**params)
 
-    def create_sqlalchemy_engine(self) -> sqlalchemy.engine.Engine:
-        """Return a new SQLAlchemy engine using the provided config.
+    def create_engine(self) -> Engine:
+        """Creates and returns a new engine. Do not call outside of _engine.
 
-        Developers can generally override just one of the following:
-        `sqlalchemy_engine`, sqlalchemy_url`.
+        NOTE: Do not call this method. The only place that this method should
+        be called is inside the self._engine method. If you'd like to access
+        the engine on a connector, use self._engine.
+
+        This method exists solely so that tap/target developers can override it
+        on their subclass of SQLConnector to perform custom engine creation
+        logic.
 
         Returns:
-            A newly created SQLAlchemy engine object.
+            A new SQLAlchemy Engine.
         """
         return sqlalchemy.create_engine(
-            url=self.sqlalchemy_url,
+            self.sqlalchemy_url,
             connect_args={
                 "session_parameters": {
                     "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
@@ -93,60 +137,29 @@ class SnowflakeConnector(SQLConnector):
             echo=False,
         )
 
-    def _adapt_column_type(
-        self,
-        full_table_name: str,
-        column_name: str,
-        sql_type: sqlalchemy.types.TypeEngine,
-    ) -> None:
-        """Adapt table column type to support the new JSON schema type.
+    @staticmethod
+    def get_column_alter_ddl(
+        table_name: str, column_name: str, column_type: sqlalchemy.types.TypeEngine
+    ) -> sqlalchemy.DDL:
+        """Get the alter column DDL statement.
 
-        Overridden here as Snowflake ALTER syntax for columns is different than that implemented in the SDK
-        https://docs.snowflake.com/en/sql-reference/sql/alter-table-column.html
-        TODO: update once https://github.com/meltano/sdk/pull/1114 merges
+        Override this if your database uses a different syntax for altering columns.
 
         Args:
-            full_table_name: The target table name.
-            column_name: The target column name.
-            sql_type: The new SQLAlchemy type.
+            table_name: Fully qualified table name of column to alter.
+            column_name: Column name to alter.
+            column_type: New column type string.
 
-        Raises:
-            NotImplementedError: if altering columns is not supported.
+        Returns:
+            A sqlalchemy DDL instance.
         """
-        current_type: sqlalchemy.types.TypeEngine = self._get_column_type(
-            full_table_name, column_name
-        )
-
-        # Check if the existing column type and the sql type are the same
-        if str(sql_type) == str(current_type):
-            # The current column and sql type are the same
-            # Nothing to do
-            return
-
-        # Not the same type, generic type or compatible types
-        # calling merge_sql_types for assistnace
-        compatible_sql_type = self.merge_sql_types([current_type, sql_type])
-
-        if str(compatible_sql_type) == str(current_type):
-            # Nothing to do
-            return
-
-        if not self.allow_column_alter:
-            raise NotImplementedError(
-                "Altering columns is not supported. "
-                f"Could not convert column '{full_table_name}.{column_name}' "
-                f"from '{current_type}' to '{compatible_sql_type}'."
-            )
-
-        self.connection.execute(
-            sqlalchemy.DDL(
-                "ALTER TABLE %(table)s ALTER COLUMN %(col_name)s SET DATA TYPE %(col_type)s",
-                {
-                    "table": full_table_name,
-                    "col_name": column_name,
-                    "col_type": compatible_sql_type,
-                },
-            )
+        return sqlalchemy.DDL(
+            "ALTER TABLE %(table_name)s ALTER COLUMN %(column_name)s SET DATA TYPE %(column_type)s",
+            {
+                "table_name": table_name,
+                "column_name": column_name,
+                "column_type": column_type,
+            },
         )
 
     @staticmethod
@@ -193,6 +206,16 @@ class SnowflakeSink(SQLSink):
 
     connector_class = SnowflakeConnector
 
+    @property
+    def batch_config(self) -> BatchConfig | None:
+        """Get batch configuration.
+
+        Returns:
+            A frozen (read-only) config dictionary map.
+        """
+        raw = self.config.get("batch_config", DEFAULT_BATCH_CONFIG)
+        return BatchConfig.from_dict(raw)
+    
     @property
     def schema_name(self) -> Optional[str]:
         schema = super().schema_name or self.config.get("schema")
@@ -244,6 +267,23 @@ class SnowflakeSink(SQLSink):
             {},
         )
 
+    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):
+        """Get Snowflake COPY statement."""
+        # convert from case in JSON to UPPER column name
+        column_selections = [
+            f"$1:{property_name}::{self.connector.to_sql_type(property_def)} as {property_name.upper()}"
+            for property_name, property_def in schema["properties"].items()
+        ]
+        return (
+            text(
+                f"copy into {full_table_name} from " +
+                f"(select {', '.join(column_selections)} from " +
+                f"'@~/target-snowflake/{sync_id}')" +
+                f"file_format = (format_name='{file_format}')"
+            ),
+            {},
+        )
+
     def _get_file_format_statement(self, file_format):
         return (
             text(
@@ -287,15 +327,26 @@ class SnowflakeSink(SQLSink):
             )
             self.logger.debug(f"Creating file format with SQL: {file_format_statement}")
             self.connector.connection.execute(file_format_statement, **kwargs)
-            # merge into destination table
-            merge_statement, kwargs = self._get_merge_statement(
-                full_table_name=self.full_table_name,
-                schema=self.conform_schema(self.schema),
-                sync_id=sync_id,
-                file_format=file_format,
-            )
-            self.logger.info(f"Merging batch with SQL: {merge_statement}")
-            self.connector.connection.execute(merge_statement, **kwargs)
+            if self.key_properties:
+                # merge into destination table
+                merge_statement, kwargs = self._get_merge_statement(
+                    full_table_name=self.full_table_name,
+                    schema=self.conform_schema(self.schema),
+                    sync_id=sync_id,
+                    file_format=file_format,
+                )
+                self.logger.info(f"Merging batch with SQL: {merge_statement}")
+                self.connector.connection.execute(merge_statement, **kwargs)
+            else:
+                copy_statement, kwargs = self._get_copy_statement(
+                    full_table_name=self.full_table_name,
+                    schema=self.conform_schema(self.schema),
+                    sync_id=sync_id,
+                    file_format=file_format,
+                )
+                self.logger.info(f"Copying batch with SQL: {copy_statement}")
+                self.connector.connection.execute(copy_statement, **kwargs)
+
         finally:
             # clean up file format
             self.logger.debug("Cleaning up after batch processing")
@@ -340,6 +391,7 @@ class SnowflakeSink(SQLSink):
                 stream_name=self.stream_name,
                 record=rcd,
                 schema=schema,
+                level="RECURSIVE",
                 logger=self.logger,
             )
             for rcd in records
