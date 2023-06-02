@@ -47,7 +47,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
     def teardown(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         connector.connection.execute(
-            f"drop schema {self.target.config['database']}.{self.target.config['default_target_schema']}",
+            f"drop schema if exists {self.target.config['database']}.{self.target.config['default_target_schema']}",
         )
 
 
