@@ -6,9 +6,12 @@ import os
 from typing import Any, Dict
 
 import pytest
-from singer_sdk.testing import get_target_test_class
+from singer_sdk.testing import get_test_class
+from singer_sdk.testing import TargetTestRunner
 
 from target_snowflake.target import TargetSnowflake
+from tests.test_impl import target_tests
+
 
 SAMPLE_CONFIG: Dict[str, Any] = {
     "user": os.environ["TARGET_SNOWFLAKE_USER"],
@@ -21,11 +24,14 @@ SAMPLE_CONFIG: Dict[str, Any] = {
     "default_target_schema": "TARGET_SNOWFLAKE",
 }
 
-
-# Run standard built-in target tests from the SDK:
-StandardTargetTests = get_target_test_class(
-    target_class=TargetSnowflake,
-    config=SAMPLE_CONFIG,
+# Custom so I can implement all validate methods
+StandardTargetTests = get_test_class(
+    test_runner=TargetTestRunner(
+        target_class=TargetSnowflake,
+        config=SAMPLE_CONFIG,
+    ),
+    test_suites=[target_tests],
+    suite_config=None,
 )
 
 
