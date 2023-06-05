@@ -10,7 +10,8 @@ import pytest
 from singer_sdk.testing import TargetTestRunner, get_test_class
 
 from target_snowflake.target import TargetSnowflake
-from tests.test_impl import target_tests
+
+from .test_impl import target_tests
 
 SAMPLE_CONFIG: dict[str, Any] = {
     "user": os.environ["TARGET_SNOWFLAKE_USER"],

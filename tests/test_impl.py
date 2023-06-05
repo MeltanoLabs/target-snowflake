@@ -21,7 +21,7 @@ from singer_sdk.testing.target_tests import (
 class SnowflakeTargetArrayData(TargetArrayData):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}"
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
             f"select * from {table}",
         )
