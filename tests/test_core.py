@@ -39,7 +39,7 @@ class TestTargetSnowflake(StandardTargetTests):  # type: ignore[misc, valid-type
 
     @pytest.fixture(scope="class")
     def connection(self, runner):
-        return runner.target_class.default_sink_class.connector_class(
+        return runner.singer_class.default_sink_class.connector_class(
             runner.config
         ).connection
 
