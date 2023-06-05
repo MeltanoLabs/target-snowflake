@@ -38,13 +38,13 @@ class TestTargetSnowflake(StandardTargetTests):  # type: ignore[misc, valid-type
     """Standard Target Tests."""
 
     @pytest.fixture(scope="class")
-    def connection(self):
-        return self.target.default_sink_class.connector_class(
-            self.target.config
+    def connection(self, runner):
+        return runner.target_class.default_sink_class.connector_class(
+            runner.config
         ).connection
 
     @pytest.fixture(scope="class")
-    def resource(self, connection):  # noqa: ANN201
+    def resource(self, runner, connection):  # noqa: ANN201
         """Generic external resource.
 
         This fixture is useful for setup and teardown of external resources,
@@ -54,9 +54,9 @@ class TestTargetSnowflake(StandardTargetTests):  # type: ignore[misc, valid-type
         https://github.com/meltano/sdk/tree/main/tests/samples
         """
         connection.execute(
-            f"create schema {self.target.config['database']}.{self.target.config['default_target_schema']}"
+            f"create schema {runner.config['database']}.{runner.config['default_target_schema']}"
         )
         yield
         connection.execute(
-            f"drop schema if exists {self.target.config['database']}.{self.target.config['default_target_schema']}"
+            f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}"
         )
