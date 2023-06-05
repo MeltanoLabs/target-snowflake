@@ -20,7 +20,7 @@ SAMPLE_CONFIG: dict[str, Any] = {
     "warehouse": os.environ["TARGET_SNOWFLAKE_WAREHOUSE"],
     "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
     "schema": "PUBLIC",
-    "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4()!s}",
+    "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}",
 }
 
 # Custom so I can implement all validate methods
