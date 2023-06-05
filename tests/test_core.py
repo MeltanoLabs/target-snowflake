@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import typing as t
 from typing import Any, Dict
 
 import pytest
@@ -18,8 +17,8 @@ SAMPLE_CONFIG: Dict[str, Any] = {
     "database": os.environ["TARGET_SNOWFLAKE_DATABASE"],
     "warehouse": os.environ["TARGET_SNOWFLAKE_WAREHOUSE"],
     "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
-    "schema": "PYTEST_SCHEMA",
-    "default_target_schema": "PYTEST_SCHEMA",
+    "schema": "PUBLIC",
+    "default_target_schema": "TARGET_SNOWFLAKE",
 }
 
 

@@ -1,0 +1,33 @@
+name: Test target-snowflake
+
+on: [push]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      TARGET_SNOWFLAKE_USER: ${{secrets.TARGET_SNOWFLAKE_USER}}
+      TARGET_SNOWFLAKE_PASSWORD: ${{secrets.TARGET_SNOWFLAKE_PASSWORD}}
+      TARGET_SNOWFLAKE_ACCOUNT: ${{secrets.TARGET_SNOWFLAKE_ACCOUNT}}
+      TARGET_SNOWFLAKE_DATABASE: ${{secrets.TARGET_SNOWFLAKE_DATABASE}}
+      TARGET_SNOWFLAKE_WAREHOUSE: ${{secrets.TARGET_SNOWFLAKE_WAREHOUSE}}
+      TARGET_SNOWFLAKE_ROLE: ${{secrets.TARGET_SNOWFLAKE_ROLE}}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Poetry
+      run: |
+        pip install poetry
+    - name: Install dependencies
+      run: |
+        poetry install
+    - name: Test with pytest
+      run: |
+        poetry run pytest
