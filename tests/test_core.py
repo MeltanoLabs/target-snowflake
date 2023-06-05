@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from typing import Any
 
 import pytest
@@ -19,7 +20,7 @@ SAMPLE_CONFIG: dict[str, Any] = {
     "warehouse": os.environ["TARGET_SNOWFLAKE_WAREHOUSE"],
     "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
     "schema": "PUBLIC",
-    "default_target_schema": "TARGET_SNOWFLAKE",
+    "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4()!s}",
 }
 
 # Custom so I can implement all validate methods
@@ -37,7 +38,13 @@ class TestTargetSnowflake(StandardTargetTests):  # type: ignore[misc, valid-type
     """Standard Target Tests."""
 
     @pytest.fixture(scope="class")
-    def resource(self):  # noqa: ANN201
+    def connection(self):
+        return self.target.default_sink_class.connector_class(
+            self.target.config
+        ).connection
+
+    @pytest.fixture(scope="class")
+    def resource(self, connection):  # noqa: ANN201
         """Generic external resource.
 
         This fixture is useful for setup and teardown of external resources,
@@ -46,4 +53,10 @@ class TestTargetSnowflake(StandardTargetTests):  # type: ignore[misc, valid-type
         Example usage can be found in the SDK samples test suite:
         https://github.com/meltano/sdk/tree/main/tests/samples
         """
-        return "resource"
+        connection.execute(
+            f"create schema {self.target.config['database']}.{self.target.config['default_target_schema']}"
+        )
+        yield
+        connection.execute(
+            f"drop schema if exists {self.target.config['database']}.{self.target.config['default_target_schema']}"
+        )
