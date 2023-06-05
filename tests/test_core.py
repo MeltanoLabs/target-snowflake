@@ -24,9 +24,18 @@ SAMPLE_CONFIG: dict[str, Any] = {
     "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}",
 }
 
+class CustomRunner(TargetTestRunner):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def sync_all(self, *args, **kwargs):
+        super().sync_all(*args, **kwargs)
+        self.target_input = None
+
+
 # Custom so I can implement all validate methods
 StandardTargetTests = get_test_class(
-    test_runner=TargetTestRunner(
+    test_runner=CustomRunner(
         target_class=TargetSnowflake,
         config=SAMPLE_CONFIG,
     ),
