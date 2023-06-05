@@ -156,6 +156,15 @@ class SnowflakeConnector(SQLConnector):
 
         return cast(sqlalchemy.types.TypeEngine, target_type)
 
+    def prepare_schema(self, schema_name: str) -> None:
+        """Create the target database schema.
+
+        Args:
+            schema_name: The target schema name.
+        """
+        with self._connect() as conn:
+            conn.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+
     # Custom SQL get methods
 
     def _get_put_statement(self, sync_id: str, file_uri: str) -> Tuple[text, dict]:
@@ -228,11 +237,17 @@ class SnowflakeConnector(SQLConnector):
 
     def _get_drop_file_format_statement(self, file_format):
         """Get Snowflake DROP FILE FORMAT statement."""
-        return text(f"drop file format if exists {file_format}")
+        return (
+            text(f"drop file format if exists {file_format}"),
+            {},
+        )
 
     def _get_stage_files_remove_statement(self, sync_id):
         """Get Snowflake REMOVE statement."""
-        return text(f"remove '@~/target-snowflake/{sync_id}/'")
+        return (
+            text(f"remove '@~/target-snowflake/{sync_id}/'"),
+            {},
+        )
 
     # Custom connector methods
 

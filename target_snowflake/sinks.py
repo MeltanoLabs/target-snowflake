@@ -99,10 +99,12 @@ class SnowflakeSink(SQLSink):
             stream_name=self.stream_name,
             batch_config=self.batch_config,
         )
-        self.insert_batch_files_via_internal_stage(
-            full_table_name=full_table_name,
-            files=batcher.get_batches(records=processed_records),
-        )
+        batches = batcher.get_batches(records=processed_records)
+        for files in batches:
+            self.insert_batch_files_via_internal_stage(
+                full_table_name=full_table_name,
+                files=files,
+            )
         # if records list, we can quickly return record count.
         return len(records) if isinstance(records, list) else None
 
@@ -129,12 +131,12 @@ class SnowflakeSink(SQLSink):
             encoding: The batch file encoding.
             files: The batch files to process.
         """
-        self.logger.info(f"Processing batch of {len(files)} files")
+        self.logger.info("Processing batch of files.")
         try:
             sync_id = f"{self.stream_name}-{uuid4()}"
             file_format = f'{self.database_name}.{self.schema_name}."{sync_id}"'
             self.connector.put_batches_to_stage(sync_id=sync_id, files=files)
-            self.connector.prepare_schema()
+            self.connector.prepare_schema(schema_name=self.schema_name)
             self.connector.create_file_format(file_format=file_format)
 
             if self.key_properties:
