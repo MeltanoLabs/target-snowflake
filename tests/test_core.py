@@ -29,8 +29,10 @@ class CustomRunner(TargetTestRunner):
         super().__init__(*args, **kwargs)
     
     def sync_all(self, *args, **kwargs):
-        super().sync_all(*args, **kwargs)
-        self.target_input = None
+        try:
+            super().sync_all(*args, **kwargs)
+        finally:
+            self.target_input = None
 
 
 # Custom so I can implement all validate methods
