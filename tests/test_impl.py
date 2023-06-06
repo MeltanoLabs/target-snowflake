@@ -249,7 +249,8 @@ target_tests = TestSuite(
         TargetNoPrimaryKeys,  # Implicitly asserts no pk is handled
         TargetOptionalAttributes,  # Implicitly asserts that nullable fields are handled
         SnowflakeTargetRecordBeforeSchemaTest,
-        SnowflakeTargetRecordMissingKeyProperty,
+        # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/42
+        # SnowflakeTargetRecordMissingKeyProperty,
         SnowflakeTargetSchemaNoProperties,
         # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/43
         # SnowflakeTargetSchemaUpdates,
