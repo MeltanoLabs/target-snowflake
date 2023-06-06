@@ -24,6 +24,8 @@ SAMPLE_CONFIG: dict[str, Any] = {
     "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}",
 }
 
+# TODO: replace when upstream issue resolves
+# https://github.com/meltano/sdk/pull/1752
 class CustomRunner(TargetTestRunner):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
