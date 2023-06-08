@@ -195,13 +195,13 @@ class SnowflakeConnector(SQLConnector):
         not_matched_insert_values = ", ".join(
             [f's."{col}"' for col in upper_properties]
         )
-        dedupe_cols = ", ".join([f"$1:{key_prop}" for key_prop in key_properties])
-        dedupe = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedupe_cols} ORDER BY SEQ8() DESC) = 1"
+        dedup_cols = ", ".join([f"$1:{key_prop}" for key_prop in key_properties])
+        dedup = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} ORDER BY SEQ8() DESC) = 1"
         return (
             text(
                 f"merge into {full_table_name} d using "
                 + f"(select {', '.join(column_selections)} from '@~/target-snowflake/{sync_id}'"
-                + f"(file_format => {file_format}) {dedupe}) s "
+                + f"(file_format => {file_format}) {dedup}) s "
                 + f"on {join_expr} "
                 + f"when matched then update set {matched_clause} "
                 + f"when not matched then insert ({not_matched_insert_cols}) "
