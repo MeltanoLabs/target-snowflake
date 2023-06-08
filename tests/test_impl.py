@@ -239,8 +239,7 @@ target_tests = TestSuite(
         SnowflakeTargetCamelcaseComplexSchema,
         SnowflakeTargetCamelcaseTest,
         TargetCliPrintsTest,
-        # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/41
-        # SnowflakeTargetDuplicateRecords,
+        SnowflakeTargetDuplicateRecords,
         SnowflakeTargetEncodedStringData,
         SnowflakeTargetInvalidSchemaTest,
         # Not available in the SDK yet
