@@ -251,8 +251,7 @@ target_tests = TestSuite(
         SnowflakeTargetRecordBeforeSchemaTest,
         SnowflakeTargetRecordMissingKeyProperty,
         SnowflakeTargetSchemaNoProperties,
-        # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/43
-        # SnowflakeTargetSchemaUpdates,
+        SnowflakeTargetSchemaUpdates,
         TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled
     ],
 )
