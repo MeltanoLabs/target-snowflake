@@ -1,0 +1,6 @@
+{"type": "SCHEMA", "stream": "reserved_words_no_key_props", "schema": {"properties": {"NON_RESERVED": {"type": ["string", "null"]}, "SELECT": {"type": ["string", "null"]}, "INSERT": {"type": ["string", "null"]}, "UPDATE": {"type": ["string", "null"]}}, "type": "object"}, "key_properties": []}
+{"type": "RECORD", "stream": "reserved_words_no_key_props", "record": {"NON_RESERVED": "sample_1", "SELECT": "test10", "INSERT": "test20", "UPDATE": "test30"}, "time_extracted": "2023-06-09T18:18:04.605072+00:00"}
+{"type": "STATE", "value": {"bookmarks": {"reserved_words_no_key_props": {}}}}
+{"type": "SCHEMA", "stream": "reserved_words_no_key_props", "schema": {"properties": {"NON_RESERVED": {"type": ["string", "null"]}, "SELECT": {"type": ["string", "null"]}, "INSERT": {"type": ["string", "null"]}, "UPDATE": {"type": ["string", "null"]}, "ACCOUNT": {"type": ["string", "null"]}}, "type": "object"}, "key_properties": []}
+{"type": "RECORD", "stream": "reserved_words_no_key_props", "record": {"NON_RESERVED": "sample", "SELECT": "test1", "INSERT": "test2", "UPDATE": "test3", "ACCOUNT": "test4"}, "time_extracted": "2023-06-09T18:17:12.737177+00:00"}
+{"type": "STATE", "value": {"bookmarks": {"reserved_words_no_key_props": {}}}}

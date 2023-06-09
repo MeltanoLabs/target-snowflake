@@ -1,23 +1,24 @@
+from pathlib import Path
+
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk.testing.suites import TestSuite
-from singer_sdk.testing.target_tests import (
-    TargetArrayData,
-    TargetCamelcaseComplexSchema,
-    TargetCamelcaseTest,
-    TargetCliPrintsTest,
-    TargetDuplicateRecords,
-    TargetEncodedStringData,
-    TargetInvalidSchemaTest,
-    TargetNoPrimaryKeys,
-    TargetOptionalAttributes,
-    TargetRecordBeforeSchemaTest,
-    TargetRecordMissingKeyProperty,
-    TargetSchemaNoProperties,
-    TargetSchemaUpdates,
-    TargetSpecialCharsInAttributes,
-)
+from singer_sdk.testing.target_tests import (TargetArrayData,
+                                             TargetCamelcaseComplexSchema,
+                                             TargetCamelcaseTest,
+                                             TargetCliPrintsTest,
+                                             TargetDuplicateRecords,
+                                             TargetEncodedStringData,
+                                             TargetInvalidSchemaTest,
+                                             TargetNoPrimaryKeys,
+                                             TargetOptionalAttributes,
+                                             TargetRecordBeforeSchemaTest,
+                                             TargetRecordMissingKeyProperty,
+                                             TargetSchemaNoProperties,
+                                             TargetSchemaUpdates,
+                                             TargetSpecialCharsInAttributes)
+from singer_sdk.testing.templates import TargetFileTestTemplate
 
 
 class SnowflakeTargetArrayData(TargetArrayData):
@@ -232,6 +233,49 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
             isinstance(column.type, expected_types[column.name])
 
 
+class SnowflakeTargetReservedWords(TargetFileTestTemplate):
+
+    # Contains reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # Syncs records then alters schema by adding a non-reserved word column.
+    name = "reserved_words"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 2
+        row = result.first()
+        assert len(row) == 11
+
+class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
+
+    # Contains all reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # Syncs records then alters schema by adding a non-reserved word column.
+    # Does not contain any key properties to test COPY behavior.
+    name = "reserved_words_no_key_props"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 2
+        row = result.first()
+        assert len(row) == 11
+
 target_tests = TestSuite(
     kind="target",
     tests=[
@@ -253,5 +297,7 @@ target_tests = TestSuite(
         # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/43
         # SnowflakeTargetSchemaUpdates,
         TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled
+        SnowflakeTargetReservedWords,
+        SnowflakeTargetReservedWordsNoKeyProps,
     ],
 )
