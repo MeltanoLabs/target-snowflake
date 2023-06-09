@@ -148,7 +148,7 @@ class SnowflakeSink(SQLSink):
                 # merge into destination table
                 self.connector.merge_from_stage(
                     full_table_name=full_table_name,
-                    schema=self.conform_schema(self.schema),
+                    schema=self.schema,
                     sync_id=sync_id,
                     file_format=file_format,
                     key_properties=self.key_properties,
@@ -157,7 +157,7 @@ class SnowflakeSink(SQLSink):
             else:
                 self.connector.copy_from_stage(
                     full_table_name=full_table_name,
-                    schema=self.conform_schema(self.schema),
+                    schema=self.schema,
                     sync_id=sync_id,
                     file_format=file_format,
                 )

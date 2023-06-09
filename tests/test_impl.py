@@ -237,8 +237,7 @@ target_tests = TestSuite(
     tests=[
         SnowflakeTargetArrayData,
         SnowflakeTargetCamelcaseComplexSchema,
-        # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/40
-        # SnowflakeTargetCamelcaseTest,
+        SnowflakeTargetCamelcaseTest,
         TargetCliPrintsTest,
         # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/41
         # SnowflakeTargetDuplicateRecords,
@@ -251,8 +250,7 @@ target_tests = TestSuite(
         SnowflakeTargetRecordBeforeSchemaTest,
         SnowflakeTargetRecordMissingKeyProperty,
         SnowflakeTargetSchemaNoProperties,
-        # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/43
-        # SnowflakeTargetSchemaUpdates,
+        SnowflakeTargetSchemaUpdates,
         TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled
     ],
 )
