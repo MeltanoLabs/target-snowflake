@@ -10,7 +10,12 @@ from uuid import uuid4
 
 from singer_sdk import PluginBase, SQLConnector
 from singer_sdk.batch import JSONLinesBatcher
-from singer_sdk.helpers._batch import BatchConfig
+from singer_sdk.helpers._batch import (
+    BaseBatchFileEncoding,
+    BatchConfig,
+    BatchFileFormat,
+    StorageTarget,
+)
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLSink
 
@@ -167,3 +172,25 @@ class SnowflakeSink(SQLSink):
                     file_path = urlparse(file_url).path
                     if os.path.exists(file_path):
                         os.remove(file_path)
+
+    def process_batch_files(
+        self, encoding: BaseBatchFileEncoding, files: t.Sequence[str]
+    ) -> None:
+        """Process a batch file with the given batch context.
+
+        Args:
+            encoding: The batch file encoding.
+            files: The batch files to process.
+
+        Raises:
+            NotImplementedError: If the batch file encoding is not supported.
+        """
+        if encoding.format == BatchFileFormat.JSONL:
+            self.insert_batch_files_via_internal_stage(
+                full_table_name=self.full_table_name,
+                files=files,
+            )
+        else:
+            raise NotImplementedError(
+                f"Unsupported batch file encoding: {encoding.format}"
+            )
