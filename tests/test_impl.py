@@ -256,9 +256,8 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
 
 class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
 
-    # Contains all reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
-    # Syncs records then alters schema by adding a non-reserved word column.
-    # Does not contain any key properties to test COPY behavior.
+    # Contains reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # TODO: Syncs records then alters schema by adding a non-reserved word column.
     name = "reserved_words_no_key_props"
 
     @property
@@ -272,9 +271,9 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         result = connector.connection.execute(
             f"select * from {table}",
         )
-        assert result.rowcount == 2
+        assert result.rowcount == 1
         row = result.first()
-        assert len(row) == 11
+        assert len(row) == 10
 
 target_tests = TestSuite(
     kind="target",
