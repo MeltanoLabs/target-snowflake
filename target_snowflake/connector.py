@@ -208,8 +208,11 @@ class SnowflakeConnector(SQLConnector):
         column_selections = []
         for property_name, property_def in schema["properties"].items():
             clean_property_name = formatter.format_collation(property_name)
+            clean_alias = clean_property_name
+            if '"' in clean_property_name:
+                clean_alias = clean_property_name.upper()
             column_selections.append(
-                f"$1:{property_name}::{self.to_sql_type(property_def)} as {clean_property_name}"
+                f"$1:{clean_property_name}::{self.to_sql_type(property_def)} as {clean_alias}"
             )
         return column_selections
 

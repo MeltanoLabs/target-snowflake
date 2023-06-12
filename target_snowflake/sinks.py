@@ -59,6 +59,13 @@ class SnowflakeSink(SQLSink):
     def table_name(self) -> str:
         return super().table_name.upper()
 
+    def conform_name(
+        self,
+        name: str,
+        object_type: str | None = None,  # noqa: ARG002
+    ) -> str:
+        return name
+
     def bulk_insert_records(
         self,
         full_table_name: str,

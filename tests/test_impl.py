@@ -275,6 +275,40 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         row = result.first()
         assert len(row) == 10
 
+
+class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
+
+    name = "colons_in_col_name"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 1
+        row = result.first()
+        assert len(row) == 11
+        table_schema = connector.get_table(table)
+        assert {column.name for column in table_schema.columns} == {
+            "FOO::BAR",
+            "interval",
+            "enabled",
+            "LOWERCASE_VAL::ANOTHER_VAL",
+            "event",
+            "_sdc_extracted_at",
+            "_sdc_batched_at",
+            "_sdc_received_at",
+            "_sdc_deleted_at",
+            "_sdc_table_version",
+            "_sdc_sequence",
+        }
+
 target_tests = TestSuite(
     kind="target",
     tests=[
@@ -297,5 +331,6 @@ target_tests = TestSuite(
         TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled
         SnowflakeTargetReservedWords,
         SnowflakeTargetReservedWordsNoKeyProps,
+        SnowflakeTargetColonsInColName,
     ],
 )
