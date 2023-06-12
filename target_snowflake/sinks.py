@@ -13,6 +13,8 @@ from singer_sdk.batch import JSONLinesBatcher
 from singer_sdk.helpers._batch import BatchConfig
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLSink
+from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
+from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 
 from target_snowflake.connector import SnowflakeConnector
 
@@ -64,7 +66,13 @@ class SnowflakeSink(SQLSink):
         name: str,
         object_type: str | None = None,  # noqa: ARG002
     ) -> str:
-        return name
+        if not object_type or object_type == "column":
+            formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+            if '"' not in formatter.format_collation(name.lower()):
+                name = name.lower()
+            return name
+        else:
+            return super().conform_name(name=name, object_type=object_type)
 
     def bulk_insert_records(
         self,
