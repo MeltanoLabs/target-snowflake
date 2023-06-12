@@ -45,6 +45,7 @@ class SnowflakeConnector(SQLConnector):
     allow_column_alter: bool = True  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
+    column_cache = {}
 
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
@@ -88,6 +89,20 @@ class SnowflakeConnector(SQLConnector):
             },
             echo=False,
         )
+
+    def column_exists(self, full_table_name: str, column_name: str) -> bool:
+        """Determine if the target table already exists.
+        Args:
+            full_table_name: the target table name.
+            column_name: the target column name.
+        Returns:
+            True if table exists, False if not.
+        """
+        if full_table_name not in self.column_cache:
+            self.column_cache[full_table_name] = self.get_table_columns(
+                full_table_name
+            )
+        return column_name in self.column_cache[full_table_name]
 
     def prepare_column(
         self,
