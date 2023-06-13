@@ -1,2 +1,2 @@
-{"type": "SCHEMA", "stream": "TestCamelcase", "schema": {"type": "object", "properties": { "Id": {"type": "string"}, "clientName": {"type": "string"} }}, "key_properties": ["Id"]}
-{"type": "BATCH", "stream": "TestCamelcase", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_camelcase.jsonl"]}
+{"type": "SCHEMA", "stream": "TestBatchCamelcase", "schema": {"type": "object", "properties": { "Id": {"type": "string"}, "clientName": {"type": "string"} }}, "key_properties": ["Id"]}
+{"type": "BATCH", "stream": "TestBatchCamelcase", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_camelcase.jsonl"]}
