@@ -1,7 +1,0 @@
-{"type": "SCHEMA", "stream": "test_users", "key_properties": ["id"], "schema": {"required": ["id", "name"], "type": "object", "properties": {"id": {"type": "integer"}, "name": {"type": "string"}}}}
-
-{"type": "SCHEMA", "stream": "test_locations", "key_properties": ["id"], "schema": {"required": ["id", "name"], "type": "object", "properties": {"id": {"type": "integer"}, "name": {"type": "string"}}}}
-
-{"type": "SCHEMA", "stream": "test_user_in_location", "key_properties": ["id"], "schema": {"required": ["id", "user_id", "location_id"], "type": "object", "properties": {"id": {"type": "integer"}, "user_id": {"type": "integer"}, "location_id": {"type": "integer"}, "info": {"type": "object", "properties": {"weather": {"type": "string"}, "mood": {"type": "string"}}}}}}
-
-{"type": "STATE", "value": {"test_users": 5, "test_locations": 3, "test_user_in_location": 3}}

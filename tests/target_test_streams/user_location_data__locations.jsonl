@@ -1,3 +1,0 @@
-{"type": "RECORD", "stream": "test_locations", "record": {"id": 1, "name": "Philadelphia"}}
-{"type": "RECORD", "stream": "test_locations", "record": {"id": 2, "name": "NY"}}
-{"type": "RECORD", "stream": "test_locations", "record": {"id": 3, "name": "SF"}}
