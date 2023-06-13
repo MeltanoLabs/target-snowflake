@@ -171,6 +171,12 @@ class SnowflakeTargetRecordMissingKeyProperty(TargetRecordMissingKeyProperty):
             self.runner.sync_all()
 
 
+class SnowflakeTargetRecordMissingRequiredProperty(TargetRecordMissingRequiredProperty):
+    def test(self) -> None:
+        with pytest.raises(Exception):
+            self.runner.sync_all()
+
+
 class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
     def validate(self) -> None:
         for table_name in [
@@ -251,7 +257,7 @@ target_tests = TestSuite(
         TargetOptionalAttributes,  # Implicitly asserts that nullable fields are handled
         SnowflakeTargetRecordBeforeSchemaTest,
         SnowflakeTargetRecordMissingKeyProperty,
-        TargetRecordMissingRequiredProperty,
+        SnowflakeTargetRecordMissingRequiredProperty,
         SnowflakeTargetSchemaNoProperties,
         SnowflakeTargetSchemaUpdates,
         TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled

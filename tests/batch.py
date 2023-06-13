@@ -6,7 +6,6 @@ from singer_sdk.testing.suites import TestSuite
 from singer_sdk.testing.target_tests import (
     TargetNoPrimaryKeys,
     TargetOptionalAttributes,
-    TargetRecordMissingRequiredProperty,
     TargetSpecialCharsInAttributes,
 )
 from singer_sdk.testing.templates import TargetFileTestTemplate
@@ -18,6 +17,7 @@ from .core import (
     SnowflakeTargetEncodedStringData,
     SnowflakeTargetRecordBeforeSchemaTest,
     SnowflakeTargetRecordMissingKeyProperty,
+    SnowflakeTargetRecordMissingRequiredProperty,
     SnowflakeTargetSchemaNoProperties,
     SnowflakeTargetSchemaUpdates,
 )
@@ -118,7 +118,7 @@ class SnowflakeTargetBatchRecordMissingKeyProperty(
 
 
 class SnowflakeTargetBatchRecordMissingRequiredProperty(
-    SnowflakeTargetCustomTestTemplate, TargetRecordMissingRequiredProperty
+    SnowflakeTargetCustomTestTemplate, SnowflakeTargetRecordMissingRequiredProperty
 ):
     """Test that the target can handle batch messages."""
 
