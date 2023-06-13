@@ -45,9 +45,12 @@ class SnowflakeConnector(SQLConnector):
     allow_column_alter: bool = False  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
-    table_cache: dict = {}
-    schema_cache: dict = {}
 
+    def __init__(self, *args, **kwargs) -> None:
+        self.table_cache: dict = {}
+        self.schema_cache: dict = {}
+        super().__init__(*args, **kwargs)
+        
     def get_table_columns(
         self,
         full_table_name: str,
