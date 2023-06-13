@@ -1,3 +1,5 @@
+import typing as t
+
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
@@ -143,7 +145,7 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
 
 class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
     @property
-    def stream_names(self) -> List[str]:
+    def stream_names(self) -> t.List[str]:
         return ["test_strings", "test_strings_in_objects", "test_strings_in_arrays"]
 
     def validate(self) -> None:
@@ -183,7 +185,7 @@ class SnowflakeTargetRecordMissingRequiredProperty(TargetRecordMissingRequiredPr
 
 class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
     @property
-    def stream_names(self) -> List[str]:
+    def stream_names(self) -> t.List[str]:
         return [
             "test_object_schema_with_properties",
             "test_object_schema_no_properties",
