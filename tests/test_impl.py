@@ -18,6 +18,7 @@ from singer_sdk.testing.target_tests import (
     TargetSchemaUpdates,
     TargetSpecialCharsInAttributes,
 )
+from singer_sdk.testing.templates import TargetFileTestTemplate
 
 
 class SnowflakeTargetArrayData(TargetArrayData):
