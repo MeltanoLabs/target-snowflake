@@ -1,0 +1,11 @@
+{"id": 1, "info": {"name": "simple", "value": "simple string 2837"}}
+{"id": 2, "info": {"name": "greek", "value": "απλή συμβολοσειρά"}}
+{"id": 3, "info": {"name": "chinese", "value": "简单的字串"}}
+{"id": 4, "info": {"name": "french", "value": "chaîne simple"}}
+{"id": 5, "info": {"name": "quoted string", "value": "quoted \"string\""}}
+{"id": 6, "info": {"name": "escape sequences", "value": "various \" \\ \/ \n escape sequences"}}
+{"id": 7, "info": {"name": "unicode", "value": "\u006D"}}
+{"id": 8, "info": {"name": "unicode", "value": "\u0101"}}
+{"id": 9, "info": {"name": "unicode", "value": "\u0199"}}
+{"id": 10, "info": {"name": "Double quoting", "value": " \\u0000 \\u0041 \\u0001"}}
+{"id": 11, "info": {"name": "Control Characters in string", "value": "\u0000 \u0041 \u0001"}}

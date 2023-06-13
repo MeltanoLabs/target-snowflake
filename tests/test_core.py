@@ -22,14 +22,16 @@ SAMPLE_CONFIG: dict[str, Any] = {
     "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
     "schema": "PUBLIC",
     "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}",
+    "add_record_metadata": False,
 }
+
 
 # TODO: replace when upstream issue resolves
 # https://github.com/meltano/sdk/pull/1752
 class CustomRunner(TargetTestRunner):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
     def sync_all(self, *args, **kwargs):
         try:
             super().sync_all(*args, **kwargs)

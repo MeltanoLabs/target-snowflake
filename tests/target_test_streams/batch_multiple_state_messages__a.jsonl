@@ -1,0 +1,6 @@
+{"type": "RECORD", "stream": "test_multiple_state_messages_a", "record": {"id": 1, "metric": 100}}
+{"type": "RECORD", "stream": "test_multiple_state_messages_a", "record": {"id": 2, "metric": 200}}
+{"type": "RECORD", "stream": "test_multiple_state_messages_a", "record": {"id": 3, "metric": 300}}
+{"type": "RECORD", "stream": "test_multiple_state_messages_a", "record": {"id": 4, "metric": 400}}
+{"type": "RECORD", "stream": "test_multiple_state_messages_a", "record": {"id": 5, "metric": 500}}
+{"type": "RECORD", "stream": "test_multiple_state_messages_a", "record": {"id": 6, "metric": 600}}

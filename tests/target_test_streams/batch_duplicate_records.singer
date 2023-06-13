@@ -1,0 +1,3 @@
+{"type": "SCHEMA", "stream": "test_duplicate_records", "key_properties": ["id"], "schema": {"required": ["id", "metric"], "type": "object", "properties": {"id": {"type": "integer"}, "metric": {"type": "integer"}}}}
+{"type": "BATCH", "stream": "test_duplicate_records", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_duplicate_records.jsonl"]}
+{"type": "STATE", "value": {"test_duplicate_records": 2}}

@@ -1,0 +1,7 @@
+{"type": "SCHEMA", "stream": "test_batch_multiple_state_messages_a", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}, "metric": {"type": "integer"}}}}
+{"type": "BATCH", "stream": "test_batch_multiple_state_messages_a", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_multiple_state_messages__a.jsonl"]}
+{"type": "STATE", "value": {"test_batch_multiple_state_messages_a": 6}}
+{"type": "SCHEMA", "stream": "test_batch_multiple_state_messages_b", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}, "metric": {"type": "integer"}}}}
+{"type": "BATCH", "stream": "test_batch_multiple_state_messages_b", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_multiple_state_messages__b.jsonl"]}
+{"type": "STATE", "value": {"test_batch_multiple_state_messages_b": 6}}
+{"type": "STATE", "value": {"test_batch_multiple_state_messages_a": 6, "test_multiple_state_messages_b": 6}}

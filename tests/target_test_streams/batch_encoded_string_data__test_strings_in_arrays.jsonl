@@ -1,0 +1,6 @@
+{"id": 1, "strings": ["simple string", "απλή συμβολοσειρά", "简单的字串"]}
+{"id": 2, "strings": ["chaîne simple", "quoted \"string\""]}
+{"id": 3, "strings": ["various \" \\ \/ \n escape sequences"]}
+{"id": 4, "strings": ["\u006D", "\u0101", "\u0199"]}
+{"id": 5, "strings": ["aaa", "Double quoting: \\u0000 \\u0041 \\u0001"]}
+{"id": 6, "strings": ["bbb", "Control Characters in string: \u0000 \u0041 \u0001"]}

@@ -1,0 +1,2 @@
+{"type": "BATCH", "stream": "test_batch_record_before_schema", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_record_before_schema.jsonl"]}
+{"type": "SCHEMA", "stream": "test_batch_record_before_schema", "key_properties": ["id"], "schema": {"type": "object", "properties": {"id": {"type": "integer"}, "metric": {"type": "integer"}}}}

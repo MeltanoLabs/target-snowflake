@@ -1,0 +1,5 @@
+{"type": "RECORD", "stream": "test_users", "record": {"id": 1, "name": "Yannis"}}
+{"type": "RECORD", "stream": "test_users", "record": {"id": 2, "name": "Micael"}}
+{"type": "RECORD", "stream": "test_users", "record": {"id": 3, "name": "Jacob"}}
+{"type": "RECORD", "stream": "test_users", "record": {"id": 4, "name": "Josh"}}
+{"type": "RECORD", "stream": "test_users", "record": {"id": 5, "name": "Thomas"}}

@@ -1,0 +1,7 @@
+{"type": "SCHEMA", "stream": "test_strings", "key_properties": ["id"], "schema": {"required": ["id", "info"], "type": "object", "properties": {"id": {"type": "integer"}, "info": {"type": "string"}}}}
+{"type": "BATCH", "stream": "test_strings", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_encoded_string_data__test_strings.jsonl"]}
+{"type": "SCHEMA", "stream": "test_strings_in_objects", "key_properties": ["id"], "schema": {"required": ["id", "info"], "type": "object", "properties": {"id": {"type": "integer"}, "info": {"required": ["name"], "type": "object", "properties": {"name": {"type": "string"}, "value": {"type": "string"}}}}}}
+{"type": "BATCH", "stream": "test_strings_in_objects", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_encoded_string_data__test_strings_in_objects.jsonl"]}
+{"type": "SCHEMA", "stream": "test_strings_in_arrays", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}, "strings": {"type": "array", "items": {"type": "string"}}}}}
+{"type": "BATCH", "stream": "test_strings_in_arrays", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_encoded_string_data__test_strings_in_arrays.jsonl"]}
+{"type": "STATE", "value": {"test_strings": 11, "test_strings_in_objects": 11, "test_strings_in_arrays": 6}}

@@ -1,0 +1,2 @@
+{"id": 5, "a1": 105, "a2": "string5", "a3": false, "a4": {"id": 3, "value": 33}, "a5": [ "apple" ], "a6": 985}
+{"id": 6, "a1": 106, "a2": "string6", "a3": true, "a4": {"id": 4, "value": 444}, "a5": [ "banana", "orange" ], "a6": 341}
