@@ -1,5 +1,5 @@
 from operator import contains, eq
-from typing import Sequence, Tuple, cast, Union, List
+from typing import Sequence, Tuple, cast, Union, List, Dict
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
@@ -52,7 +52,7 @@ class SnowflakeConnector(SQLConnector):
         self,
         full_table_name: str,
         column_names: Union[List[str], None] = None,
-    ) -> dict[str, sqlalchemy.Column]:
+    ) -> Dict[str, sqlalchemy.Column]:
         """Return a list of table columns.
 
         Args:
