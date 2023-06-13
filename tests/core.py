@@ -83,7 +83,7 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_duplicate_records".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
             f"select * from {table}",
         )
@@ -114,9 +114,13 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
 
 
 class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
+    @property
+    def stream_name(self) -> str:
+        return "TestCamelcase"
+
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.TestCamelcase".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
         connector.connection.execute(
             f"select * from {table}",
         )
@@ -138,13 +142,13 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
 
 
 class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
+    @property
+    def stream_names(self) -> List[str]:
+        return ["test_strings", "test_strings_in_objects", "test_strings_in_arrays"]
+
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        for table_name in [
-            "test_strings",
-            "test_strings_in_objects",
-            "test_strings_in_arrays",
-        ]:
+        for table_name in self.stream_names:
             table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             connector.connection.execute(
                 f"select * from {table}",
@@ -178,11 +182,15 @@ class SnowflakeTargetRecordMissingRequiredProperty(TargetRecordMissingRequiredPr
 
 
 class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
-    def validate(self) -> None:
-        for table_name in [
+    @property
+    def stream_names(self) -> List[str]:
+        return [
             "test_object_schema_with_properties",
             "test_object_schema_no_properties",
-        ]:
+        ]
+
+    def validate(self) -> None:
+        for table_name in self.stream_names:
             connector = self.target.default_sink_class.connector_class(
                 self.target.config
             )
@@ -211,7 +219,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_schema_updates".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
             f"select * from {table}",
         )

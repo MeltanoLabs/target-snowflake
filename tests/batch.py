@@ -51,6 +51,7 @@ class SnowflakeTargetBatchCamelcase(
     """Test that the target can handle batch messages."""
 
     name = "batch_camelcase"
+    stream_name = "TestBatchCamelcase"
 
 
 class SnowflakeTargetBatchDuplicateRecords(
@@ -67,6 +68,11 @@ class SnowflakeTargetBatchEncodedStringData(
     """Test that the target can handle batch messages."""
 
     name = "batch_encoded_string_data"
+    stream_names = [
+        "test_batch_strings",
+        "test_batch_strings_in_objects",
+        "test_batch_strings_in_arrays",
+    ]
 
 
 # class SnowflakeTargetBatchMultipleStateMessages(
@@ -131,6 +137,10 @@ class SnowflakeTargetBatchSchemaNoProperties(
     """Test that the target can handle batch messages."""
 
     name = "batch_schema_no_properties"
+    stream_names = [
+        "test_batch_object_schema_with_properties",
+        "test_batch_object_schema_no_properties",
+    ]
 
 
 class SnowflakeTargetBatchSchemaUpdates(
