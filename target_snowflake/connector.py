@@ -1,5 +1,5 @@
 from operator import contains, eq
-from typing import Sequence, Tuple, cast
+from typing import Sequence, Tuple, cast, Union, List, Dict
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
@@ -42,9 +42,36 @@ class SnowflakeConnector(SQLConnector):
 
     allow_column_add: bool = True  # Whether ADD COLUMN is supported.
     allow_column_rename: bool = True  # Whether RENAME COLUMN is supported.
-    allow_column_alter: bool = True  # Whether altering column types is supported.
+    allow_column_alter: bool = False  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
+
+    def __init__(self, *args, **kwargs) -> None:
+        self.table_cache: dict = {}
+        self.schema_cache: dict = {}
+        super().__init__(*args, **kwargs)
+        
+    def get_table_columns(
+        self,
+        full_table_name: str,
+        column_names: Union[List[str], None] = None,
+    ) -> Dict[str, sqlalchemy.Column]:
+        """Return a list of table columns.
+
+        Args:
+            full_table_name: Fully qualified table name.
+            column_names: A list of column names to filter to.
+
+        Returns:
+            An ordered list of column objects.
+        """
+        # Cache these columns because they're frequently used.
+        if full_table_name in self.table_cache:
+            return self.table_cache[full_table_name]
+        else:
+            parsed_columns = super().get_table_columns(full_table_name, column_names)
+            self.table_cache[full_table_name] = parsed_columns
+            return parsed_columns
 
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
@@ -189,14 +216,19 @@ class SnowflakeConnector(SQLConnector):
 
         return cast(sqlalchemy.types.TypeEngine, target_type)
 
-    def prepare_schema(self, schema_name: str) -> None:
-        """Create the target database schema.
-
-        Args:
-            schema_name: The target schema name.
-        """
-        with self._connect() as conn:
-            conn.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+    def schema_exists(self, schema_name: str) -> bool:
+        if schema_name in self.schema_cache:
+            return True
+        else:
+            schema_names = sqlalchemy.inspect(self._engine).get_schema_names()
+            self.schema_cache = schema_names
+            formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+            # Make quoted schema names upper case because we create them that way
+            # and the metadata that SQLAlchemy returns is case insensitive only for non-quoted
+            # schema names so these will look like they dont exist yet.
+            if '"' in formatter.format_collation(schema_name):
+                schema_name = schema_name.upper()
+            return schema_name in schema_names
 
     # Custom SQL get methods
 
