@@ -1,7 +1,6 @@
 from operator import contains, eq
-from typing import Sequence, Tuple, cast, Union, List, Dict
+from typing import Dict, List, Sequence, Tuple, Union, cast
 
-import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
@@ -10,6 +9,8 @@ from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
+
+from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
 
 class TypeMap:
@@ -197,15 +198,15 @@ class SnowflakeConnector(SQLConnector):
         maxlength = jsonschema_type.get("maxLength", 16777216)
         # define type maps
         string_submaps = [
-            TypeMap(eq, sct.TIMESTAMP_NTZ(), "date-time"),
+            TypeMap(eq, TIMESTAMP_NTZ(), "date-time"),
             TypeMap(contains, sqlalchemy.types.TIME(), "time"),
             TypeMap(eq, sqlalchemy.types.DATE(), "date"),
             TypeMap(eq, sqlalchemy.types.VARCHAR(maxlength), None),
         ]
         type_maps = [
-            TypeMap(th._jsonschema_type_check, sct.NUMBER(), ("integer",)),
-            TypeMap(th._jsonschema_type_check, sct.VARIANT(), ("object",)),
-            TypeMap(th._jsonschema_type_check, sct.VARIANT(), ("array",)),
+            TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),
+            TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),
+            TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),
         ]
         # apply type maps
         if th._jsonschema_type_check(jsonschema_type, ("string",)):
