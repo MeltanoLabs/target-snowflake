@@ -308,6 +308,48 @@ class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
             "_sdc_sequence",
         }
 
+class SnowflakeTargetExistingTable(TargetFileTestTemplate):
+
+    name = "existing_table"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def setup(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        connector.connection.execute(
+            f"""
+            CREATE OR REPLACE TABLE {table} (
+                ID VARCHAR(16777216),
+                COL_STR VARCHAR(16777216),
+                COL_TS TIMESTAMP_NTZ(9),
+                COL_INT INTEGER,
+                COL_BOOL BOOLEAN,
+                COL_VARIANT VARIANT,
+                _SDC_BATCHED_AT TIMESTAMP_NTZ(9),
+                _SDC_DELETED_AT VARCHAR(16777216),
+                _SDC_EXTRACTED_AT TIMESTAMP_NTZ(9),
+                _SDC_RECEIVED_AT TIMESTAMP_NTZ(9),
+                _SDC_SEQUENCE NUMBER(38,0),
+                _SDC_TABLE_VERSION NUMBER(38,0),
+                PRIMARY KEY (ID)
+            )
+            """
+        )
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 1
+        row = result.first()
+        assert len(row) == 12
+
 target_tests = TestSuite(
     kind="target",
     tests=[
@@ -331,5 +373,6 @@ target_tests = TestSuite(
         SnowflakeTargetReservedWords,
         SnowflakeTargetReservedWordsNoKeyProps,
         SnowflakeTargetColonsInColName,
+        SnowflakeTargetExistingTable,
     ],
 )
