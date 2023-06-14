@@ -28,11 +28,15 @@ class SnowflakeTargetArrayData(TargetArrayData):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
         assert result.rowcount == 4
         row = result.first()
-        assert len(row) == 8
+        if self.target.config.get("add_record_metadata", True):
+            assert len(row) == 8
+        else:
+            assert len(row) == 2
+
         assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
         table_schema = connector.get_table(table)
         expected_types = {
@@ -87,7 +91,7 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
         expected_value = {
             1: 100,
@@ -124,7 +128,7 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
         connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
 
         table_schema = connector.get_table(table)
@@ -153,7 +157,7 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
         for table_name in self.stream_names:
             table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             connector.connection.execute(
-                f"select * from {table}",
+                f"select * from {table} order by 1",
             )
             # TODO: more assertions
 
@@ -173,6 +177,15 @@ class SnowflakeTargetRecordBeforeSchemaTest(TargetRecordBeforeSchemaTest):
 class SnowflakeTargetRecordMissingKeyProperty(TargetRecordMissingKeyProperty):
     def test(self) -> None:
         # TODO: try to catch exact exception, currently snowflake throws an integrity error
+        with pytest.raises(Exception):
+            self.runner.sync_all()
+
+
+# Snowflake does not support ignoring missing keys when copying/selecting JSON
+# data from staged files. We should make a CSV batcher and use
+#  `ERROR_ON_COLUMN_COUNT_MISMATCH=FALSE`
+class SnowflakeTargetOptionalAttributes(TargetOptionalAttributes):
+    def test(self) -> None:
         with pytest.raises(Exception):
             self.runner.sync_all()
 
@@ -198,11 +211,15 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
             )
             table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             result = connector.connection.execute(
-                f"select * from {table}",
+                f"select * from {table} order by 1",
             )
             assert result.rowcount == 2
             row = result.first()
-            assert len(row) == 7
+            if self.target.config.get("add_record_metadata", True):
+                assert len(row) == 7
+            else:
+                assert len(row) == 1
+
             table_schema = connector.get_table(table)
             expected_types = {
                 "object_store": sct.VARIANT,
@@ -223,11 +240,16 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
         assert result.rowcount == 6
         row = result.first()
-        assert len(row) == 13
+
+        if self.target.config.get("add_record_metadata", True):
+            assert len(row) == 13
+        else:
+            assert len(row) == 7
+
         table_schema = connector.get_table(table)
         expected_types = {
             "id": sct.NUMBER,
@@ -261,7 +283,7 @@ target_tests = TestSuite(
         # SnowflakeTargetDuplicateRecords,
         SnowflakeTargetEncodedStringData,
         SnowflakeTargetInvalidSchemaTest,
-        # Not available in the SDK yet
+        # TODO: Not available in the SDK yet
         # TargetMultipleStateMessages,
         TargetNoPrimaryKeys,  # Implicitly asserts no pk is handled
         TargetOptionalAttributes,  # Implicitly asserts that nullable fields are handled

@@ -2,10 +2,10 @@
 
 from pathlib import Path
 
+import pytest
 from singer_sdk.testing.suites import TestSuite
 from singer_sdk.testing.target_tests import (
     TargetNoPrimaryKeys,
-    TargetOptionalAttributes,
     TargetSpecialCharsInAttributes,
 )
 from singer_sdk.testing.templates import TargetFileTestTemplate
@@ -15,6 +15,7 @@ from .core import (
     SnowflakeTargetCamelcaseTest,
     SnowflakeTargetDuplicateRecords,
     SnowflakeTargetEncodedStringData,
+    SnowflakeTargetOptionalAttributes,
     SnowflakeTargetRecordBeforeSchemaTest,
     SnowflakeTargetRecordMissingKeyProperty,
     SnowflakeTargetRecordMissingRequiredProperty,
@@ -100,7 +101,7 @@ class SnowflakeTargetBatchNoPrimaryKeys(
 
 
 class SnowflakeTargetBatchOptionalAttributes(
-    SnowflakeTargetCustomTestTemplate, TargetOptionalAttributes
+    SnowflakeTargetCustomTestTemplate, SnowflakeTargetOptionalAttributes
 ):
     """Test that the target can handle batch messages."""
 
@@ -163,19 +164,15 @@ batch_target_tests = TestSuite(
     kind="target",
     tests=[
         # BATCH
-        # TODO: failing assertion
-        # SnowflakeTargetBatchArrayData,
+        SnowflakeTargetBatchArrayData,
         SnowflakeTargetBatchCamelcase,
-        # TODO: as above
+        # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/41
         # SnowflakeTargetBatchDuplicateRecords,
         SnowflakeTargetBatchEncodedStringData,
-        # TODO: as above
+        # TODO: Not available in the SDK yet
         # SnowflakeTargetBatchMultipleStateMessages,
-        # TODO: in sdk but not enabled
-        # SnowflakeTargetBatchNoPrimaryKeysAppend,
         SnowflakeTargetBatchNoPrimaryKeys,
-        # TODO: failing on SQL Merge (NULLs in non-Nullable columns)
-        # SnowflakeTargetBatchOptionalAttributes,
+        SnowflakeTargetBatchOptionalAttributes,
         SnowflakeTargetBatchRecordBeforeSchemaTest,
         SnowflakeTargetBatchRecordMissingKeyProperty,
         SnowflakeTargetBatchSchemaNoProperties,

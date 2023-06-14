@@ -230,7 +230,7 @@ class SnowflakeConnector(SQLConnector):
         return (
             text(
                 f"create or replace file format {file_format}"
-                + "type = 'JSON' compression = 'GZIP'"
+                + "type = 'JSON' compression = 'AUTO'"
             ),
             {},
         )
