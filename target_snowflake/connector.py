@@ -1,17 +1,13 @@
-import os
 from operator import contains, eq
-from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, cast
-from urllib.parse import urlparse
-from uuid import uuid4
+from typing import Sequence, Tuple, cast
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk import typing as th
-from singer_sdk.batch import lazy_chunked_generator
 from singer_sdk.connectors import SQLConnector
-from singer_sdk.helpers._batch import BaseBatchFileEncoding, BatchConfig
-from singer_sdk.helpers._typing import conform_record_data_types
 from snowflake.sqlalchemy import URL
+from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
+from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
 
@@ -93,6 +89,40 @@ class SnowflakeConnector(SQLConnector):
             echo=False,
         )
 
+    def prepare_column(
+        self,
+        full_table_name: str,
+        column_name: str,
+        sql_type: sqlalchemy.types.TypeEngine,
+    ) -> None:
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        # Make quoted column names upper case because we create them that way
+        # and the metadata that SQLAlchemy returns is case insensitive only for non-quoted
+        # column names so these will look like they dont exist yet.
+        if '"' in formatter.format_collation(column_name):
+            column_name = column_name.upper()
+
+        super().prepare_column(
+            full_table_name,
+            column_name,
+            sql_type,
+        )
+
+    @staticmethod
+    def get_column_rename_ddl(
+        table_name: str,
+        column_name: str,
+        new_column_name: str,
+    ) -> sqlalchemy.DDL:
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        # Since we build the ddl manually we can't rely on SQLAlchemy to
+        # quote column names automatically.
+        return SQLConnector.get_column_rename_ddl(
+            table_name,
+            formatter.format_collation(column_name),
+            formatter.format_collation(new_column_name),
+        )
+
     @staticmethod
     def get_column_alter_ddl(
         table_name: str, column_name: str, column_type: sqlalchemy.types.TypeEngine
@@ -109,11 +139,14 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             A sqlalchemy DDL instance.
         """
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        # Since we build the ddl manually we can't rely on SQLAlchemy to
+        # quote column names automatically.
         return sqlalchemy.DDL(
             "ALTER TABLE %(table_name)s ALTER COLUMN %(column_name)s SET DATA TYPE %(column_type)s",
             {
                 "table_name": table_name,
-                "column_name": column_name,
+                "column_name": formatter.format_collation(column_name),
                 "column_type": column_type,
             },
         )
@@ -171,29 +204,35 @@ class SnowflakeConnector(SQLConnector):
         """Get Snowflake PUT statement."""
         return (text(f"put '{file_uri}' '@~/target-snowflake/{sync_id}'"), {})
 
+    def _get_column_selections(self, schema: dict, formatter: SnowflakeIdentifierPreparer) -> list:
+        column_selections = []
+        for property_name, property_def in schema["properties"].items():
+            clean_property_name = formatter.format_collation(property_name)
+            column_selections.append(
+                f"$1:{property_name}::{self.to_sql_type(property_def)} as {clean_property_name}"
+            )
+        return column_selections
+
     def _get_merge_from_stage_statement(
         self, full_table_name, schema, sync_id, file_format, key_properties
     ):
         """Get Snowflake MERGE statement."""
 
-        # convert from case in JSON to UPPER column name
-        column_selections = [
-            f"$1:{property_name}::{self.to_sql_type(property_def)} as {property_name.upper()}"
-            for property_name, property_def in schema["properties"].items()
-        ]
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        column_selections = self._get_column_selections(schema, formatter)
 
         # use UPPER from here onwards
-        upper_properties = [col.upper() for col in schema["properties"].keys()]
-        upper_key_properties = [col.upper() for col in key_properties]
+        formatted_properties = [formatter.format_collation(col) for col in schema["properties"].keys()]
+        formatted_key_properties = [formatter.format_collation(col) for col in key_properties]
         join_expr = " and ".join(
-            [f'd."{key}" = s."{key}"' for key in upper_key_properties]
+            [f'd.{key} = s.{key}' for key in formatted_key_properties]
         )
         matched_clause = ", ".join(
-            [f'd."{col}" = s."{col}"' for col in upper_properties]
+            [f'd.{col} = s.{col}' for col in formatted_properties]
         )
-        not_matched_insert_cols = ", ".join(upper_properties)
+        not_matched_insert_cols = ", ".join(formatted_properties)
         not_matched_insert_values = ", ".join(
-            [f's."{col}"' for col in upper_properties]
+            [f's.{col}' for col in formatted_properties]
         )
         return (
             text(
@@ -210,11 +249,8 @@ class SnowflakeConnector(SQLConnector):
 
     def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):
         """Get Snowflake COPY statement."""
-        # convert from case in JSON to UPPER column name
-        column_selections = [
-            f"$1:{property_name}::{self.to_sql_type(property_def)} as {property_name.upper()}"
-            for property_name, property_def in schema["properties"].items()
-        ]
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        column_selections = self._get_column_selections(schema, formatter)
         return (
             text(
                 f"copy into {full_table_name} from "
