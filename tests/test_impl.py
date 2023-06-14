@@ -328,6 +328,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
                 COL_TS TIMESTAMP_NTZ(9),
                 COL_INT INTEGER,
                 COL_BOOL BOOLEAN,
+                COL_VARIANT VARIANT,
                 _SDC_BATCHED_AT TIMESTAMP_NTZ(9),
                 _SDC_DELETED_AT VARCHAR(16777216),
                 _SDC_EXTRACTED_AT TIMESTAMP_NTZ(9),
@@ -347,7 +348,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
         )
         assert result.rowcount == 1
         row = result.first()
-        assert len(row) == 11
+        assert len(row) == 12
 
 target_tests = TestSuite(
     kind="target",
