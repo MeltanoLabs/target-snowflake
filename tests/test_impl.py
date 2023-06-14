@@ -275,7 +275,6 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         row = result.first()
         assert len(row) == 10
 
-
 class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
 
     name = "colons_in_col_name"
