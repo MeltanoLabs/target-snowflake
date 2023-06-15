@@ -18,6 +18,8 @@ from singer_sdk.helpers._batch import (
 )
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLSink
+from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
+from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 
 from target_snowflake.connector import SnowflakeConnector
 
@@ -63,6 +65,40 @@ class SnowflakeSink(SQLSink):
     @property
     def table_name(self) -> str:
         return super().table_name.upper()
+
+    def setup(self) -> None:
+        """Set up Sink.
+
+        This method is called on Sink creation, and creates the required Schema and
+        Table entities in the target database.
+        """
+        if self.schema_name:
+            # Needed to conform schema name
+            self.connector.prepare_schema(
+                self.conform_name(
+                    self.schema_name,
+                    object_type="schema"
+                ),
+            )
+        self.connector.prepare_table(
+            full_table_name=self.full_table_name,
+            schema=self.conform_schema(self.schema),
+            primary_keys=self.key_properties,
+            as_temp_table=False,
+        )
+
+    def conform_name(
+        self,
+        name: str,
+        object_type: str | None = None,  # noqa: ARG002
+    ) -> str:
+        if not object_type or object_type == "column":
+            formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+            if '"' not in formatter.format_collation(name.lower()):
+                name = name.lower()
+            return name
+        else:
+            return super().conform_name(name=name, object_type=object_type)
 
     def bulk_insert_records(
         self,
@@ -141,7 +177,12 @@ class SnowflakeSink(SQLSink):
             sync_id = f"{self.stream_name}-{uuid4()}"
             file_format = f'{self.database_name}.{self.schema_name}."{sync_id}"'
             self.connector.put_batches_to_stage(sync_id=sync_id, files=files)
-            self.connector.prepare_schema(schema_name=self.schema_name)
+            self.connector.prepare_schema(
+                self.conform_name(
+                    self.schema_name,
+                    object_type="schema"
+                ),
+            )
             self.connector.create_file_format(file_format=file_format)
 
             if self.key_properties:

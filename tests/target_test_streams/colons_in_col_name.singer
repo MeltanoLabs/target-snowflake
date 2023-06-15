@@ -1,0 +1,2 @@
+{"type": "SCHEMA", "stream": "colons_in_col_name", "schema": {"properties": {"enabled": {"type": "boolean"}, "Foo::Bar": {"type": "string"}, "interval": {"type": "string"}, "lowercase_val::another_val": {"type": "string"}, "event": {"type": "string"}}, "type": "object"}, "key_properties": ["lowercase_val::another_val", "Foo::Bar"]}
+{"type": "RECORD", "stream": "colons_in_col_name", "record": {"enabled": false, "Foo::Bar": "test::data", "interval": "@daily", "lowercase_val::another_val": "abc::def", "event": "xyz"}, "time_extracted": "2023-06-01T02:24:21.216447+00:00"}
