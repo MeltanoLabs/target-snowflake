@@ -4,22 +4,21 @@ import pytest
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk.testing.suites import TestSuite
-from singer_sdk.testing.target_tests import (
-    TargetArrayData,
-    TargetCamelcaseComplexSchema,
-    TargetCamelcaseTest,
-    TargetCliPrintsTest,
-    TargetDuplicateRecords,
-    TargetEncodedStringData,
-    TargetInvalidSchemaTest,
-    TargetNoPrimaryKeys,
-    TargetOptionalAttributes,
-    TargetRecordBeforeSchemaTest,
-    TargetRecordMissingKeyProperty,
-    TargetSchemaNoProperties,
-    TargetSchemaUpdates,
-    TargetSpecialCharsInAttributes,
-)
+from singer_sdk.testing.target_tests import (TargetArrayData,
+                                             TargetCamelcaseComplexSchema,
+                                             TargetCamelcaseTest,
+                                             TargetCliPrintsTest,
+                                             TargetDuplicateRecords,
+                                             TargetEncodedStringData,
+                                             TargetInvalidSchemaTest,
+                                             TargetNoPrimaryKeys,
+                                             TargetOptionalAttributes,
+                                             TargetRecordBeforeSchemaTest,
+                                             TargetRecordMissingKeyProperty,
+                                             TargetSchemaNoProperties,
+                                             TargetSchemaUpdates,
+                                             TargetSpecialCharsInAttributes)
+from singer_sdk.testing.templates import TargetFileTestTemplate
 
 
 class SnowflakeTargetArrayData(TargetArrayData):
@@ -242,6 +241,123 @@ class SnowflakeTargetSchemaUpdatesNoKeyProps(SnowflakeTargetSchemaUpdates):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
 
+class SnowflakeTargetReservedWords(TargetFileTestTemplate):
+
+    # Contains reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # Syncs records then alters schema by adding a non-reserved word column.
+    name = "reserved_words"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 2
+        row = result.first()
+        assert len(row) == 11
+
+class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
+
+    # Contains reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # TODO: Syncs records then alters schema by adding a non-reserved word column.
+    name = "reserved_words_no_key_props"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 1
+        row = result.first()
+        assert len(row) == 10
+
+class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
+
+    name = "colons_in_col_name"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 1
+        row = result.first()
+        assert len(row) == 11
+        table_schema = connector.get_table(table)
+        assert {column.name for column in table_schema.columns} == {
+            "FOO::BAR",
+            "interval",
+            "enabled",
+            "LOWERCASE_VAL::ANOTHER_VAL",
+            "event",
+            "_sdc_extracted_at",
+            "_sdc_batched_at",
+            "_sdc_received_at",
+            "_sdc_deleted_at",
+            "_sdc_table_version",
+            "_sdc_sequence",
+        }
+
+class SnowflakeTargetExistingTable(TargetFileTestTemplate):
+
+    name = "existing_table"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def setup(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        connector.connection.execute(
+            f"""
+            CREATE OR REPLACE TABLE {table} (
+                ID VARCHAR(16777216),
+                COL_STR VARCHAR(16777216),
+                COL_TS TIMESTAMP_NTZ(9),
+                COL_INT INTEGER,
+                COL_BOOL BOOLEAN,
+                COL_VARIANT VARIANT,
+                _SDC_BATCHED_AT TIMESTAMP_NTZ(9),
+                _SDC_DELETED_AT VARCHAR(16777216),
+                _SDC_EXTRACTED_AT TIMESTAMP_NTZ(9),
+                _SDC_RECEIVED_AT TIMESTAMP_NTZ(9),
+                _SDC_SEQUENCE NUMBER(38,0),
+                _SDC_TABLE_VERSION NUMBER(38,0),
+                PRIMARY KEY (ID)
+            )
+            """
+        )
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 1
+        row = result.first()
+        assert len(row) == 12
+
 target_tests = TestSuite(
     kind="target",
     tests=[
@@ -249,8 +365,7 @@ target_tests = TestSuite(
         SnowflakeTargetCamelcaseComplexSchema,
         SnowflakeTargetCamelcaseTest,
         TargetCliPrintsTest,
-        # TODO: bug https://github.com/MeltanoLabs/target-snowflake/issues/41
-        # SnowflakeTargetDuplicateRecords,
+        SnowflakeTargetDuplicateRecords,
         SnowflakeTargetEncodedStringData,
         SnowflakeTargetInvalidSchemaTest,
         # Not available in the SDK yet
@@ -263,5 +378,9 @@ target_tests = TestSuite(
         SnowflakeTargetSchemaUpdates,
         SnowflakeTargetSchemaUpdatesNoKeyProps,
         TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled
+        SnowflakeTargetReservedWords,
+        SnowflakeTargetReservedWordsNoKeyProps,
+        SnowflakeTargetColonsInColName,
+        SnowflakeTargetExistingTable,
     ],
 )
