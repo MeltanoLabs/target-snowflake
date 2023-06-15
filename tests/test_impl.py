@@ -205,7 +205,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_schema_updates".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
             f"select * from {table}",
         )
@@ -231,6 +231,14 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
         for column in table_schema.columns:
             assert column.name in expected_types
             isinstance(column.type, expected_types[column.name])
+
+class SnowflakeTargetSchemaUpdatesNoKeyProps(SnowflakeTargetSchemaUpdates):
+    name = "schema_updates_no_key_props"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
 
 
 class SnowflakeTargetReservedWords(TargetFileTestTemplate):
@@ -368,6 +376,7 @@ target_tests = TestSuite(
         SnowflakeTargetRecordMissingKeyProperty,
         SnowflakeTargetSchemaNoProperties,
         SnowflakeTargetSchemaUpdates,
+        SnowflakeTargetSchemaUpdatesNoKeyProps,
         TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled
         SnowflakeTargetReservedWords,
         SnowflakeTargetReservedWordsNoKeyProps,
