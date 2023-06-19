@@ -43,7 +43,7 @@ class SnowflakeConnector(SQLConnector):
 
     allow_column_add: bool = True  # Whether ADD COLUMN is supported.
     allow_column_rename: bool = True  # Whether RENAME COLUMN is supported.
-    allow_column_alter: bool = False  # Whether altering column types is supported.
+    allow_column_alter: bool = True  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
 
