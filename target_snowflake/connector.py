@@ -36,7 +36,7 @@ def evaluate_typemaps(type_maps, compare_value, unmatched_value):
     return unmatched_value
 
 
-def _jsonschema_type_check(jsonschema_type: dict, type_check: tuple[str]) -> bool:
+def _jsonschema_type_check(jsonschema_type: dict, type_check: Tuple[str]) -> bool:
     """Return True if the jsonschema_type supports the provided type.
 
     Args:
