@@ -1,23 +1,27 @@
+import typing as t
 from pathlib import Path
 
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk.testing.suites import TestSuite
-from singer_sdk.testing.target_tests import (TargetArrayData,
-                                             TargetCamelcaseComplexSchema,
-                                             TargetCamelcaseTest,
-                                             TargetCliPrintsTest,
-                                             TargetDuplicateRecords,
-                                             TargetEncodedStringData,
-                                             TargetInvalidSchemaTest,
-                                             TargetNoPrimaryKeys,
-                                             TargetOptionalAttributes,
-                                             TargetRecordBeforeSchemaTest,
-                                             TargetRecordMissingKeyProperty,
-                                             TargetSchemaNoProperties,
-                                             TargetSchemaUpdates,
-                                             TargetSpecialCharsInAttributes)
+from singer_sdk.testing.target_tests import (
+    TargetArrayData,
+    TargetCamelcaseComplexSchema,
+    TargetCamelcaseTest,
+    TargetCliPrintsTest,
+    TargetDuplicateRecords,
+    TargetEncodedStringData,
+    TargetInvalidSchemaTest,
+    TargetNoPrimaryKeys,
+    TargetOptionalAttributes,
+    TargetRecordBeforeSchemaTest,
+    TargetRecordMissingKeyProperty,
+    TargetRecordMissingRequiredProperty,
+    TargetSchemaNoProperties,
+    TargetSchemaUpdates,
+    TargetSpecialCharsInAttributes,
+)
 from singer_sdk.testing.templates import TargetFileTestTemplate
 
 
@@ -26,11 +30,15 @@ class SnowflakeTargetArrayData(TargetArrayData):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
         assert result.rowcount == 4
         row = result.first()
-        assert len(row) == 8
+        if self.target.config.get("add_record_metadata", True):
+            assert len(row) == 8
+        else:
+            assert len(row) == 2
+
         assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
         table_schema = connector.get_table(table)
         expected_types = {
@@ -83,9 +91,9 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_duplicate_records".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
         expected_value = {
             1: 100,
@@ -114,11 +122,15 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
 
 
 class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
+    @property
+    def stream_name(self) -> str:
+        return "TestCamelcase"
+
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.TestCamelcase".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
         connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
 
         table_schema = connector.get_table(table)
@@ -138,16 +150,16 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
 
 
 class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
+    @property
+    def stream_names(self) -> t.List[str]:
+        return ["test_strings", "test_strings_in_objects", "test_strings_in_arrays"]
+
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        for table_name in [
-            "test_strings",
-            "test_strings_in_objects",
-            "test_strings_in_arrays",
-        ]:
+        for table_name in self.stream_names:
             table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             connector.connection.execute(
-                f"select * from {table}",
+                f"select * from {table} order by 1",
             )
             # TODO: more assertions
 
@@ -166,27 +178,50 @@ class SnowflakeTargetRecordBeforeSchemaTest(TargetRecordBeforeSchemaTest):
 
 class SnowflakeTargetRecordMissingKeyProperty(TargetRecordMissingKeyProperty):
     def test(self) -> None:
-        # TODO: try to catch exact exception, currently snowflake throws an integrity error
+        # TODO: catch exact exception, currently snowflake throws an integrity error
+        with pytest.raises(Exception):
+            self.runner.sync_all()
+
+
+# Snowflake does not support ignoring missing keys when copying/selecting JSON
+# data from staged files. We should make a CSV batcher and use
+#  `ERROR_ON_COLUMN_COUNT_MISMATCH=FALSE`
+class SnowflakeTargetOptionalAttributes(TargetOptionalAttributes):
+    def test(self) -> None:
+        with pytest.raises(Exception):
+            self.runner.sync_all()
+
+
+class SnowflakeTargetRecordMissingRequiredProperty(TargetRecordMissingRequiredProperty):
+    def test(self) -> None:
         with pytest.raises(Exception):
             self.runner.sync_all()
 
 
 class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
-    def validate(self) -> None:
-        for table_name in [
+    @property
+    def stream_names(self) -> t.List[str]:
+        return [
             "test_object_schema_with_properties",
             "test_object_schema_no_properties",
-        ]:
+        ]
+
+    def validate(self) -> None:
+        for table_name in self.stream_names:
             connector = self.target.default_sink_class.connector_class(
                 self.target.config
             )
             table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             result = connector.connection.execute(
-                f"select * from {table}",
+                f"select * from {table} order by 1",
             )
             assert result.rowcount == 2
             row = result.first()
-            assert len(row) == 7
+            if self.target.config.get("add_record_metadata", True):
+                assert len(row) == 7
+            else:
+                assert len(row) == 1
+
             table_schema = connector.get_table(table)
             expected_types = {
                 "object_store": sct.VARIANT,
@@ -205,13 +240,18 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_schema_updates".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            f"select * from {table} order by 1",
         )
         assert result.rowcount == 6
         row = result.first()
-        assert len(row) == 13
+
+        if self.target.config.get("add_record_metadata", True):
+            assert len(row) == 13
+        else:
+            assert len(row) == 7
+
         table_schema = connector.get_table(table)
         expected_types = {
             "id": sct.NUMBER,
@@ -234,8 +274,8 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
 
 
 class SnowflakeTargetReservedWords(TargetFileTestTemplate):
-
-    # Contains reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # Contains reserved words from
+    # https://docs.snowflake.com/en/sql-reference/reserved-keywords
     # Syncs records then alters schema by adding a non-reserved word column.
     name = "reserved_words"
 
@@ -254,9 +294,10 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
         row = result.first()
         assert len(row) == 11
 
-class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
 
-    # Contains reserved words from https://docs.snowflake.com/en/sql-reference/reserved-keywords
+class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
+    # Contains reserved words from
+    # https://docs.snowflake.com/en/sql-reference/reserved-keywords
     # TODO: Syncs records then alters schema by adding a non-reserved word column.
     name = "reserved_words_no_key_props"
 
@@ -275,8 +316,8 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         row = result.first()
         assert len(row) == 10
 
-class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
 
+class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
     name = "colons_in_col_name"
 
     @property
@@ -308,8 +349,8 @@ class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
             "_sdc_sequence",
         }
 
-class SnowflakeTargetExistingTable(TargetFileTestTemplate):
 
+class SnowflakeTargetExistingTable(TargetFileTestTemplate):
     name = "existing_table"
 
     @property
@@ -350,9 +391,11 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
         row = result.first()
         assert len(row) == 12
 
+
 target_tests = TestSuite(
     kind="target",
     tests=[
+        # Core
         SnowflakeTargetArrayData,
         SnowflakeTargetCamelcaseComplexSchema,
         SnowflakeTargetCamelcaseTest,
@@ -360,15 +403,16 @@ target_tests = TestSuite(
         SnowflakeTargetDuplicateRecords,
         SnowflakeTargetEncodedStringData,
         SnowflakeTargetInvalidSchemaTest,
-        # Not available in the SDK yet
+        # TODO: Not available in the SDK yet
         # TargetMultipleStateMessages,
         TargetNoPrimaryKeys,  # Implicitly asserts no pk is handled
-        TargetOptionalAttributes,  # Implicitly asserts that nullable fields are handled
+        TargetOptionalAttributes,  # Implicitly asserts nullable fields handled
         SnowflakeTargetRecordBeforeSchemaTest,
         SnowflakeTargetRecordMissingKeyProperty,
+        SnowflakeTargetRecordMissingRequiredProperty,
         SnowflakeTargetSchemaNoProperties,
         SnowflakeTargetSchemaUpdates,
-        TargetSpecialCharsInAttributes,  # Implicitly asserts that special chars are handled
+        TargetSpecialCharsInAttributes,  # Implicitly asserts special chars handled
         SnowflakeTargetReservedWords,
         SnowflakeTargetReservedWordsNoKeyProps,
         SnowflakeTargetColonsInColName,

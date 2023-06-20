@@ -1,0 +1,11 @@
+{"id": 1, "info": "simple string 2837"}
+{"id": 2, "info": "απλή συμβολοσειρά"}
+{"id": 3, "info": "简单的字串"}
+{"id": 4, "info": "chaîne simple"}
+{"id": 5, "info": "quoted \"string\""}
+{"id": 6, "info": "various \" \\ \/ \n escape sequences"}
+{"id": 7, "info": "\u006D"}
+{"id": 8, "info": "\u0101"}
+{"id": 9, "info": "\u0199"}
+{"id": 10, "info": "Double quoting: \\u0000 \\u0041 \\u0001"}
+{"id": 11, "info": "Control Characters in string: \u0000 \u0041 \u0001"}

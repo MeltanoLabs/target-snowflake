@@ -1,0 +1,3 @@
+{"type": "SCHEMA", "stream": "test_batch_no_primary_keys", "key_properties": [], "schema": { "type": "object", "properties": {"id": {"type": "integer"}, "metric": {"type": "integer"}}}}
+{"type": "BATCH", "stream": "test_batch_no_primary_keys", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_no_primary_keys.jsonl"]}
+{"type": "STATE", "value": {"test_batch_no_primary_keys": 3}}

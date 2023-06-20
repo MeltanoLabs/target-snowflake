@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 import uuid
 from typing import Any
@@ -11,7 +12,8 @@ from singer_sdk.testing import TargetTestRunner, get_test_class
 
 from target_snowflake.target import TargetSnowflake
 
-from .test_impl import target_tests
+from .batch import batch_target_tests
+from .core import target_tests
 
 SAMPLE_CONFIG: dict[str, Any] = {
     "user": os.environ["TARGET_SNOWFLAKE_USER"],
@@ -21,15 +23,15 @@ SAMPLE_CONFIG: dict[str, Any] = {
     "warehouse": os.environ["TARGET_SNOWFLAKE_WAREHOUSE"],
     "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
     "schema": "PUBLIC",
-    "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}",
 }
+
 
 # TODO: replace when upstream issue resolves
 # https://github.com/meltano/sdk/pull/1752
 class CustomRunner(TargetTestRunner):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
     def sync_all(self, *args, **kwargs):
         try:
             super().sync_all(*args, **kwargs)
@@ -37,19 +39,8 @@ class CustomRunner(TargetTestRunner):
             self.target_input = None
 
 
-# Custom so I can implement all validate methods
-StandardTargetTests = get_test_class(
-    test_runner=CustomRunner(
-        target_class=TargetSnowflake,
-        config=SAMPLE_CONFIG,
-    ),
-    test_suites=[target_tests],
-    suite_config=None,
-)
-
-
-class TestTargetSnowflake(StandardTargetTests):  # type: ignore[misc, valid-type]  # noqa: E501
-    """Standard Target Tests."""
+class BaseSnowflakeTargetTests:
+    """Base class for Snowflake target tests."""
 
     @pytest.fixture(scope="class")
     def connection(self, runner):
@@ -74,3 +65,42 @@ class TestTargetSnowflake(StandardTargetTests):  # type: ignore[misc, valid-type
         connection.execute(
             f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}"
         )
+
+
+# Custom so I can implement all validate methods
+STANDARD_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
+STANDARD_TEST_CONFIG[
+    "default_target_schema"
+] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
+StandardTargetTests = get_test_class(
+    test_runner=CustomRunner(
+        target_class=TargetSnowflake,
+        config=STANDARD_TEST_CONFIG,
+    ),
+    test_suites=[target_tests],
+    suite_config=None,
+)
+
+
+class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # type: ignore[misc, valid-type]  # noqa: E501
+    """Standard Target Tests."""
+
+
+# Custom so I can implement all validate methods
+BATCH_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
+BATCH_TEST_CONFIG[
+    "default_target_schema"
+] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
+BATCH_TEST_CONFIG["add_record_metadata"] = False
+BatchTargetTests = get_test_class(
+    test_runner=CustomRunner(
+        target_class=TargetSnowflake,
+        config=BATCH_TEST_CONFIG,
+    ),
+    test_suites=[batch_target_tests],
+    suite_config=None,
+)
+
+
+class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]  # noqa: E501
+    """Batch Target Tests."""

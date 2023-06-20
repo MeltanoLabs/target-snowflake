@@ -1,0 +1,4 @@
+{"type": "RECORD", "stream": "test_optional_attributes", "record": {"id": 1, "optional": "This is optional"}}
+{"type": "RECORD", "stream": "test_optional_attributes", "record": {"id": 2}}
+{"type": "RECORD", "stream": "test_optional_attributes", "record": {"id": 3, "optional": "Also optional"}}
+{"type": "RECORD", "stream": "test_optional_attributes", "record": {"id": 4}}

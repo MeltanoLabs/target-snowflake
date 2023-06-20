@@ -1,0 +1,2 @@
+{"type": "SCHEMA", "stream": "test_batch:SpecialChars!in?attributes", "schema": {"type": "object", "properties": {"_id": {"type": "string"}, "d": {"type": "object", "properties": {"env": {"type": "string"}, "agent:type": {"type": "string"}, "agent:os:version": {"type": "string"}}}}}, "key_properties": ["_id"]}
+{"type": "BATCH", "stream": "test_batch:SpecialChars!in?attributes", "encoding": {"format": "jsonl"}, "manifest": ["file://tests/target_test_streams/batch_special_chars_in_attributes.jsonl"]}
