@@ -1,6 +1,7 @@
 from operator import contains, eq
 from typing import Dict, List, Sequence, Tuple, Union, cast
 
+import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
@@ -35,6 +36,34 @@ def evaluate_typemaps(type_maps, compare_value, unmatched_value):
     return unmatched_value
 
 
+def _jsonschema_type_check(jsonschema_type: dict, type_check: Tuple[str]) -> bool:
+    """Return True if the jsonschema_type supports the provided type.
+
+    Args:
+        jsonschema_type: The type dict.
+        type_check: A tuple of type strings to look for.
+
+    Returns:
+        True if the schema suports the type.
+    """
+    if "type" in jsonschema_type:
+        if isinstance(jsonschema_type["type"], (list, tuple)):
+            for schema_type in jsonschema_type["type"]:
+                if schema_type in type_check:
+                    return True
+        else:
+            if jsonschema_type.get("type") in type_check:  # noqa: PLR5501
+                return True
+
+    # TODO: remove following release of https://github.com/meltano/sdk/issues/1774
+    if any(
+        _jsonschema_type_check(t, type_check)
+        for t in jsonschema_type.get("anyOf", ())
+    ):
+        return True
+
+    return False
+
 class SnowflakeConnector(SQLConnector):
     """Snowflake Target Connector.
 
@@ -43,7 +72,7 @@ class SnowflakeConnector(SQLConnector):
 
     allow_column_add: bool = True  # Whether ADD COLUMN is supported.
     allow_column_rename: bool = True  # Whether RENAME COLUMN is supported.
-    allow_column_alter: bool = False  # Whether altering column types is supported.
+    allow_column_alter: bool = True  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
 
@@ -70,9 +99,32 @@ class SnowflakeConnector(SQLConnector):
         if full_table_name in self.table_cache:
             return self.table_cache[full_table_name]
         else:
-            parsed_columns = super().get_table_columns(full_table_name, column_names)
+            _, schema_name, table_name = self.parse_full_table_name(full_table_name)
+            inspector = sqlalchemy.inspect(self._engine)
+            columns = inspector.get_columns(table_name, schema_name)
+
+            parsed_columns = {
+                col_meta["name"]: sqlalchemy.Column(
+                    col_meta["name"],
+                    self._convert_type(col_meta["type"]),
+                    nullable=col_meta.get("nullable", False),
+                )
+                for col_meta in columns
+                if not column_names
+                or col_meta["name"].casefold() in {col.casefold() for col in column_names}
+            }
             self.table_cache[full_table_name] = parsed_columns
             return parsed_columns
+
+    def _convert_type(self, sql_type):
+        if isinstance(sql_type, sct.TIMESTAMP_NTZ):
+            return TIMESTAMP_NTZ
+        elif isinstance(sql_type, sct.NUMBER):
+            return NUMBER
+        elif isinstance(sql_type, sct.VARIANT):
+            return VARIANT
+        else:
+            return sql_type
 
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
@@ -204,12 +256,12 @@ class SnowflakeConnector(SQLConnector):
             TypeMap(eq, sqlalchemy.types.VARCHAR(maxlength), None),
         ]
         type_maps = [
-            TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),
-            TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),
-            TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),
+            TypeMap(_jsonschema_type_check, NUMBER(), ("integer",)),
+            TypeMap(_jsonschema_type_check, VARIANT(), ("object",)),
+            TypeMap(_jsonschema_type_check, VARIANT(), ("array",)),
         ]
         # apply type maps
-        if th._jsonschema_type_check(jsonschema_type, ("string",)):
+        if _jsonschema_type_check(jsonschema_type, ("string",)):
             datelike_type = th.get_datelike_property_type(jsonschema_type)
             target_type = evaluate_typemaps(string_submaps, datelike_type, target_type)
         else:
