@@ -26,19 +26,6 @@ SAMPLE_CONFIG: dict[str, Any] = {
 }
 
 
-# TODO: replace when upstream issue resolves
-# https://github.com/meltano/sdk/pull/1752
-class CustomRunner(TargetTestRunner):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def sync_all(self, *args, **kwargs):
-        try:
-            super().sync_all(*args, **kwargs)
-        finally:
-            self.target_input = None
-
-
 class BaseSnowflakeTargetTests:
     """Base class for Snowflake target tests."""
 
@@ -73,7 +60,7 @@ STANDARD_TEST_CONFIG[
     "default_target_schema"
 ] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
 StandardTargetTests = get_test_class(
-    test_runner=CustomRunner(
+    test_runner=TargetTestRunner(
         target_class=TargetSnowflake,
         config=STANDARD_TEST_CONFIG,
     ),

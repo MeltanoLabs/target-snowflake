@@ -38,34 +38,6 @@ def evaluate_typemaps(type_maps, compare_value, unmatched_value):
     return unmatched_value
 
 
-def _jsonschema_type_check(jsonschema_type: dict, type_check: Tuple[str]) -> bool:
-    """Return True if the jsonschema_type supports the provided type.
-
-    Args:
-        jsonschema_type: The type dict.
-        type_check: A tuple of type strings to look for.
-
-    Returns:
-        True if the schema suports the type.
-    """
-    if "type" in jsonschema_type:
-        if isinstance(jsonschema_type["type"], (list, tuple)):
-            for schema_type in jsonschema_type["type"]:
-                if schema_type in type_check:
-                    return True
-        else:
-            if jsonschema_type.get("type") in type_check:  # noqa: PLR5501
-                return True
-
-    # TODO: remove following release of https://github.com/meltano/sdk/issues/1774
-    if any(
-        _jsonschema_type_check(t, type_check)
-        for t in jsonschema_type.get("anyOf", ())
-    ):
-        return True
-
-    return False
-
 class SnowflakeConnector(SQLConnector):
     """Snowflake Target Connector.
 
@@ -267,12 +239,12 @@ class SnowflakeConnector(SQLConnector):
             TypeMap(eq, sqlalchemy.types.VARCHAR(maxlength), None),
         ]
         type_maps = [
-            TypeMap(_jsonschema_type_check, NUMBER(), ("integer",)),
-            TypeMap(_jsonschema_type_check, VARIANT(), ("object",)),
-            TypeMap(_jsonschema_type_check, VARIANT(), ("array",)),
+            TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),
+            TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),
+            TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),
         ]
         # apply type maps
-        if _jsonschema_type_check(jsonschema_type, ("string",)):
+        if th._jsonschema_type_check(jsonschema_type, ("string",)):
             datelike_type = th.get_datelike_property_type(jsonschema_type)
             target_type = evaluate_typemaps(string_submaps, datelike_type, target_type)
         else:
