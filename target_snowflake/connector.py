@@ -14,6 +14,8 @@ from sqlalchemy.sql import text
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
 
+SNOWFLAKE_MAX_STRING_LENGTH = 16777216
+
 class TypeMap:
     def __init__(self, operator, map_value, match_value=None):
         self.operator = operator
@@ -232,6 +234,14 @@ class SnowflakeConnector(SQLConnector):
         )
 
     @staticmethod
+    def _conform_max_length(jsonschema_type):
+        """Alter jsonschema representations to limit max length to Snowflake's VARCHAR length."""
+        max_length = jsonschema_type.get("maxLength")
+        if max_length and max_length > SNOWFLAKE_MAX_STRING_LENGTH:
+            jsonschema_type["maxLength"] = SNOWFLAKE_MAX_STRING_LENGTH
+        return jsonschema_type
+
+    @staticmethod
     def to_sql_type(jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
         """Return a JSON Schema representation of the provided type.
 
@@ -244,10 +254,11 @@ class SnowflakeConnector(SQLConnector):
             The SQLAlchemy type representation of the data type.
         """
         # start with default implementation
+        jsonschema_type = SnowflakeConnector._conform_max_length(jsonschema_type)
         target_type = SQLConnector.to_sql_type(jsonschema_type)
         # snowflake max and default varchar length
         # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
-        maxlength = jsonschema_type.get("maxLength", 16777216)
+        maxlength = jsonschema_type.get("maxLength", SNOWFLAKE_MAX_STRING_LENGTH)
         # define type maps
         string_submaps = [
             TypeMap(eq, TIMESTAMP_NTZ(), "date-time"),
