@@ -419,6 +419,38 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
             """
         )
 
+
+class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
+    name = "type_edge_cases"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        connector.connection.execute(
+            f"select * from {table} order by 1",
+        )
+
+        table_schema = connector.get_table(table)
+        expected_types = {
+            "id": sct.NUMBER,
+            "col_max_length_str": sct.STRING,
+            "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+            "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+            "_sdc_received_at": sct.TIMESTAMP_NTZ,
+            "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+            "_sdc_table_version": sct.NUMBER,
+            "_sdc_sequence": sct.NUMBER,
+        }
+        for column in table_schema.columns:
+            assert column.name in expected_types
+            isinstance(column.type, expected_types[column.name])
+
+
 target_tests = TestSuite(
     kind="target",
     tests=[
@@ -445,5 +477,6 @@ target_tests = TestSuite(
         SnowflakeTargetColonsInColName,
         SnowflakeTargetExistingTable,
         SnowflakeTargetExistingTableAlter,
+        SnowflakeTargetTypeEdgeCasesTest,
     ],
 )

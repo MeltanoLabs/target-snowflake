@@ -1,0 +1,2 @@
+{"type": "SCHEMA", "stream": "type_edge_cases", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}, "col_max_length_str": {"maxLength": 4294967295, "type": [ "null", "string" ] }}}}
+{"type": "RECORD", "stream": "type_edge_cases", "record": {"id": 1, "col_max_length_str": "foo"}}
