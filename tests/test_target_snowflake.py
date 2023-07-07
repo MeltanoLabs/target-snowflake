@@ -29,13 +29,13 @@ SAMPLE_CONFIG: dict[str, Any] = {
 class BaseSnowflakeTargetTests:
     """Base class for Snowflake target tests."""
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def connection(self, runner):
         return runner.singer_class.default_sink_class.connector_class(
             runner.config
         ).connection
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def resource(self, runner, connection):  # noqa: ANN201
         """Generic external resource.
 
