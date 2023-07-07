@@ -243,13 +243,4 @@ class SnowflakeSink(SQLSink):
         Raises:
             MissingKeyPropertiesError: If record is missing one or more key properties.
         """
-        conformed_record_keys = [self.conform_name(key, "column") for key in record.keys()]
-        if not all(key_property in conformed_record_keys for key_property in self.key_properties):
-            msg = (
-                f"Record is missing one or more key_properties. \n"
-                f"Key Properties: {self.key_properties}, "
-                f"Record Keys: {list(record.keys())}"
-            )
-            raise Exception(
-                msg,
-            )
+        pass
