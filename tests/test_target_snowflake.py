@@ -8,7 +8,7 @@ import uuid
 from typing import Any
 
 import pytest
-from singer_sdk.testing import TargetTestRunner, get_test_class
+from singer_sdk.testing import TargetTestRunner, get_target_test_class
 
 from target_snowflake.target import TargetSnowflake
 
@@ -79,7 +79,7 @@ BATCH_TEST_CONFIG[
     "default_target_schema"
 ] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
 BATCH_TEST_CONFIG["add_record_metadata"] = False
-BatchTargetTests = get_test_class(
+BatchTargetTests = get_target_test_class(
     test_runner=TargetTestRunner(
         target_class=TargetSnowflake,
         config=BATCH_TEST_CONFIG,
