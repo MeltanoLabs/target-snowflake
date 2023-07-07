@@ -60,11 +60,9 @@ STANDARD_TEST_CONFIG[
     "default_target_schema"
 ] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
 StandardTargetTests = get_target_test_class(
-    test_runner=TargetTestRunner(
-        target_class=TargetSnowflake,
-        config=STANDARD_TEST_CONFIG,
-    ),
-    test_suites=[target_tests],
+    target_class=TargetSnowflake,
+    config=STANDARD_TEST_CONFIG,
+    custom_suites=[target_tests],
     suite_config=None,
 )
 
@@ -80,11 +78,9 @@ BATCH_TEST_CONFIG[
 ] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
 BATCH_TEST_CONFIG["add_record_metadata"] = False
 BatchTargetTests = get_target_test_class(
-    test_runner=TargetTestRunner(
-        target_class=TargetSnowflake,
-        config=BATCH_TEST_CONFIG,
-    ),
-    test_suites=[batch_target_tests],
+    target_class=TargetSnowflake,
+    config=BATCH_TEST_CONFIG,
+    custom_suites=[batch_target_tests],
     suite_config=None,
 )
 
