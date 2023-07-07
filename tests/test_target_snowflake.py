@@ -8,7 +8,7 @@ import uuid
 from typing import Any
 
 import pytest
-from singer_sdk.testing import TargetTestRunner, get_test_class
+from singer_sdk.testing import TargetTestRunner, get_target_test_class
 
 from target_snowflake.target import TargetSnowflake
 
@@ -26,29 +26,16 @@ SAMPLE_CONFIG: dict[str, Any] = {
 }
 
 
-# TODO: replace when upstream issue resolves
-# https://github.com/meltano/sdk/pull/1752
-class CustomRunner(TargetTestRunner):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def sync_all(self, *args, **kwargs):
-        try:
-            super().sync_all(*args, **kwargs)
-        finally:
-            self.target_input = None
-
-
 class BaseSnowflakeTargetTests:
     """Base class for Snowflake target tests."""
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def connection(self, runner):
         return runner.singer_class.default_sink_class.connector_class(
             runner.config
         ).connection
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def resource(self, runner, connection):  # noqa: ANN201
         """Generic external resource.
 
@@ -72,13 +59,12 @@ STANDARD_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
 STANDARD_TEST_CONFIG[
     "default_target_schema"
 ] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
-StandardTargetTests = get_test_class(
-    test_runner=CustomRunner(
-        target_class=TargetSnowflake,
-        config=STANDARD_TEST_CONFIG,
-    ),
-    test_suites=[target_tests],
+StandardTargetTests = get_target_test_class(
+    target_class=TargetSnowflake,
+    config=STANDARD_TEST_CONFIG,
+    custom_suites=[target_tests],
     suite_config=None,
+    include_target_tests=False,
 )
 
 
@@ -92,13 +78,12 @@ BATCH_TEST_CONFIG[
     "default_target_schema"
 ] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
 BATCH_TEST_CONFIG["add_record_metadata"] = False
-BatchTargetTests = get_test_class(
-    test_runner=CustomRunner(
-        target_class=TargetSnowflake,
-        config=BATCH_TEST_CONFIG,
-    ),
-    test_suites=[batch_target_tests],
+BatchTargetTests = get_target_test_class(
+    target_class=TargetSnowflake,
+    config=BATCH_TEST_CONFIG,
+    custom_suites=[batch_target_tests],
     suite_config=None,
+    include_target_tests=False,
 )
 
 

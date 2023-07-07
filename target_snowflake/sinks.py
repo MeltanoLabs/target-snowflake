@@ -1,8 +1,6 @@
 """Snowflake target sink class, which handles writing streams."""
 from __future__ import annotations
 
-import gzip
-import json
 import os
 import typing as t
 from urllib.parse import urlparse
@@ -14,7 +12,6 @@ from singer_sdk.helpers._batch import (
     BaseBatchFileEncoding,
     BatchConfig,
     BatchFileFormat,
-    StorageTarget,
 )
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLSink
@@ -235,3 +232,15 @@ class SnowflakeSink(SQLSink):
             raise NotImplementedError(
                 f"Unsupported batch file encoding: {encoding.format}"
             )
+
+    # TODO: remove after https://github.com/meltano/sdk/issues/1819 is fixed
+    def _singer_validate_message(self, record: dict) -> None:
+        """Ensure record conforms to Singer Spec.
+
+        Args:
+            record: Record (after parsing, schema validations and transformations).
+
+        Raises:
+            MissingKeyPropertiesError: If record is missing one or more key properties.
+        """
+        pass
