@@ -69,53 +69,5 @@ class TargetSnowflake(SQLTarget):
 
     default_sink_class = SnowflakeSink
 
-    def get_sink(
-        self,
-        stream_name: str,
-        *,
-        record: dict | None = None,
-        schema: dict | None = None,
-        key_properties: list[str] | None = None,
-    ) -> Sink:
-        _ = record  # Custom implementations may use record in sink selection.
-        if schema is None:
-            self._assert_sink_exists(stream_name)
-            return self._sinks_active[stream_name]
-
-        existing_sink = self._sinks_active.get(stream_name, None)
-        if not existing_sink:
-            return self.add_sink(stream_name, schema, key_properties)
-
-        # Diffing was not accounting for metadata columns added by the target.
-        # The existing schema has the columns but the original from the SCHEMA
-        # message does not.
-        clean_existing_schema = existing_sink.schema.copy()
-        if self.config.get("add_record_metadata", True):
-            existing_props_copy = existing_sink.schema["properties"].copy()
-            for col in {
-                "_sdc_extracted_at",
-                "_sdc_received_at",
-                "_sdc_batched_at",
-                "_sdc_deleted_at",
-                "_sdc_sequence",
-                "_sdc_table_version",
-            }:
-                existing_props_copy.pop(col, None)
-            clean_existing_schema["properties"] = existing_props_copy
-        if (
-            clean_existing_schema != schema
-            or existing_sink.key_properties != key_properties
-        ):
-            self.logger.info(
-                "Schema or key properties for '%s' stream have changed. "
-                "Initializing a new '%s' sink...",
-                stream_name,
-                stream_name,
-            )
-            self._sinks_to_clear.append(self._sinks_active.pop(stream_name))
-            return self.add_sink(stream_name, schema, key_properties)
-
-        return existing_sink
-
 if __name__ == "__main__":
     TargetSnowflake.cli()

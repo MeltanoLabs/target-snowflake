@@ -1,8 +1,6 @@
 """Snowflake target sink class, which handles writing streams."""
 from __future__ import annotations
 
-import gzip
-import json
 import os
 import typing as t
 from urllib.parse import urlparse
@@ -14,7 +12,6 @@ from singer_sdk.helpers._batch import (
     BaseBatchFileEncoding,
     BatchConfig,
     BatchFileFormat,
-    StorageTarget,
 )
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.sinks import SQLSink
