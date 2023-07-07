@@ -64,6 +64,7 @@ StandardTargetTests = get_target_test_class(
     config=STANDARD_TEST_CONFIG,
     custom_suites=[target_tests],
     suite_config=None,
+    include_target_tests=False,
 )
 
 
@@ -82,6 +83,7 @@ BatchTargetTests = get_target_test_class(
     config=BATCH_TEST_CONFIG,
     custom_suites=[batch_target_tests],
     suite_config=None,
+    include_target_tests=False,
 )
 
 
