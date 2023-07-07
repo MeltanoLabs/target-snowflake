@@ -59,7 +59,7 @@ STANDARD_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
 STANDARD_TEST_CONFIG[
     "default_target_schema"
 ] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
-StandardTargetTests = get_test_class(
+StandardTargetTests = get_target_test_class(
     test_runner=TargetTestRunner(
         target_class=TargetSnowflake,
         config=STANDARD_TEST_CONFIG,
