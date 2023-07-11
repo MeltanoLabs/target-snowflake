@@ -32,6 +32,37 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 
 A full list of supported settings and capabilities is available by running: `target-snowflake --about`
 
+### Initializing a Snowflake Account
+
+This target has an interactive feature that will help you get a Snowflake account initialized with everything needed to get started loading data.
+
+- User
+- Role
+- Warehouse
+- Database
+- Proper grants
+
+The CLI will ask you to provide information about the new user/role/etc. you want to create but it will also need SYSADMIN credentials to execute the queries.
+You should prepare the following inputs:
+
+- Account
+- User that has SYSADMIN and SECURITYADMIN access. These comes default with the user that created the Snowflake account.
+- The password for your SYSADMIN user.
+
+Run the following command to get started with the interactive CLI.
+Note - the CLI will print the SQL queries it is planning to run and confirm with you before it makes any changes.
+
+```bash
+poetry run target-snowflake --initialize
+
+# Alternatively using Meltano CLI
+meltano invoke target-snowflake --initialize
+```
+
+The CLI also has a "dry run" mode that will print the queries without executing them.
+
+Check out the demo of this [on YouTube](https://youtu.be/9vEFxw-0nxI).
+
 ### Configure using environment variables
 
 This Singer target will automatically import any environment variables within the working directory's

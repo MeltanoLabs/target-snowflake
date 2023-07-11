@@ -461,3 +461,52 @@ class SnowflakeConnector(SQLConnector):
             )
             self.logger.debug(f"Removing staged files with SQL: {remove_statement!s}")
             conn.execute(remove_statement, **kwargs)
+
+    @staticmethod
+    def get_initialize_script(role, user, password, warehouse, database):
+        # https://fivetran.com/docs/destinations/snowflake/setup-guide
+        return f"""
+            begin;
+
+            -- change role to securityadmin for user / role steps
+            use role securityadmin;
+
+            -- create role
+            create role if not exists {role};
+            grant role {role} to role SYSADMIN;
+
+            -- create a user
+            create user if not exists {user}
+            password = '{password}'
+            default_role = {role}
+            default_warehouse = {warehouse};
+
+            grant role {role} to user {user};
+
+            -- change role to sysadmin for warehouse / database steps
+            use role sysadmin;
+
+            -- create a warehouse
+            create warehouse if not exists {warehouse}
+            warehouse_size = xsmall
+            warehouse_type = standard
+            auto_suspend = 60
+            auto_resume = true
+            initially_suspended = true;
+
+            -- create database
+            create database if not exists {database};
+
+            -- grant role access to warehouse
+            grant USAGE
+            on warehouse {warehouse}
+            to role {role};
+
+            -- grant access to database
+            grant CREATE SCHEMA, MONITOR, USAGE
+            on database {database}
+            to role {role};
+            
+            commit;
+
+        """
