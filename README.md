@@ -61,6 +61,8 @@ meltano invoke target-snowflake --initialize
 
 The CLI also has a "dry run" mode that will print the queries without executing them.
 
+Check out the demo of this [on YouTube](https://youtu.be/9vEFxw-0nxI).
+
 ### Configure using environment variables
 
 This Singer target will automatically import any environment variables within the working directory's
