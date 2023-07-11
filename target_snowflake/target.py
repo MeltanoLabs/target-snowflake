@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from singer_sdk import typing as th
-from singer_sdk.target_base import SQLTarget
+import sys
 
+import click
+from singer_sdk import typing as th
+from singer_sdk.target_base import SQLTarget, Target
+
+from target_snowflake.initializer import initializer
 from target_snowflake.sinks import SnowflakeSink
-from singer_sdk.sinks import Sink
+
 
 class TargetSnowflake(SQLTarget):
     """Target for Snowflake."""
@@ -69,5 +73,38 @@ class TargetSnowflake(SQLTarget):
 
     default_sink_class = SnowflakeSink
 
+    @classmethod
+    def get_singer_command(cls: type[Target]) -> click.Command:
+        """Execute standard CLI handler for targets.
+
+        Returns:
+            A click.Command object.
+        """
+        command = super().get_singer_command()
+        command.params.extend(
+            [
+                click.Option(
+                    ["--initialize"],
+                    is_flag=True,
+                    help="Interactive Snowflake account initialization.",
+                ),
+            ],
+        )
+
+        return command
+
+    @classmethod
+    def invoke(  # type: ignore[override]
+        cls: type[Target],
+        *args,
+        **kwargs,
+    ) -> None:
+        if kwargs.pop("initialize"):
+            initializer()
+            sys.exit(0)
+        else:
+            super().invoke(*args, **kwargs)
+
+        
 if __name__ == "__main__":
     TargetSnowflake.cli()
