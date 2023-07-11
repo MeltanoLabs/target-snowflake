@@ -54,6 +54,9 @@ Note - the CLI will print the SQL queries it is planning to run and confirm with
 
 ```bash
 poetry run target-snowflake --initialize
+
+# Alternatively using Meltano CLI
+meltano invoke target-snowflake --initialize
 ```
 
 The CLI also has a "dry run" mode that will print the queries without executing them.
