@@ -74,7 +74,18 @@ class TargetSnowflake(SQLTarget):
     default_sink_class = SnowflakeSink
 
     @classmethod
-    def get_singer_command(cls: type[Target]) -> click.Command:
+    def cb_inititalize(
+        cls: type[TargetSnowflake],
+        ctx: click.Context,
+        param: click.Option,  # noqa: ARG003
+        value: bool,  # noqa: FBT001
+    ) -> None:
+        if value:
+            initializer()
+            ctx.exit()
+
+    @classmethod
+    def get_singer_command(cls: type[TargetSnowflake]) -> click.Command:
         """Execute standard CLI handler for targets.
 
         Returns:
@@ -87,24 +98,14 @@ class TargetSnowflake(SQLTarget):
                     ["--initialize"],
                     is_flag=True,
                     help="Interactive Snowflake account initialization.",
+                    callback=cls.cb_inititalize,
+                    expose_value=False,
                 ),
             ],
         )
 
         return command
 
-    @classmethod
-    def invoke(  # type: ignore[override]
-        cls: type[Target],
-        *args,
-        **kwargs,
-    ) -> None:
-        if kwargs.pop("initialize"):
-            initializer()
-            sys.exit(0)
-        else:
-            super().invoke(*args, **kwargs)
 
-        
 if __name__ == "__main__":
     TargetSnowflake.cli()
