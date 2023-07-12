@@ -18,7 +18,7 @@ python = "<3.12,>=3.7.1"
 requests = "^2.31.0"
 snowflake-sqlalchemy = "^1.4.7"
 singer-sdk = "0.30.0"
-cryptography = "^40.0.2"
+cryptography = ">=40.0.2,<42.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.3.1"
