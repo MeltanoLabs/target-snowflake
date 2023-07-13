@@ -13,7 +13,6 @@ from sqlalchemy.sql import text
 
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
-
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
 
 class TypeMap:
@@ -270,7 +269,7 @@ class SnowflakeConnector(SQLConnector):
 
     def _get_put_statement(self, sync_id: str, file_uri: str) -> Tuple[text, dict]:
         """Get Snowflake PUT statement."""
-        return (text(f"put '{file_uri}' '@~/target-snowflake/{sync_id}'"), {})
+        return (text(f"put :file_uri '@~/target-snowflake/{sync_id}'"), {})
 
     def _get_column_selections(self, schema: dict, formatter: SnowflakeIdentifierPreparer) -> list:
         column_selections = []
@@ -372,7 +371,9 @@ class SnowflakeConnector(SQLConnector):
                 put_statement, kwargs = self._get_put_statement(
                     sync_id=sync_id, file_uri=file_uri
                 )
-                conn.execute(put_statement, **kwargs)
+                # sqlalchemy.text stripped a slash, which caused windows to fail so we used bound parameters instead
+                # See https://github.com/MeltanoLabs/target-snowflake/issues/87 for more information about this error
+                conn.execute(put_statement, file_uri=file_uri, **kwargs)
 
     def create_file_format(self, file_format: str) -> None:
         """Create a file format in the schema.
