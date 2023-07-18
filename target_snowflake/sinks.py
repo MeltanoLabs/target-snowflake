@@ -232,15 +232,3 @@ class SnowflakeSink(SQLSink):
             raise NotImplementedError(
                 f"Unsupported batch file encoding: {encoding.format}"
             )
-
-    # TODO: remove after https://github.com/meltano/sdk/issues/1819 is fixed
-    def _singer_validate_message(self, record: dict) -> None:
-        """Ensure record conforms to Singer Spec.
-
-        Args:
-            record: Record (after parsing, schema validations and transformations).
-
-        Raises:
-            MissingKeyPropertiesError: If record is missing one or more key properties.
-        """
-        pass
