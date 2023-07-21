@@ -1,2 +1,2 @@
-{"type": "SCHEMA", "stream": "type_edge_cases", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}, "col_max_length_str": {"maxLength": 4294967295, "type": [ "null", "string" ] }}}}
-{"type": "RECORD", "stream": "type_edge_cases", "record": {"id": 1, "col_max_length_str": "foo"}}
+{"type": "SCHEMA", "stream": "type_edge_cases", "key_properties": ["id"], "schema": {"required": ["id"], "type": "object", "properties": {"id": {"type": "integer"}, "col_max_length_str": {"maxLength": 4294967295, "type": [ "null", "string" ] }, "col_multiple_of": {"multipleOf": 0.0001, "type": [ "null", "number" ] }}}}
+{"type": "RECORD", "stream": "type_edge_cases", "record": {"id": 1, "col_max_length_str": "foo", "col_multiple_of": 123.456}}

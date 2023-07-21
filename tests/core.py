@@ -431,14 +431,15 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
-        connector.connection.execute(
+        result = connector.connection.execute(
             f"select * from {table} order by 1",
         )
-
+        test = connector.get_table_columns(table)
         table_schema = connector.get_table(table)
         expected_types = {
             "id": sct.NUMBER,
             "col_max_length_str": sct.STRING,
+            "col_multiple_of": sct.NUMBER,
             "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
             "_sdc_received_at": sct.TIMESTAMP_NTZ,
@@ -449,6 +450,9 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
         for column in table_schema.columns:
             assert column.name in expected_types
             isinstance(column.type, expected_types[column.name])
+            if column.name == "col_multiple_of":
+                assert column.type.precision == 38
+                assert column.type.scale == 4
 
 
 target_tests = TestSuite(
