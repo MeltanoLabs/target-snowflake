@@ -132,7 +132,7 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             A new SQLAlchemy Engine.
         """
-        return sqlalchemy.create_engine(
+        engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
             connect_args={
                 "session_parameters": {
@@ -141,6 +141,11 @@ class SnowflakeConnector(SQLConnector):
             },
             echo=False,
         )
+        db_names = [db[1] for db in engine.execute("SHOW DATABASES;").fetchall()]
+        if self.config["database"] not in db_names:
+            raise Exception(f"Database '{self.config['database']}' does not exist or the user/role doesn't have access to it.")
+        return engine
+
 
     def prepare_column(
         self,
