@@ -89,3 +89,14 @@ BatchTargetTests = get_target_test_class(
 
 class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]  # noqa: E501
     """Batch Target Tests."""
+
+def test_invalid_database():
+    INVALID_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
+    INVALID_TEST_CONFIG["database"] = "FOO_BAR_DOESNT_EXIST"
+    runner = TargetTestRunner(
+        TargetSnowflake,
+        config=INVALID_TEST_CONFIG,
+        input_filepath="tests/target_test_streams/existing_table.singer"
+    )
+    with pytest.raises(Exception):
+        runner.sync_all()
