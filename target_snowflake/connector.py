@@ -141,7 +141,8 @@ class SnowflakeConnector(SQLConnector):
             },
             echo=False,
         )
-        db_names = [db[1] for db in engine.execute(text("SHOW DATABASES;")).fetchall()]
+        connection = engine.connect()
+        db_names = [db[1] for db in connection.execute(text("SHOW DATABASES;")).fetchall()]
         if self.config["database"] not in db_names:
             raise Exception(f"Database '{self.config['database']}' does not exist or the user/role doesn't have access to it.")
         return engine
