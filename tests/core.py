@@ -436,6 +436,7 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
             "id": sct.NUMBER,
             "col_max_length_str": sct.STRING,
             "col_multiple_of": sct.NUMBER,
+            "col_multiple_of_int": sct.NUMBER,
             "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
             "_sdc_received_at": sct.TIMESTAMP_NTZ,
@@ -449,7 +450,9 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
             if column.name == "col_multiple_of":
                 assert column.type.precision == 38
                 assert column.type.scale == 4
-
+            if column.name == "col_multiple_of_int":
+                assert column.type.precision == 38
+                assert column.type.scale == 0
 
 target_tests = TestSuite(
     kind="target",
