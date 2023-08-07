@@ -15,7 +15,7 @@ from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
 SNOWFLAKE_MAX_NUMBER_PRECISION = 38
-SNOWFLAKE_MAX_NUMBER_SCALE = 0
+SNOWFLAKE_MAX_NUMBER_SCALE = 37
 
 class TypeMap:
     def __init__(self, operator, map_value, match_value=None):
@@ -226,21 +226,15 @@ class SnowflakeConnector(SQLConnector):
 
     @staticmethod
     def _get_numeric_scale(jsonschema_type):
-        precision = SNOWFLAKE_MAX_NUMBER_SCALE
-        if jsonschema_type.get("exclusiveMinimum"):
-            if str(jsonschema_type[attrib])[-1] == 1:
-                return len(str(jsonschema_type[attrib]).split(".")[1]) - 1
-            else:
-                return len(str(jsonschema_type[attrib]).split(".")[1])
-        attribs_to_check = [
-            "multipleOf",
-            "min",
-            "max",
-        ]
-        for attrib in attribs_to_check:
-            if jsonschema_type.get(attrib):
-                precision = max(precision, len(str(jsonschema_type[attrib]).split(".")[1]))
-        return precision
+        scale = SNOWFLAKE_MAX_NUMBER_SCALE
+        multiple_of_setting = jsonschema_type.get("multipleOf")
+        if multiple_of_setting:
+            str_attrib = str(multiple_of_setting)
+            multiple_of_scale = 0
+            if len(str_attrib.split(".")) > 1:
+                multiple_of_scale = len(str_attrib.split(".")[1])
+            scale = min(scale, multiple_of_scale)
+        return scale
 
     @staticmethod
     def to_sql_type(jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
