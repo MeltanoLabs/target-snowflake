@@ -255,7 +255,7 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
         table_schema = connector.get_table(table)
         expected_types = {
             "id": sct.NUMBER,
-            "a1": sct.NUMBER,
+            "a1": sct.DOUBLE,
             "a2": sct.STRING,
             "a3": sqlalchemy.types.BOOLEAN,
             "a4": sct.VARIANT,
@@ -435,7 +435,7 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
         expected_types = {
             "id": sct.NUMBER,
             "col_max_length_str": sct.STRING,
-            "col_multiple_of": sct.NUMBER,
+            "col_multiple_of": sct.DOUBLE,
             "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
             "_sdc_received_at": sct.TIMESTAMP_NTZ,
@@ -446,10 +446,6 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
         for column in table_schema.columns:
             assert column.name in expected_types
             isinstance(column.type, expected_types[column.name])
-            if column.name == "col_multiple_of":
-                assert column.type.precision == 38
-                assert column.type.scale == 4
-
 
 target_tests = TestSuite(
     kind="target",

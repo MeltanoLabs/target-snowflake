@@ -273,7 +273,7 @@ class SnowflakeConnector(SQLConnector):
             TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),
             TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),
             TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),
-            TypeMap(th._jsonschema_type_check, NUMBER(precision=num_precision, scale=num_scale), ("number",)),
+            TypeMap(th._jsonschema_type_check, sct.DOUBLE(), ("number",)),
         ]
         # apply type maps
         if th._jsonschema_type_check(jsonschema_type, ("string",)):
