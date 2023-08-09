@@ -436,6 +436,7 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
             "id": sct.NUMBER,
             "col_max_length_str": sct.STRING,
             "col_multiple_of": sct.DOUBLE,
+            "col_multiple_of_int": sct.DOUBLE,
             "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
             "_sdc_received_at": sct.TIMESTAMP_NTZ,
