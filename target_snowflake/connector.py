@@ -134,6 +134,8 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             A new SQLAlchemy Engine.
         """
+        self.logger.info(f"{self.sqlalchemy_url=}")
+        self.logger.info(f"{self.config=}")
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
             connect_args={
