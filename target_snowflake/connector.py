@@ -14,8 +14,6 @@ from sqlalchemy.sql import text
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
-SNOWFLAKE_MAX_NUMBER_PRECISION = 38
-SNOWFLAKE_MAX_NUMBER_SCALE = 0
 
 class TypeMap:
     def __init__(self, operator, map_value, match_value=None):
@@ -95,7 +93,7 @@ class SnowflakeConnector(SQLConnector):
         if isinstance(sql_type, sct.TIMESTAMP_NTZ):
             return TIMESTAMP_NTZ
         elif isinstance(sql_type, sct.NUMBER):
-            return NUMBER(precision=sql_type.precision, scale=sql_type.scale)
+            return NUMBER
         elif isinstance(sql_type, sct.VARIANT):
             return VARIANT
         else:
@@ -221,28 +219,6 @@ class SnowflakeConnector(SQLConnector):
         return jsonschema_type
 
     @staticmethod
-    def _get_numeric_precision(jsonschema_type):
-        return SNOWFLAKE_MAX_NUMBER_PRECISION
-
-    @staticmethod
-    def _get_numeric_scale(jsonschema_type):
-        precision = SNOWFLAKE_MAX_NUMBER_SCALE
-        if jsonschema_type.get("exclusiveMinimum"):
-            if str(jsonschema_type[attrib])[-1] == 1:
-                return len(str(jsonschema_type[attrib]).split(".")[1]) - 1
-            else:
-                return len(str(jsonschema_type[attrib]).split(".")[1])
-        attribs_to_check = [
-            "multipleOf",
-            "min",
-            "max",
-        ]
-        for attrib in attribs_to_check:
-            if jsonschema_type.get(attrib):
-                precision = max(precision, len(str(jsonschema_type[attrib]).split(".")[1]))
-        return precision
-
-    @staticmethod
     def to_sql_type(jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
         """Return a JSON Schema representation of the provided type.
 
@@ -260,8 +236,6 @@ class SnowflakeConnector(SQLConnector):
         # snowflake max and default varchar length
         # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
         maxlength = jsonschema_type.get("maxLength", SNOWFLAKE_MAX_STRING_LENGTH)
-        num_precision = SnowflakeConnector._get_numeric_precision(jsonschema_type)
-        num_scale = SnowflakeConnector._get_numeric_scale(jsonschema_type)
         # define type maps
         string_submaps = [
             TypeMap(eq, TIMESTAMP_NTZ(), "date-time"),
@@ -273,7 +247,7 @@ class SnowflakeConnector(SQLConnector):
             TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),
             TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),
             TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),
-            TypeMap(th._jsonschema_type_check, NUMBER(precision=num_precision, scale=num_scale), ("number",)),
+            TypeMap(th._jsonschema_type_check, sct.DOUBLE(), ("number",)),
         ]
         # apply type maps
         if th._jsonschema_type_check(jsonschema_type, ("string",)):
