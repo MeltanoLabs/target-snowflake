@@ -13,22 +13,24 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 
 ## Settings
 
-| Setting              | Required | Default | Description |
-|:---------------------|:--------:|:-------:|:------------|
-| user                 | True     | None    | The login name for your Snowflake user. |
-| password             | True     | None    | The password for your Snowflake user. |
-| account              | True     | None    | Your account identifier. See [Account Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html). |
-| database             | True     | None    | The initial database for the Snowflake session. |
-| schema               | False    | None    | The initial schema for the Snowflake session. |
-| warehouse            | False    | None    | The initial warehouse for the session. |
-| role                 | False    | None    | The initial role for the session. |
-| add_record_metadata  | False    |       1 | Whether to add metadata columns. |
-| clean_up_batch_files | False    |       1 | Whether to remove batch files after processing. |
-| default_target_schema| False    | None    | The default target database schema name to use for all streams. |
-| stream_maps          | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
-| stream_map_config    | False    | None    | User-defined config values to be used within map expressions. |
-| flattening_enabled   | False    | None    | 'True' to enable schema flattening and automatically expand nested properties. |
-| flattening_max_depth | False    | None    | The max depth to flatten schemas. |
+| Setting                | Required | Default | Description                                                                                                                                 |
+|:-----------------------|:--------:|:-------:|:--------------------------------------------------------------------------------------------------------------------------------------------|
+| user                   | True     | None    | The login name for your Snowflake user.                                                                                                     |
+| password               | False    | None    | The password for your Snowflake user.                                                                                                       |
+| private_key_path       | False    | None    | Path to private key file. See [Key pair auth](https://docs.snowflake.com/en/user-guide/key-pair-auth)                                       |
+| private_key_passphrase | False    | None    | Passphrase to decrypt private key if encrypted.                                                                                             |
+| account                | True     | None    | Your account identifier. See [Account Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html).                 |
+| database               | True     | None    | The initial database for the Snowflake session.                                                                                             |
+| schema                 | False    | None    | The initial schema for the Snowflake session.                                                                                               |
+| warehouse              | False    | None    | The initial warehouse for the session.                                                                                                      |
+| role                   | False    | None    | The initial role for the session.                                                                                                           |
+| add_record_metadata    | False    |       1 | Whether to add metadata columns.                                                                                                            |
+| clean_up_batch_files   | False    |       1 | Whether to remove batch files after processing.                                                                                             |
+| default_target_schema  | False    | None    | The default target database schema name to use for all streams.                                                                             |
+| stream_maps            | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
+| stream_map_config      | False    | None    | User-defined config values to be used within map expressions.                                                                               |
+| flattening_enabled     | False    | None    | 'True' to enable schema flattening and automatically expand nested properties.                                                              |
+| flattening_max_depth   | False    | None    | The max depth to flatten schemas.                                                                                                           |
 
 A full list of supported settings and capabilities is available by running: `target-snowflake --about`
 
