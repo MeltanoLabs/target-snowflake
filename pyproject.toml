@@ -16,14 +16,14 @@ packages = [
 [tool.poetry.dependencies]
 python = "<3.12,>=3.7.1"
 cryptography = "^40.0.2"
-singer-sdk = "~=0.31.0"
+singer-sdk = "0.30.0"
 snowflake-sqlalchemy = "^1.4.7"
 sqlalchemy = "<2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.3.1"
 pytest-xdist = ">=3.3.1"
-singer-sdk = { version="~=0.31.0", extras = ["testing"] }
+singer-sdk = { version="0.30.0", extras = ["testing"] }
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.2.7"
