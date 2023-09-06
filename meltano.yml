@@ -49,6 +49,14 @@ plugins:
       kind: password
       label: Password
       name: password
+    - description: Path to file containing private key
+      kind: string
+      label: Private Key Path
+      name: private_key_path
+    - description: Passphrase to decrypt private key if encrypted
+      label: Private Key Passphrase
+      kind: password
+      name: private_key_passphrase
     - description: The initial role for the session.
       kind: string
       label: Role

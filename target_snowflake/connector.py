@@ -3,6 +3,8 @@ from typing import Dict, List, Sequence, Tuple, Union, cast
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
 from snowflake.sqlalchemy import URL
@@ -14,6 +16,7 @@ from sqlalchemy.sql import text
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
+
 
 class TypeMap:
     def __init__(self, operator, map_value, match_value=None):
@@ -89,7 +92,8 @@ class SnowflakeConnector(SQLConnector):
             self.table_cache[full_table_name] = parsed_columns
             return parsed_columns
 
-    def _convert_type(self, sql_type):
+    @staticmethod
+    def _convert_type(sql_type):
         if isinstance(sql_type, sct.TIMESTAMP_NTZ):
             return TIMESTAMP_NTZ
         elif isinstance(sql_type, sct.NUMBER):
@@ -108,9 +112,13 @@ class SnowflakeConnector(SQLConnector):
         params = {
             "account": config["account"],
             "user": config["user"],
-            "password": config["password"],
             "database": config["database"],
         }
+
+        if "password" in config:
+            params["password"] = config["password"]
+        elif "private_key_path" not in config:
+            raise Exception("Neither password nor private_key_path was provided for authentication.")
 
         for option in ["warehouse", "role"]:
             if config.get(option):
@@ -132,13 +140,26 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             A new SQLAlchemy Engine.
         """
+        connect_args = {
+            "session_parameters": {
+                "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
+            }
+        }
+        if "private_key_path" in self.config:
+            with open(self.config["private_key_path"], "rb") as private_key_file:
+                private_key = serialization.load_pem_private_key(
+                    private_key_file.read(),
+                    password=self.config["private_key_passphrase"].encode() if "private_key_passphrase" in self.config else None,
+                    backend=default_backend(),
+                )
+                connect_args["private_key"] = private_key.private_bytes(
+                    encoding=serialization.Encoding.DER,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption(),
+                )
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
-            connect_args={
-                "session_parameters": {
-                    "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
-                }
-            },
+            connect_args=connect_args,
             echo=False,
         )
         connection = engine.connect()
@@ -146,7 +167,6 @@ class SnowflakeConnector(SQLConnector):
         if self.config["database"] not in db_names:
             raise Exception(f"Database '{self.config['database']}' does not exist or the user/role doesn't have access to it.")
         return engine
-
 
     def prepare_column(
         self,
