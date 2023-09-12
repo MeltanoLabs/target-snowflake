@@ -450,9 +450,9 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
 
 
 
-class SnowflakeTargetUnorderedColumns(TargetFileTestTemplate):
+class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
 
-    name = "unordered_columns"
+    name = "column_order_mismatch"
 
     def setup(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
@@ -498,6 +498,6 @@ target_tests = TestSuite(
         SnowflakeTargetExistingTable,
         SnowflakeTargetExistingTableAlter,
         SnowflakeTargetTypeEdgeCasesTest,
-        SnowflakeTargetUnorderedColumns,
+        SnowflakeTargetColumnOrderMismatch,
     ],
 )
