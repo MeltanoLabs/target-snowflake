@@ -448,6 +448,29 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
             assert column.name in expected_types
             isinstance(column.type, expected_types[column.name])
 
+
+
+class SnowflakeTargetUnorderedColumns(TargetFileTestTemplate):
+
+    name = "unordered_columns"
+
+    def setup(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        connector.connection.execute(
+            f"""
+            CREATE OR REPLACE TABLE {table} (
+                COL1 VARCHAR(16777216),
+                COL2 BOOLEAN
+            )
+            """
+        )
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
 target_tests = TestSuite(
     kind="target",
     tests=[
@@ -475,5 +498,6 @@ target_tests = TestSuite(
         SnowflakeTargetExistingTable,
         SnowflakeTargetExistingTableAlter,
         SnowflakeTargetTypeEdgeCasesTest,
+        SnowflakeTargetUnorderedColumns,
     ],
 )
