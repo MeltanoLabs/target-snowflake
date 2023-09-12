@@ -457,6 +457,7 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
     def setup(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        # Seed the 2 columns from tap schema and an unused third column to assert explicit inserts are working
         connector.connection.execute(
             f"""
             CREATE OR REPLACE TABLE {table} (
