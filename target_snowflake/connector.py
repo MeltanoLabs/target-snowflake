@@ -349,10 +349,11 @@ class SnowflakeConnector(SQLConnector):
     def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):
         """Get Snowflake COPY statement."""
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        formatted_properties = ", ".join([formatter.format_collation(col) for col in schema["properties"].keys()])
         column_selections = self._get_column_selections(schema, formatter)
         return (
             text(
-                f"copy into {full_table_name} from "
+                f"copy into {full_table_name} ({formatted_properties}) from "
                 + f"(select {', '.join(column_selections)} from "
                 + f"'@~/target-snowflake/{sync_id}')"
                 + f"file_format = (format_name='{file_format}')"
