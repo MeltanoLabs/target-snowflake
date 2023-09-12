@@ -298,6 +298,19 @@ class SnowflakeConnector(SQLConnector):
         """Get Snowflake PUT statement."""
         return (text(f"put :file_uri '@~/target-snowflake/{sync_id}'"), {})
 
+    @staticmethod
+    def _format_column_selections(column_selections: dict, format: str) -> str:
+        if format == "json_casting":
+            return ', '.join(
+                [
+                    f"$1:{col['clean_property_name']}::{col['sql_type']} as {col['clean_alias']}" for col in column_selections
+                ]
+            )
+        elif format == "col_alias":
+            return f"({', '.join([col['clean_alias'] for col in column_selections])})"
+        else:
+            raise NotImplementedError(f"Column format not implemented: {format}")
+
     def _get_column_selections(self, schema: dict, formatter: SnowflakeIdentifierPreparer) -> list:
         column_selections = []
         for property_name, property_def in schema["properties"].items():
@@ -306,7 +319,11 @@ class SnowflakeConnector(SQLConnector):
             if '"' in clean_property_name:
                 clean_alias = clean_property_name.upper()
             column_selections.append(
-                f"$1:{clean_property_name}::{self.to_sql_type(property_def)} as {clean_alias}"
+                {
+                    "clean_property_name": clean_property_name,
+                    "sql_type": self.to_sql_type(property_def),
+                    "clean_alias": clean_alias,
+                }
             )
         return column_selections
 
@@ -317,6 +334,7 @@ class SnowflakeConnector(SQLConnector):
 
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         column_selections = self._get_column_selections(schema, formatter)
+        json_casting_selects = self._format_column_selections(column_selections, "json_casting")
 
         # use UPPER from here onwards
         formatted_properties = [formatter.format_collation(col) for col in schema["properties"].keys()]
@@ -336,7 +354,7 @@ class SnowflakeConnector(SQLConnector):
         return (
             text(
                 f"merge into {full_table_name} d using "
-                + f"(select {', '.join(column_selections)} from '@~/target-snowflake/{sync_id}'"
+                + f"(select {json_casting_selects} from '@~/target-snowflake/{sync_id}'"
                 + f"(file_format => {file_format}) {dedup}) s "
                 + f"on {join_expr} "
                 + f"when matched then update set {matched_clause} "
@@ -350,10 +368,12 @@ class SnowflakeConnector(SQLConnector):
         """Get Snowflake COPY statement."""
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         column_selections = self._get_column_selections(schema, formatter)
+        json_casting_selects = self._format_column_selections(column_selections, "json_casting")
+        col_alias_selects = self._format_column_selections(column_selections, "col_alias")
         return (
             text(
-                f"copy into {full_table_name} from "
-                + f"(select {', '.join(column_selections)} from "
+                f"copy into {full_table_name} {col_alias_selects} from "
+                + f"(select {json_casting_selects} from "
                 + f"'@~/target-snowflake/{sync_id}')"
                 + f"file_format = (format_name='{file_format}')"
             ),
