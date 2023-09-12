@@ -461,6 +461,7 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
             f"""
             CREATE OR REPLACE TABLE {table} (
                 COL1 VARCHAR(16777216),
+                COL3 TIMESTAMP_NTZ(9),
                 COL2 BOOLEAN
             )
             """
