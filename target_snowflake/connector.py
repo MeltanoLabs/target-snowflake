@@ -181,11 +181,15 @@ class SnowflakeConnector(SQLConnector):
         if '"' in formatter.format_collation(column_name):
             column_name = column_name.upper()
 
-        super().prepare_column(
-            full_table_name,
-            column_name,
-            sql_type,
-        )
+        try:
+            super().prepare_column(
+                full_table_name,
+                column_name,
+                sql_type,
+            )
+        except Exception as e:
+            self.logger.error(f"Error preparing column for {full_table_name=} {column_name=}")
+            raise e
 
     @staticmethod
     def get_column_rename_ddl(
@@ -558,3 +562,30 @@ class SnowflakeConnector(SQLConnector):
             commit;
 
         """
+
+    def _adapt_column_type(
+        self,
+        full_table_name: str,
+        column_name: str,
+        sql_type: sqlalchemy.types.TypeEngine,
+    ) -> None:
+        """Adapt table column type to support the new JSON schema type.
+
+        Args:
+            full_table_name: The target table name.
+            column_name: The target column name.
+            sql_type: The new SQLAlchemy type.
+
+        Raises:
+            NotImplementedError: if altering columns is not supported.
+        """
+
+        try:
+            super()._adapt_column_type(full_table_name, column_name, sql_type)
+        except Exception as e:
+            current_type: sqlalchemy.types.TypeEngine = self._get_column_type(
+                full_table_name,
+                column_name,
+            )
+            self.logger.error(f"Error adapting column type for {full_table_name=} {column_name=}, {current_type=} {sql_type=} (new sql type)")
+            raise e

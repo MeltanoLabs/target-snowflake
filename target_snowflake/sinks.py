@@ -77,12 +77,17 @@ class SnowflakeSink(SQLSink):
                     object_type="schema"
                 ),
             )
-        self.connector.prepare_table(
-            full_table_name=self.full_table_name,
-            schema=self.conform_schema(self.schema),
-            primary_keys=self.key_properties,
-            as_temp_table=False,
-        )
+        try:
+            self.connector.prepare_table(
+                full_table_name=self.full_table_name,
+                schema=self.conform_schema(self.schema),
+                primary_keys=self.key_properties,
+                as_temp_table=False,
+            )
+        except Exception as e:
+            self.logger.error(f"Error creating {self.full_table_name=} {self.conform_schema(self.schema)=}")
+            raise e
+
 
     def conform_name(
         self,
