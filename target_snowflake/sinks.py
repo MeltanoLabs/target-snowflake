@@ -6,7 +6,6 @@ import typing as t
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from singer_sdk import PluginBase, SQLConnector
 from singer_sdk.batch import JSONLinesBatcher
 from singer_sdk.helpers._batch import (
     BaseBatchFileEncoding,
@@ -20,6 +19,9 @@ from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 
 from target_snowflake.connector import SnowflakeConnector
 
+if t.TYPE_CHECKING:
+    from singer_sdk import PluginBase, SQLConnector
+
 DEFAULT_BATCH_CONFIG = {
     "encoding": {"format": "jsonl", "compression": "gzip"},
     "storage": {"root": "file://"},
@@ -31,7 +33,7 @@ class SnowflakeSink(SQLSink):
 
     connector_class = SnowflakeConnector
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         target: PluginBase,
         stream_name: str,
@@ -50,12 +52,12 @@ class SnowflakeSink(SQLSink):
         )
 
     @property
-    def schema_name(self) -> t.Optional[str]:
+    def schema_name(self) -> str | None:
         schema = super().schema_name or self.config.get("schema")
         return schema.upper() if schema else None
 
     @property
-    def database_name(self) -> t.Optional[str]:
+    def database_name(self) -> str | None:
         db = super().database_name or self.config.get("database")
         return db.upper() if db else None
 
@@ -72,10 +74,7 @@ class SnowflakeSink(SQLSink):
         if self.schema_name:
             # Needed to conform schema name
             self.connector.prepare_schema(
-                self.conform_name(
-                    self.schema_name,
-                    object_type="schema"
-                ),
+                self.conform_name(self.schema_name, object_type="schema"),
             )
         try:
             self.connector.prepare_table(
@@ -84,30 +83,34 @@ class SnowflakeSink(SQLSink):
                 primary_keys=self.key_properties,
                 as_temp_table=False,
             )
-        except Exception as e:
-            self.logger.error(f"Error creating {self.full_table_name=} {self.conform_schema(self.schema)=}")
-            raise e
-
+        except Exception:
+            (
+                self.logger.exception(
+                    "Error creating %s %s",
+                    self.full_table_name,
+                    self.conform_schema(self.schema),
+                ),
+            )
+            raise
 
     def conform_name(
         self,
         name: str,
-        object_type: str | None = None,  # noqa: ARG002
+        object_type: str | None = None,
     ) -> str:
-        if not object_type or object_type == "column":
-            formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
-            if '"' not in formatter.format_collation(name.lower()):
-                name = name.lower()
-            return name
-        else:
+        if object_type and object_type != "column":
             return super().conform_name(name=name, object_type=object_type)
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        if '"' not in formatter.format_collation(name.lower()):
+            name = name.lower()
+        return name
 
     def bulk_insert_records(
         self,
         full_table_name: str,
         schema: dict,
-        records: t.Iterable[t.Dict[str, t.Any]],
-    ) -> t.Optional[int]:
+        records: t.Iterable[dict[str, t.Any]],
+    ) -> int | None:
         """Bulk insert records to an existing destination table.
 
         The default implementation uses a generic SQLAlchemy bulk insert operation.
@@ -180,10 +183,7 @@ class SnowflakeSink(SQLSink):
             file_format = f'{self.database_name}.{self.schema_name}."{sync_id}"'
             self.connector.put_batches_to_stage(sync_id=sync_id, files=files)
             self.connector.prepare_schema(
-                self.conform_name(
-                    self.schema_name,
-                    object_type="schema"
-                ),
+                self.conform_name(self.schema_name, object_type="schema"),  # type: ignore[arg-type]
             )
             self.connector.create_file_format(file_format=file_format)
 
@@ -213,11 +213,13 @@ class SnowflakeSink(SQLSink):
             if self.config.get("clean_up_batch_files"):
                 for file_url in files:
                     file_path = urlparse(file_url).path
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
+                    if os.path.exists(file_path):  # noqa: PTH110
+                        os.remove(file_path)  # noqa: PTH107
 
     def process_batch_files(
-        self, encoding: BaseBatchFileEncoding, files: t.Sequence[str]
+        self,
+        encoding: BaseBatchFileEncoding,
+        files: t.Sequence[str],
     ) -> None:
         """Process a batch file with the given batch context.
 
@@ -234,8 +236,9 @@ class SnowflakeSink(SQLSink):
                 files=files,
             )
         else:
+            msg = f"Unsupported batch file encoding: {encoding.format}"
             raise NotImplementedError(
-                f"Unsupported batch file encoding: {encoding.format}"
+                msg,
             )
 
     # TODO: remove after https://github.com/meltano/sdk/issues/1819 is fixed
@@ -248,4 +251,3 @@ class SnowflakeSink(SQLSink):
         Raises:
             MissingKeyPropertiesError: If record is missing one or more key properties.
         """
-        pass
