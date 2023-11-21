@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import datetime as dt
+import typing as t
 
 import snowflake.sqlalchemy.custom_types as sct
 
 
-class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):
+class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
     """Snowflake TIMESTAMP_NTZ type."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
     @property
@@ -17,7 +20,7 @@ class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):
 class NUMBER(sct.NUMBER):
     """Snowflake NUMBER type."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
     @property
@@ -28,7 +31,7 @@ class NUMBER(sct.NUMBER):
 class VARIANT(sct.VARIANT):
     """Snowflake VARIANT type."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
     @property

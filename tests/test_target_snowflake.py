@@ -32,11 +32,11 @@ class BaseSnowflakeTargetTests:
     @pytest.fixture()
     def connection(self, runner):
         return runner.singer_class.default_sink_class.connector_class(
-            runner.config
+            runner.config,
         ).connection
 
     @pytest.fixture()
-    def resource(self, runner, connection):  # noqa: ANN201
+    def resource(self, runner, connection):  # noqa: PT004
         """Generic external resource.
 
         This fixture is useful for setup and teardown of external resources,
@@ -46,19 +46,17 @@ class BaseSnowflakeTargetTests:
         https://github.com/meltano/sdk/tree/main/tests/samples
         """
         connection.execute(
-            f"create schema {runner.config['database']}.{runner.config['default_target_schema']}"
+            f"create schema {runner.config['database']}.{runner.config['default_target_schema']}",
         )
         yield
         connection.execute(
-            f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}"
+            f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}",
         )
 
 
 # Custom so I can implement all validate methods
 STANDARD_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
-STANDARD_TEST_CONFIG[
-    "default_target_schema"
-] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
+STANDARD_TEST_CONFIG["default_target_schema"] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
 StandardTargetTests = get_target_test_class(
     target_class=TargetSnowflake,
     config=STANDARD_TEST_CONFIG,
@@ -68,15 +66,13 @@ StandardTargetTests = get_target_test_class(
 )
 
 
-class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # type: ignore[misc, valid-type]  # noqa: E501
+class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # type: ignore[misc, valid-type]
     """Standard Target Tests."""
 
 
 # Custom so I can implement all validate methods
 BATCH_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
-BATCH_TEST_CONFIG[
-    "default_target_schema"
-] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
+BATCH_TEST_CONFIG["default_target_schema"] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
 BATCH_TEST_CONFIG["add_record_metadata"] = False
 BatchTargetTests = get_target_test_class(
     target_class=TargetSnowflake,
@@ -87,16 +83,17 @@ BatchTargetTests = get_target_test_class(
 )
 
 
-class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]  # noqa: E501
+class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]
     """Batch Target Tests."""
 
+
 def test_invalid_database():
-    INVALID_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
+    INVALID_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)  # noqa: N806
     INVALID_TEST_CONFIG["database"] = "FOO_BAR_DOESNT_EXIST"
     runner = TargetTestRunner(
         TargetSnowflake,
         config=INVALID_TEST_CONFIG,
-        input_filepath="tests/target_test_streams/existing_table.singer"
+        input_filepath="tests/target_test_streams/existing_table.singer",
     )
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017, PT011
         runner.sync_all()
