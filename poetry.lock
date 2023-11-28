@@ -1289,13 +1289,13 @@ secure-local-storage = ["keyring (!=16.1.0,<24.0.0)"]
 
 [[package]]
 name = "snowflake-sqlalchemy"
-version = "1.4.7"
+version = "1.5.1"
 description = "Snowflake SQLAlchemy Dialect"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "snowflake-sqlalchemy-1.4.7.tar.gz", hash = "sha256:64f0d5c0f73808ab5f52d7212698a5ec4cd63656f068fe6d4e9bddc05c0e367a"},
-    {file = "snowflake_sqlalchemy-1.4.7-py2.py3-none-any.whl", hash = "sha256:0b8209fb3155f1c497f77909a9a02f5509433e69626b3577a40b1cb425020c2a"},
+    {file = "snowflake-sqlalchemy-1.5.1.tar.gz", hash = "sha256:4f1383402ffc89311974bd810dee22003aef4af0f312a0fdb55778333ad1abf7"},
+    {file = "snowflake_sqlalchemy-1.5.1-py2.py3-none-any.whl", hash = "sha256:df022fb73bc04d68dfb3216ebf7a1bfbd14d22def9c38bbe05275beb258adcd0"},
 ]
 
 [package.dependencies]
@@ -1433,4 +1433,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7.1,<3.12"
-content-hash = "f5ff92253b5270eef54f7ef0232ef6e48ad499d20e6ae4d017261ad588abc046"
+content-hash = "4a9cb63c3c894aadba4be6203f393eab3bfabf0aaa40429fc0f16324c9b284c3"
