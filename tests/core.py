@@ -1,4 +1,5 @@
-import typing as t
+from __future__ import annotations
+
 from pathlib import Path
 
 import pytest
@@ -28,7 +29,9 @@ from singer_sdk.testing.templates import TargetFileTestTemplate
 class SnowflakeTargetArrayData(TargetArrayData):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
+        table = (
+            f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
+        )
         result = connector.connection.execute(
             f"select * from {table} order by 1",
         )
@@ -42,7 +45,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
         assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
         table_schema = connector.get_table(table)
         expected_types = {
-            "id": sct._CUSTOM_DECIMAL,
+            "id": sct._CUSTOM_DECIMAL,  # noqa: SLF001
             "fruits": sct.VARIANT,
             "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
@@ -59,10 +62,10 @@ class SnowflakeTargetArrayData(TargetArrayData):
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
         table_schema = connector.get_table(table)
         expected_types = {
-            "id": sct._CUSTOM_DECIMAL,
+            "id": sct._CUSTOM_DECIMAL,  # noqa: SLF001
             "isdeleted": sqlalchemy.types.BOOLEAN,
             "createddate": sct.TIMESTAMP_NTZ,
             "createdbyid": sct.STRING,
@@ -91,7 +94,9 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
+        table = (
+            f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
+        )
         result = connector.connection.execute(
             f"select * from {table} order by 1",
         )
@@ -128,7 +133,9 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
 
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
+        table = (
+            f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
+        )
         connector.connection.execute(
             f"select * from {table} order by 1",
         )
@@ -151,13 +158,15 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
 
 class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
     @property
-    def stream_names(self) -> t.List[str]:
+    def stream_names(self) -> list[str]:
         return ["test_strings", "test_strings_in_objects", "test_strings_in_arrays"]
 
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         for table_name in self.stream_names:
-            table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
+            table = (
+                f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
+            )
             connector.connection.execute(
                 f"select * from {table} order by 1",
             )
@@ -166,20 +175,20 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
 
 class SnowflakeTargetInvalidSchemaTest(TargetInvalidSchemaTest):
     def test(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
 class SnowflakeTargetRecordBeforeSchemaTest(TargetRecordBeforeSchemaTest):
     def test(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
 class SnowflakeTargetRecordMissingKeyProperty(TargetRecordMissingKeyProperty):
     def test(self) -> None:
         # TODO: catch exact exception, currently snowflake throws an integrity error
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
@@ -188,19 +197,19 @@ class SnowflakeTargetRecordMissingKeyProperty(TargetRecordMissingKeyProperty):
 #  `ERROR_ON_COLUMN_COUNT_MISMATCH=FALSE`
 class SnowflakeTargetOptionalAttributes(TargetOptionalAttributes):
     def test(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
 class SnowflakeTargetRecordMissingRequiredProperty(TargetRecordMissingRequiredProperty):
     def test(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
 class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
     @property
-    def stream_names(self) -> t.List[str]:
+    def stream_names(self) -> list[str]:
         return [
             "test_object_schema_with_properties",
             "test_object_schema_no_properties",
@@ -209,9 +218,11 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
     def validate(self) -> None:
         for table_name in self.stream_names:
             connector = self.target.default_sink_class.connector_class(
-                self.target.config
+                self.target.config,
             )
-            table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
+            table = (
+                f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
+            )
             result = connector.connection.execute(
                 f"select * from {table} order by 1",
             )
@@ -240,7 +251,9 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
+        table = (
+            f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
+        )
         result = connector.connection.execute(
             f"select * from {table} order by 1",
         )
@@ -378,7 +391,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
                 _SDC_TABLE_VERSION NUMBER(38,0),
                 PRIMARY KEY (ID)
             )
-            """
+            """,
         )
 
     def validate(self) -> None:
@@ -391,8 +404,8 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
         row = result.first()
         assert len(row) == 12
 
-class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
 
+class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
     name = "existing_table_alter"
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
 
@@ -416,7 +429,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
                 _SDC_TABLE_VERSION NUMBER(38,0),
                 PRIMARY KEY (ID)
             )
-            """
+            """,
         )
 
 
@@ -448,6 +461,30 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
             assert column.name in expected_types
             isinstance(column.type, expected_types[column.name])
 
+
+class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
+    name = "column_order_mismatch"
+
+    def setup(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
+        # Seed the 2 columns from tap schema and an unused third column to assert explicit inserts are working
+        connector.connection.execute(
+            f"""
+            CREATE OR REPLACE TABLE {table} (
+                COL1 VARCHAR(16777216),
+                COL3 TIMESTAMP_NTZ(9),
+                COL2 BOOLEAN
+            )
+            """,
+        )
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / f"{self.name}.singer"
+
+
 target_tests = TestSuite(
     kind="target",
     tests=[
@@ -475,5 +512,6 @@ target_tests = TestSuite(
         SnowflakeTargetExistingTable,
         SnowflakeTargetExistingTableAlter,
         SnowflakeTargetTypeEdgeCasesTest,
+        SnowflakeTargetColumnOrderMismatch,
     ],
 )

@@ -1,27 +1,34 @@
+from __future__ import annotations
+
 from operator import contains, eq
-from typing import Dict, List, Sequence, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Iterable, Sequence, cast
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
-from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
 
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
+
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
 
+
 class TypeMap:
-    def __init__(self, operator, map_value, match_value=None):
+    def __init__(self, operator, map_value, match_value=None) -> None:  # noqa: ANN001
         self.operator = operator
         self.map_value = map_value
         self.match_value = match_value
 
-    def match(self, compare_value):
+    def match(self, compare_value):  # noqa: ANN001
         try:
             if self.match_value:
                 return self.operator(compare_value, self.match_value)
@@ -30,7 +37,7 @@ class TypeMap:
             return False
 
 
-def evaluate_typemaps(type_maps, compare_value, unmatched_value):
+def evaluate_typemaps(type_maps, compare_value, unmatched_value):  # noqa: ANN001
     for type_map in type_maps:
         if type_map.match(compare_value):
             return type_map.map_value
@@ -49,16 +56,16 @@ class SnowflakeConnector(SQLConnector):
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.table_cache: dict = {}
         self.schema_cache: dict = {}
         super().__init__(*args, **kwargs)
-        
+
     def get_table_columns(
         self,
         full_table_name: str,
-        column_names: Union[List[str], None] = None,
-    ) -> Dict[str, sqlalchemy.Column]:
+        column_names: list[str] | None = None,
+    ) -> dict[str, sqlalchemy.Column]:
         """Return a list of table columns.
 
         Args:
@@ -68,36 +75,36 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             An ordered list of column objects.
         """
-        # Cache these columns because they're frequently used.
         if full_table_name in self.table_cache:
             return self.table_cache[full_table_name]
-        else:
-            _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-            inspector = sqlalchemy.inspect(self._engine)
-            columns = inspector.get_columns(table_name, schema_name)
+        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
+        inspector = sqlalchemy.inspect(self._engine)
+        columns = inspector.get_columns(table_name, schema_name)
 
-            parsed_columns = {
-                col_meta["name"]: sqlalchemy.Column(
-                    col_meta["name"],
-                    self._convert_type(col_meta["type"]),
-                    nullable=col_meta.get("nullable", False),
-                )
-                for col_meta in columns
-                if not column_names
-                or col_meta["name"].casefold() in {col.casefold() for col in column_names}
-            }
-            self.table_cache[full_table_name] = parsed_columns
-            return parsed_columns
+        parsed_columns = {
+            col_meta["name"]: sqlalchemy.Column(
+                col_meta["name"],
+                self._convert_type(col_meta["type"]),
+                nullable=col_meta.get("nullable", False),
+            )
+            for col_meta in columns
+            if not column_names or col_meta["name"].casefold() in {col.casefold() for col in column_names}
+        }
+        self.table_cache[full_table_name] = parsed_columns
+        return parsed_columns
 
-    def _convert_type(self, sql_type):
+    @staticmethod
+    def _convert_type(sql_type):  # noqa: ANN205, ANN001
         if isinstance(sql_type, sct.TIMESTAMP_NTZ):
             return TIMESTAMP_NTZ
-        elif isinstance(sql_type, sct.NUMBER):
+
+        if isinstance(sql_type, sct.NUMBER):
             return NUMBER
-        elif isinstance(sql_type, sct.VARIANT):
+
+        if isinstance(sql_type, sct.VARIANT):
             return VARIANT
-        else:
-            return sql_type
+
+        return sql_type
 
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
@@ -108,9 +115,14 @@ class SnowflakeConnector(SQLConnector):
         params = {
             "account": config["account"],
             "user": config["user"],
-            "password": config["password"],
             "database": config["database"],
         }
+
+        if "password" in config:
+            params["password"] = config["password"]
+        elif "private_key_path" not in config:
+            msg = "Neither password nor private_key_path was provided for authentication."
+            raise Exception(msg)  # noqa: TRY002
 
         for option in ["warehouse", "role"]:
             if config.get(option):
@@ -132,21 +144,36 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             A new SQLAlchemy Engine.
         """
+        connect_args = {
+            "session_parameters": {
+                "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
+            },
+        }
+        if "private_key_path" in self.config:
+            with open(self.config["private_key_path"], "rb") as private_key_file:  # noqa: PTH123
+                private_key = serialization.load_pem_private_key(
+                    private_key_file.read(),
+                    password=self.config["private_key_passphrase"].encode()
+                    if "private_key_passphrase" in self.config
+                    else None,
+                    backend=default_backend(),
+                )
+                connect_args["private_key"] = private_key.private_bytes(
+                    encoding=serialization.Encoding.DER,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption(),
+                )
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
-            connect_args={
-                "session_parameters": {
-                    "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
-                }
-            },
+            connect_args=connect_args,
             echo=False,
         )
         connection = engine.connect()
         db_names = [db[1] for db in connection.execute(text("SHOW DATABASES;")).fetchall()]
         if self.config["database"] not in db_names:
-            raise Exception(f"Database '{self.config['database']}' does not exist or the user/role doesn't have access to it.")
+            msg = f"Database '{self.config['database']}' does not exist or the user/role doesn't have access to it."
+            raise Exception(msg)  # noqa: TRY002
         return engine
-
 
     def prepare_column(
         self,
@@ -161,11 +188,19 @@ class SnowflakeConnector(SQLConnector):
         if '"' in formatter.format_collation(column_name):
             column_name = column_name.upper()
 
-        super().prepare_column(
-            full_table_name,
-            column_name,
-            sql_type,
-        )
+        try:
+            super().prepare_column(
+                full_table_name,
+                column_name,
+                sql_type,
+            )
+        except Exception:
+            self.logger.exception(
+                "Error preparing column for '%s.%s'",
+                full_table_name,
+                column_name,
+            )
+            raise
 
     @staticmethod
     def get_column_rename_ddl(
@@ -184,7 +219,9 @@ class SnowflakeConnector(SQLConnector):
 
     @staticmethod
     def get_column_alter_ddl(
-        table_name: str, column_name: str, column_type: sqlalchemy.types.TypeEngine
+        table_name: str,
+        column_name: str,
+        column_type: sqlalchemy.types.TypeEngine,
     ) -> sqlalchemy.DDL:
         """Get the alter column DDL statement.
 
@@ -211,7 +248,7 @@ class SnowflakeConnector(SQLConnector):
         )
 
     @staticmethod
-    def _conform_max_length(jsonschema_type):
+    def _conform_max_length(jsonschema_type):  # noqa: ANN205, ANN001
         """Alter jsonschema representations to limit max length to Snowflake's VARCHAR length."""
         max_length = jsonschema_type.get("maxLength")
         if max_length and max_length > SNOWFLAKE_MAX_STRING_LENGTH:
@@ -244,13 +281,13 @@ class SnowflakeConnector(SQLConnector):
             TypeMap(eq, sqlalchemy.types.VARCHAR(maxlength), None),
         ]
         type_maps = [
-            TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),
-            TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),
-            TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),
-            TypeMap(th._jsonschema_type_check, sct.DOUBLE(), ("number",)),
+            TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),  # noqa: SLF001
+            TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),  # noqa: SLF001
+            TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),  # noqa: SLF001
+            TypeMap(th._jsonschema_type_check, sct.DOUBLE(), ("number",)),  # noqa: SLF001
         ]
         # apply type maps
-        if th._jsonschema_type_check(jsonschema_type, ("string",)):
+        if th._jsonschema_type_check(jsonschema_type, ("string",)):  # noqa: SLF001
             datelike_type = th.get_datelike_property_type(jsonschema_type)
             target_type = evaluate_typemaps(string_submaps, datelike_type, target_type)
         else:
@@ -261,24 +298,42 @@ class SnowflakeConnector(SQLConnector):
     def schema_exists(self, schema_name: str) -> bool:
         if schema_name in self.schema_cache:
             return True
-        else:
-            schema_names = sqlalchemy.inspect(self._engine).get_schema_names()
-            self.schema_cache = schema_names
-            formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
-            # Make quoted schema names upper case because we create them that way
-            # and the metadata that SQLAlchemy returns is case insensitive only for non-quoted
-            # schema names so these will look like they dont exist yet.
-            if '"' in formatter.format_collation(schema_name):
-                schema_name = schema_name.upper()
-            return schema_name in schema_names
+        schema_names = sqlalchemy.inspect(self._engine).get_schema_names()
+        self.schema_cache = schema_names
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        # Make quoted schema names upper case because we create them that way
+        # and the metadata that SQLAlchemy returns is case insensitive only for
+        # non-quoted schema names so these will look like they dont exist yet.
+        if '"' in formatter.format_collation(schema_name):
+            schema_name = schema_name.upper()
+        return schema_name in schema_names
 
     # Custom SQL get methods
 
-    def _get_put_statement(self, sync_id: str, file_uri: str) -> Tuple[text, dict]:
+    def _get_put_statement(self, sync_id: str, file_uri: str) -> tuple[text, dict]:  # noqa: ARG002
         """Get Snowflake PUT statement."""
         return (text(f"put :file_uri '@~/target-snowflake/{sync_id}'"), {})
 
-    def _get_column_selections(self, schema: dict, formatter: SnowflakeIdentifierPreparer) -> list:
+    @staticmethod
+    def _format_column_selections(column_selections: list, format: str) -> str:  # noqa: A002
+        if format == "json_casting":
+            return ", ".join(
+                [
+                    f"$1:{col['clean_property_name']}::{col['sql_type']} as {col['clean_alias']}"
+                    for col in column_selections
+                ],
+            )
+        if format == "col_alias":
+            return f"({', '.join([col['clean_alias'] for col in column_selections])})"
+
+        error_message = f"Column format not implemented: {format}"
+        raise NotImplementedError(error_message)
+
+    def _get_column_selections(
+        self,
+        schema: dict,
+        formatter: SnowflakeIdentifierPreparer,
+    ) -> list:
         column_selections = []
         for property_name, property_def in schema["properties"].items():
             clean_property_name = formatter.format_collation(property_name)
@@ -286,78 +341,95 @@ class SnowflakeConnector(SQLConnector):
             if '"' in clean_property_name:
                 clean_alias = clean_property_name.upper()
             column_selections.append(
-                f"$1:{clean_property_name}::{self.to_sql_type(property_def)} as {clean_alias}"
+                {
+                    "clean_property_name": clean_property_name,
+                    "sql_type": self.to_sql_type(property_def),
+                    "clean_alias": clean_alias,
+                },
             )
         return column_selections
 
-    def _get_merge_from_stage_statement(
-        self, full_table_name, schema, sync_id, file_format, key_properties
+    def _get_merge_from_stage_statement(  # noqa: ANN202, PLR0913
+        self,
+        full_table_name: str,
+        schema: dict,
+        sync_id: str,
+        file_format: str,
+        key_properties: Iterable[str],
     ):
         """Get Snowflake MERGE statement."""
-
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         column_selections = self._get_column_selections(schema, formatter)
+        json_casting_selects = self._format_column_selections(
+            column_selections,
+            "json_casting",
+        )
 
         # use UPPER from here onwards
-        formatted_properties = [formatter.format_collation(col) for col in schema["properties"].keys()]
+        formatted_properties = [formatter.format_collation(col) for col in schema["properties"]]
         formatted_key_properties = [formatter.format_collation(col) for col in key_properties]
         join_expr = " and ".join(
-            [f'd.{key} = s.{key}' for key in formatted_key_properties]
+            [f"d.{key} = s.{key}" for key in formatted_key_properties],
         )
         matched_clause = ", ".join(
-            [f'd.{col} = s.{col}' for col in formatted_properties]
+            [f"d.{col} = s.{col}" for col in formatted_properties],
         )
         not_matched_insert_cols = ", ".join(formatted_properties)
         not_matched_insert_values = ", ".join(
-            [f's.{col}' for col in formatted_properties]
+            [f"s.{col}" for col in formatted_properties],
         )
-        dedup_cols = ", ".join([key for key in formatted_key_properties])
+        dedup_cols = ", ".join(list(formatted_key_properties))
         dedup = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} ORDER BY SEQ8() DESC) = 1"
         return (
             text(
-                f"merge into {full_table_name} d using "
-                + f"(select {', '.join(column_selections)} from '@~/target-snowflake/{sync_id}'"
+                f"merge into {full_table_name} d using "  # noqa: S608, ISC003
+                + f"(select {json_casting_selects} from '@~/target-snowflake/{sync_id}'"  # noqa: S608
                 + f"(file_format => {file_format}) {dedup}) s "
                 + f"on {join_expr} "
                 + f"when matched then update set {matched_clause} "
                 + f"when not matched then insert ({not_matched_insert_cols}) "
-                + f"values ({not_matched_insert_values})"
+                + f"values ({not_matched_insert_values})",
             ),
             {},
         )
 
-    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):
+    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):  # noqa: ANN202, ANN001
         """Get Snowflake COPY statement."""
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         column_selections = self._get_column_selections(schema, formatter)
+        json_casting_selects = self._format_column_selections(
+            column_selections,
+            "json_casting",
+        )
+        col_alias_selects = self._format_column_selections(
+            column_selections,
+            "col_alias",
+        )
         return (
             text(
-                f"copy into {full_table_name} from "
-                + f"(select {', '.join(column_selections)} from "
+                f"copy into {full_table_name} {col_alias_selects} from "  # noqa: S608, ISC003
+                + f"(select {json_casting_selects} from "  # noqa: S608
                 + f"'@~/target-snowflake/{sync_id}')"
-                + f"file_format = (format_name='{file_format}')"
+                + f"file_format = (format_name='{file_format}')",
             ),
             {},
         )
 
-    def _get_file_format_statement(self, file_format):
+    def _get_file_format_statement(self, file_format):  # noqa: ANN202, ANN001
         """Get Snowflake CREATE FILE FORMAT statement."""
         return (
-            text(
-                f"create or replace file format {file_format}"
-                + "type = 'JSON' compression = 'AUTO'"
-            ),
+            text(f"create or replace file format {file_format}type = 'JSON' compression = 'AUTO'"),
             {},
         )
 
-    def _get_drop_file_format_statement(self, file_format):
+    def _get_drop_file_format_statement(self, file_format):  # noqa: ANN202, ANN001
         """Get Snowflake DROP FILE FORMAT statement."""
         return (
             text(f"drop file format if exists {file_format}"),
             {},
         )
 
-    def _get_stage_files_remove_statement(self, sync_id):
+    def _get_stage_files_remove_statement(self, sync_id):  # noqa: ANN202, ANN001
         """Get Snowflake REMOVE statement."""
         return (
             text(f"remove '@~/target-snowflake/{sync_id}/'"),
@@ -376,7 +448,8 @@ class SnowflakeConnector(SQLConnector):
         with self._connect() as conn:
             for file_uri in files:
                 put_statement, kwargs = self._get_put_statement(
-                    sync_id=sync_id, file_uri=file_uri
+                    sync_id=sync_id,
+                    file_uri=file_uri,
                 )
                 # sqlalchemy.text stripped a slash, which caused windows to fail so we used bound parameters instead
                 # See https://github.com/MeltanoLabs/target-snowflake/issues/87 for more information about this error
@@ -390,14 +463,15 @@ class SnowflakeConnector(SQLConnector):
         """
         with self._connect() as conn:
             file_format_statement, kwargs = self._get_file_format_statement(
-                file_format=file_format
+                file_format=file_format,
             )
             self.logger.debug(
-                f"Creating file format with SQL: {file_format_statement!s}"
+                "Creating file format with SQL: %s",
+                file_format_statement,
             )
             conn.execute(file_format_statement, **kwargs)
 
-    def merge_from_stage(
+    def merge_from_stage(  # noqa: PLR0913
         self,
         full_table_name: str,
         schema: dict,
@@ -420,11 +494,15 @@ class SnowflakeConnector(SQLConnector):
                 file_format=file_format,
                 key_properties=key_properties,
             )
-            self.logger.debug(f"Merging with SQL: {merge_statement!s}")
+            self.logger.debug("Merging with SQL: %s", merge_statement)
             conn.execute(merge_statement, **kwargs)
 
     def copy_from_stage(
-        self, full_table_name: str, schema: dict, sync_id: str, file_format: str
+        self,
+        full_table_name: str,
+        schema: dict,
+        sync_id: str,
+        file_format: str,
     ):
         """Copy data from a stage into a table.
 
@@ -441,7 +519,7 @@ class SnowflakeConnector(SQLConnector):
                 sync_id=sync_id,
                 file_format=file_format,
             )
-            self.logger.debug(f"Copying with SQL: {copy_statement!s}")
+            self.logger.debug("Copying with SQL: %s", copy_statement)
             conn.execute(copy_statement, **kwargs)
 
     def drop_file_format(self, file_format: str) -> None:
@@ -452,9 +530,9 @@ class SnowflakeConnector(SQLConnector):
         """
         with self._connect() as conn:
             drop_statement, kwargs = self._get_drop_file_format_statement(
-                file_format=file_format
+                file_format=file_format,
             )
-            self.logger.debug(f"Dropping file format with SQL: {drop_statement!s}")
+            self.logger.debug("Dropping file format with SQL: %s", drop_statement)
             conn.execute(drop_statement, **kwargs)
 
     def remove_staged_files(self, sync_id: str) -> None:
@@ -465,13 +543,13 @@ class SnowflakeConnector(SQLConnector):
         """
         with self._connect() as conn:
             remove_statement, kwargs = self._get_stage_files_remove_statement(
-                sync_id=sync_id
+                sync_id=sync_id,
             )
-            self.logger.debug(f"Removing staged files with SQL: {remove_statement!s}")
+            self.logger.debug("Removing staged files with SQL: %s", remove_statement)
             conn.execute(remove_statement, **kwargs)
 
     @staticmethod
-    def get_initialize_script(role, user, password, warehouse, database):
+    def get_initialize_script(role, user, password, warehouse, database) -> str:  # noqa: ANN001
         # https://fivetran.com/docs/destinations/snowflake/setup-guide
         return f"""
             begin;
@@ -514,7 +592,39 @@ class SnowflakeConnector(SQLConnector):
             grant CREATE SCHEMA, MONITOR, USAGE
             on database {database}
             to role {role};
-            
+
             commit;
 
         """
+
+    def _adapt_column_type(
+        self,
+        full_table_name: str,
+        column_name: str,
+        sql_type: sqlalchemy.types.TypeEngine,
+    ) -> None:
+        """Adapt table column type to support the new JSON schema type.
+
+        Args:
+            full_table_name: The target table name.
+            column_name: The target column name.
+            sql_type: The new SQLAlchemy type.
+
+        Raises:
+            NotImplementedError: if altering columns is not supported.
+        """
+        try:
+            super()._adapt_column_type(full_table_name, column_name, sql_type)
+        except Exception:
+            current_type: sqlalchemy.types.TypeEngine = self._get_column_type(
+                full_table_name,
+                column_name,
+            )
+            self.logger.exception(
+                "Error adapting column type for '%s.%s', '%s' to '%s' (new sql type)",
+                full_table_name,
+                column_name,
+                current_type,
+                sql_type,
+            )
+            raise

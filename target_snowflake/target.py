@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import sys
-
 import click
 from singer_sdk import typing as th
-from singer_sdk.target_base import SQLTarget, Target
+from singer_sdk.target_base import SQLTarget
 
 from target_snowflake.initializer import initializer
 from target_snowflake.sinks import SnowflakeSink
@@ -27,8 +25,20 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "password",
             th.StringType,
-            required=True,
+            required=False,
             description="The password for your Snowflake user.",
+        ),
+        th.Property(
+            "private_key_path",
+            th.StringType,
+            required=False,
+            description="Path to file containing private key.",
+        ),
+        th.Property(
+            "private_key_passphrase",
+            th.StringType,
+            required=False,
+            description="Passphrase to decrypt private key if encrypted.",
         ),
         th.Property(
             "account",

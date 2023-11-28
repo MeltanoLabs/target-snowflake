@@ -1,8 +1,9 @@
 """BATCH Tests for Target Snowflake."""
+from __future__ import annotations
 
+import typing as t
 from pathlib import Path
 
-import pytest
 from singer_sdk.testing.suites import TestSuite
 from singer_sdk.testing.target_tests import (
     TargetNoPrimaryKeys,
@@ -39,7 +40,8 @@ class SnowflakeTargetCustomTestTemplate(TargetFileTestTemplate):
 
 
 class SnowflakeTargetBatchArrayData(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetArrayData
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetArrayData,
 ):
     """Test that the target can handle batch messages."""
 
@@ -47,7 +49,8 @@ class SnowflakeTargetBatchArrayData(
 
 
 class SnowflakeTargetBatchCamelcase(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetCamelcaseTest
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetCamelcaseTest,
 ):
     """Test that the target can handle batch messages."""
 
@@ -56,7 +59,8 @@ class SnowflakeTargetBatchCamelcase(
 
 
 class SnowflakeTargetBatchDuplicateRecords(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetDuplicateRecords
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetDuplicateRecords,
 ):
     """Test that the target can handle batch messages."""
 
@@ -64,12 +68,13 @@ class SnowflakeTargetBatchDuplicateRecords(
 
 
 class SnowflakeTargetBatchEncodedStringData(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetEncodedStringData
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetEncodedStringData,
 ):
     """Test that the target can handle batch messages."""
 
     name = "batch_encoded_string_data"
-    stream_names = [
+    stream_names: t.ClassVar[list[str]] = [
         "test_batch_strings",
         "test_batch_strings_in_objects",
         "test_batch_strings_in_arrays",
@@ -81,7 +86,7 @@ class SnowflakeTargetBatchEncodedStringData(
 # ):
 #     """Test that the target can handle batch messages."""
 
-#     name = "batch_multiple_state_messages"
+#     name = "batch_multiple_state_messages"  # noqa: ERA001
 
 
 # class SnowflakeTargetBatchNoPrimaryKeysAppend(
@@ -89,11 +94,12 @@ class SnowflakeTargetBatchEncodedStringData(
 # ):
 #     """Test that the target can handle batch messages."""
 
-#     name = "batch_no_primary_keys_append"
+#     name = "batch_no_primary_keys_append"  # noqa: ERA001
 
 
 class SnowflakeTargetBatchNoPrimaryKeys(
-    SnowflakeTargetCustomTestTemplate, TargetNoPrimaryKeys
+    SnowflakeTargetCustomTestTemplate,
+    TargetNoPrimaryKeys,
 ):
     """Test that the target can handle batch messages."""
 
@@ -101,7 +107,8 @@ class SnowflakeTargetBatchNoPrimaryKeys(
 
 
 class SnowflakeTargetBatchOptionalAttributes(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetOptionalAttributes
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetOptionalAttributes,
 ):
     """Test that the target can handle batch messages."""
 
@@ -109,7 +116,8 @@ class SnowflakeTargetBatchOptionalAttributes(
 
 
 class SnowflakeTargetBatchRecordBeforeSchemaTest(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetRecordBeforeSchemaTest
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetRecordBeforeSchemaTest,
 ):
     """Test that the target can handle batch messages."""
 
@@ -117,7 +125,8 @@ class SnowflakeTargetBatchRecordBeforeSchemaTest(
 
 
 class SnowflakeTargetBatchRecordMissingKeyProperty(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetRecordMissingKeyProperty
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetRecordMissingKeyProperty,
 ):
     """Test that the target can handle batch messages."""
 
@@ -125,7 +134,8 @@ class SnowflakeTargetBatchRecordMissingKeyProperty(
 
 
 class SnowflakeTargetBatchRecordMissingRequiredProperty(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetRecordMissingRequiredProperty
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetRecordMissingRequiredProperty,
 ):
     """Test that the target can handle batch messages."""
 
@@ -133,19 +143,21 @@ class SnowflakeTargetBatchRecordMissingRequiredProperty(
 
 
 class SnowflakeTargetBatchSchemaNoProperties(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetSchemaNoProperties
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetSchemaNoProperties,
 ):
     """Test that the target can handle batch messages."""
 
     name = "batch_schema_no_properties"
-    stream_names = [
+    stream_names: t.ClassVar[list[str]] = [
         "test_batch_object_schema_with_properties",
         "test_batch_object_schema_no_properties",
     ]
 
 
 class SnowflakeTargetBatchSchemaUpdates(
-    SnowflakeTargetCustomTestTemplate, SnowflakeTargetSchemaUpdates
+    SnowflakeTargetCustomTestTemplate,
+    SnowflakeTargetSchemaUpdates,
 ):
     """Test that the target can handle batch messages."""
 
@@ -153,7 +165,8 @@ class SnowflakeTargetBatchSchemaUpdates(
 
 
 class SnowflakeTargetBatchSpecialCharsInAttributes(
-    SnowflakeTargetCustomTestTemplate, TargetSpecialCharsInAttributes
+    SnowflakeTargetCustomTestTemplate,
+    TargetSpecialCharsInAttributes,
 ):
     """Test that the target can handle batch messages."""
 
