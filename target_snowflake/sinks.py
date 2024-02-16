@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from singer_sdk.batch import JSONLinesBatcher
 from singer_sdk.helpers._batch import (
+    DEFAULT_BATCH_SIZE,
     BaseBatchFileEncoding,
     BatchConfig,
     BatchFileFormat,
@@ -251,3 +252,12 @@ class SnowflakeSink(SQLSink):
         Raises:
             MissingKeyPropertiesError: If record is missing one or more key properties.
         """
+
+    @property
+    def max_size(self) -> int:
+        """Get max batch size.
+
+        Returns:
+            Max number of records to batch before `is_full=True`
+        """
+        return self.batch_config.batch_size if self.batch_config else DEFAULT_BATCH_SIZE
