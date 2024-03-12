@@ -1,4 +1,5 @@
 """Snowflake target sink class, which handles writing streams."""
+
 from __future__ import annotations
 
 import os
