@@ -12,6 +12,7 @@ from singer_sdk.testing import TargetTestRunner, get_target_test_class
 
 from target_snowflake.target import TargetSnowflake
 
+from .batch import batch_target_tests
 from .core import target_tests
 
 SAMPLE_CONFIG: dict[str, Any] = {
@@ -69,21 +70,21 @@ class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # typ
     """Standard Target Tests."""
 
 
-# # Custom so I can implement all validate methods
-# BATCH_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
-# BATCH_TEST_CONFIG["default_target_schema"] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
-# BATCH_TEST_CONFIG["add_record_metadata"] = False
-# BatchTargetTests = get_target_test_class(
-#     target_class=TargetSnowflake,
-#     config=BATCH_TEST_CONFIG,
-#     custom_suites=[batch_target_tests],
-#     suite_config=None,
-#     include_target_tests=False,
-# )
+# Custom so I can implement all validate methods
+BATCH_TEST_CONFIG = copy.deepcopy(SAMPLE_CONFIG)
+BATCH_TEST_CONFIG["default_target_schema"] = f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}"
+BATCH_TEST_CONFIG["add_record_metadata"] = False
+BatchTargetTests = get_target_test_class(
+    target_class=TargetSnowflake,
+    config=BATCH_TEST_CONFIG,
+    custom_suites=[batch_target_tests],
+    suite_config=None,
+    include_target_tests=False,
+)
 
 
-# class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]
-#     """Batch Target Tests."""
+class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]
+    """Batch Target Tests."""
 
 
 def test_invalid_database():
