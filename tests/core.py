@@ -45,7 +45,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
         assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
         table_schema = connector.get_table(table)
         expected_types = {
-            "id": sct._CUSTOM_DECIMAL,  # noqa: SLF001
+            "id": sqlalchemy.DECIMAL,
             "fruits": sct.VARIANT,
             "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
@@ -68,7 +68,7 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
         table_schema = connector.get_table(table)
         expected_types = {
-            "id": sct._CUSTOM_DECIMAL,  # noqa: SLF001
+            "id": sqlalchemy.VARCHAR,
             "isdeleted": sqlalchemy.types.BOOLEAN,
             "createddate": sct.TIMESTAMP_NTZ,
             "createdbyid": sct.STRING,
@@ -255,6 +255,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
                 "_sdc_batched_at": sct.TIMESTAMP_NTZ,
                 "_sdc_received_at": sct.TIMESTAMP_NTZ,
                 "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_sync_started_at": sct.NUMBER,
                 "_sdc_table_version": sct.NUMBER,
                 "_sdc_sequence": sct.NUMBER,
             }
