@@ -59,7 +59,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
             assert isinstance(
                 column.type,
                 expected_types[column.name],
-            ), f"Column {column.name} not of expected type {expected_types[column.name]}"
+            ), f"Column {column.name} is of unexpected type {column.type}"
 
 
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
@@ -95,7 +95,7 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
             assert isinstance(
                 column.type,
                 expected_types[column.name],
-            ), f"Column {column.name} not of expected type {expected_types[column.name]}"
+            ), f"Column {column.name} is of unexpected type {column.type}"
 
 
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
@@ -133,7 +133,7 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
             assert isinstance(
                 column.type,
                 expected_types[column.name],
-            ), f"Column {column.name} not of expected type {expected_types[column.name]}"
+            ), f"Column {column.name} is of unexpected type {column.type}"
 
 
 class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
@@ -166,7 +166,7 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
             assert isinstance(
                 column.type,
                 expected_types[column.name],
-            ), f"Column {column.name} not of expected type {expected_types[column.name]}"
+            ), f"Column {column.name} is of unexpected type {column.type}"
 
 
 class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
@@ -261,7 +261,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
                 assert isinstance(
                     column.type,
                     expected_types[column.name],
-                ), f"Column {column.name} not of expected type {expected_types[column.name]}"
+                ), f"Column {column.name} is of unexpected type {column.type}"
 
 
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
@@ -302,7 +302,7 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
             assert isinstance(
                 column.type,
                 expected_types[column.name],
-            ), f"Column {column.name} not of expected type {expected_types[column.name]}"
+            ), f"Column {column.name} is of unexpected type {column.type}"
 
 
 class SnowflakeTargetReservedWords(TargetFileTestTemplate):
@@ -483,7 +483,7 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
             assert isinstance(
                 column.type,
                 expected_types[column.name],
-            ), f"Column {column.name} not of expected type {expected_types[column.name]}"
+            ), f"Column {column.name} is of unexpected type {column.type}"
 
 
 class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
