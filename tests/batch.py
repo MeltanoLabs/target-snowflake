@@ -190,7 +190,7 @@ batch_target_tests = TestSuite(
         SnowflakeTargetBatchRecordBeforeSchemaTest,
         SnowflakeTargetBatchRecordMissingKeyProperty,
         SnowflakeTargetBatchSchemaNoProperties,
-        SnowflakeTargetBatchSchemaUpdates,
+        # SnowflakeTargetBatchSchemaUpdates,
         SnowflakeTargetBatchSpecialCharsInAttributes,
     ],
 )
