@@ -12,7 +12,6 @@ from singer_sdk.testing import TargetTestRunner, get_target_test_class
 
 from target_snowflake.target import TargetSnowflake
 
-from .batch import batch_target_tests
 from .core import target_tests
 
 SAMPLE_CONFIG: dict[str, Any] = {
