@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import json
 import os
 import uuid
 from typing import Any
@@ -24,9 +23,6 @@ SAMPLE_CONFIG: dict[str, Any] = {
     "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
     "schema": "PUBLIC",
 }
-
-with open("config.json", "w") as f:
-    f.write(json.dumps(SAMPLE_CONFIG))
 
 
 class BaseSnowflakeTargetTests:
