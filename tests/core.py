@@ -55,8 +55,8 @@ class SnowflakeTargetArrayData(TargetArrayData):
             "_sdc_sequence": sct.NUMBER,
         }
         for column in table_schema.columns:
-            assert column.name in expected_types
-            isinstance(column.type, expected_types[column.name])
+            assert column.name in expected_types, f"Column {column.name} not found in expected types"
+            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
@@ -87,8 +87,8 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
             "_sdc_sequence": sct.NUMBER,
         }
         for column in table_schema.columns:
-            assert column.name in expected_types
-            isinstance(column.type, expected_types[column.name])
+            assert column.name in expected_types, f"Column {column.name} not found in expected types"
+            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
@@ -106,7 +106,7 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
         }
         assert result.rowcount == 2
         for row in result:
-            assert len(row) == 8
+            assert len(row) == 8, f"Row has unexpected length {len(row)}"
             assert row[0] in expected_value
             assert expected_value.get(row[0]) == row[1]
 
@@ -122,8 +122,8 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
             "_sdc_sequence": sct.NUMBER,
         }
         for column in table_schema.columns:
-            assert column.name in expected_types
-            isinstance(column.type, expected_types[column.name])
+            assert column.name in expected_types, f"Column {column.name} not found in expected types"
+            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
@@ -152,8 +152,8 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
             "_sdc_sequence": sct.NUMBER,
         }
         for column in table_schema.columns:
-            assert column.name in expected_types
-            isinstance(column.type, expected_types[column.name])
+            assert column.name in expected_types, f"Column {column.name} not found in expected types"
+            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
@@ -244,8 +244,8 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
                 "_sdc_sequence": sct.NUMBER,
             }
             for column in table_schema.columns:
-                assert column.name in expected_types
-                isinstance(column.type, expected_types[column.name])
+                assert column.name in expected_types, f"Column {column.name} not found in expected types"
+                assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
@@ -282,8 +282,8 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
             "_sdc_sequence": sct.NUMBER,
         }
         for column in table_schema.columns:
-            assert column.name in expected_types
-            isinstance(column.type, expected_types[column.name])
+            assert column.name in expected_types, f"Column {column.name} not found in expected types"
+            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetReservedWords(TargetFileTestTemplate):
@@ -458,8 +458,8 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
             "_sdc_sequence": sct.NUMBER,
         }
         for column in table_schema.columns:
-            assert column.name in expected_types
-            isinstance(column.type, expected_types[column.name])
+            assert column.name in expected_types, f"Column {column.name} not found in expected types"
+            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
