@@ -38,7 +38,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
         assert result.rowcount == 4
         row = result.first()
         if self.target.config.get("add_record_metadata", True):
-            assert len(row) == 8, f"Row has unexpected length {len(row)}"
+            assert len(row) == 9, f"Row has unexpected length {len(row)}"
         else:
             assert len(row) == 2, f"Row has unexpected length {len(row)}"
 
@@ -113,7 +113,7 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
         }
         assert result.rowcount == 2
         for row in result:
-            assert len(row) == 8, f"Row has unexpected length {len(row)}"
+            assert len(row) == 9, f"Row has unexpected length {len(row)}"
             assert row[0] in expected_value
             assert expected_value.get(row[0]) == row[1]
 
@@ -242,7 +242,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
             assert result.rowcount == 2
             row = result.first()
             if self.target.config.get("add_record_metadata", True):
-                assert len(row) == 7, f"Row has unexpected length {len(row)}"
+                assert len(row) == 8, f"Row has unexpected length {len(row)}"
             else:
                 assert len(row) == 1, f"Row has unexpected length {len(row)}"
 
@@ -324,7 +324,7 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
         )
         assert result.rowcount == 2
         row = result.first()
-        assert len(row) == 11, f"Row has unexpected length {len(row)}"
+        assert len(row) == 12, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
@@ -346,7 +346,7 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         )
         assert result.rowcount == 1
         row = result.first()
-        assert len(row) == 10, f"Row has unexpected length {len(row)}"
+        assert len(row) == 11, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
@@ -422,7 +422,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
         )
         assert result.rowcount == 1
         row = result.first()
-        assert len(row) == 12, f"Row has unexpected length {len(row)}"
+        assert len(row) == 13, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
