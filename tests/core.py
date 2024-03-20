@@ -51,6 +51,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
             "_sdc_received_at": sct.TIMESTAMP_NTZ,
             "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+            "_sdc_sync_started_at": sct.NUMBER,
             "_sdc_table_version": sct.NUMBER,
             "_sdc_sequence": sct.NUMBER,
         }
