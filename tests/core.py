@@ -56,7 +56,9 @@ class SnowflakeTargetArrayData(TargetArrayData):
         }
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
-            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
+            assert isinstance(
+                column.type, expected_types[column.name]
+            ), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
@@ -88,7 +90,9 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
         }
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
-            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
+            assert isinstance(
+                column.type, expected_types[column.name]
+            ), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
@@ -123,7 +127,9 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
         }
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
-            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
+            assert isinstance(
+                column.type, expected_types[column.name]
+            ), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
@@ -153,7 +159,9 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
         }
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
-            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
+            assert isinstance(
+                column.type, expected_types[column.name]
+            ), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
@@ -245,7 +253,9 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
             }
             for column in table_schema.columns:
                 assert column.name in expected_types, f"Column {column.name} not found in expected types"
-                assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
+                assert isinstance(
+                    column.type, expected_types[column.name]
+                ), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
@@ -283,7 +293,9 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
         }
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
-            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
+            assert isinstance(
+                column.type, expected_types[column.name]
+            ), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetReservedWords(TargetFileTestTemplate):
@@ -459,7 +471,9 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
         }
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
-            assert isinstance(column.type, expected_types[column.name]), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
+            assert isinstance(
+                column.type, expected_types[column.name]
+            ), f"Column {column.name} not of expected type {expected_types[column.name]}"  # noqa: E501
 
 
 class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
