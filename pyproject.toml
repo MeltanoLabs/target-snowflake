@@ -18,7 +18,7 @@ python = ">=3.8"
 cryptography = ">=40,<43"
 singer-sdk = "~=0.36.1"
 snowflake-sqlalchemy = "~=1.5.1"
-sqlalchemy = "<2"
+sqlalchemy = "<3"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=7.2.7"
