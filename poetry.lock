@@ -1533,15 +1533,13 @@ files = [
 
 [[package]]
 name = "singer-sdk"
-version = "0.45.4"
+version = "0.45.11.dev9+gc152403b"
 description = "A framework for building Singer taps"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
-files = [
-    {file = "singer_sdk-0.45.4-py3-none-any.whl", hash = "sha256:a8112cb0b5c784900c0f5100d9550ef22891083434f3742aa7d3168eda06862d"},
-    {file = "singer_sdk-0.45.4.tar.gz", hash = "sha256:9237ec032fbad68a6595d008caccec4e6005320bcd66bd969f80a023d62aea2c"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 backoff = {version = ">=2.0.0", markers = "python_version < \"4\""}
@@ -1549,7 +1547,7 @@ backports-datetime-fromisoformat = {version = ">=2.0.1", markers = "python_versi
 click = ">=8.0,<9.0"
 fs = ">=2.4.16"
 fsspec = ">=2024.9.0"
-importlib-metadata = {version = "<9.0.0", markers = "python_version < \"3.12\""}
+importlib-metadata = {version = ">=5.0", markers = "python_version < \"3.12\""}
 importlib-resources = {version = ">=5.12.0,<6.2.0 || >6.2.0,<6.3.0 || >6.3.0,<6.3.1 || >6.3.1", markers = "python_version < \"3.10\""}
 inflection = ">=0.5.1"
 joblib = ">=1.3.0"
@@ -1575,6 +1573,12 @@ parquet = ["numpy (>=1.22)", "pyarrow (>=13)"]
 s3 = ["fs-s3fs (>=1.1.1)", "s3fs (>=2024.9.0)"]
 ssh = ["paramiko (>=3.3.0)"]
 testing = ["pytest (>=7.2.1)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/meltano/sdk.git"
+reference = "HEAD"
+resolved_reference = "c152403ba539a11d0d2b4a699c0885b31d4c7567"
 
 [[package]]
 name = "six"
@@ -1885,4 +1889,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "69b0c24ad1c3dacc8bcffa384d3a061c6ee0a123416dd211effb9f1a234295c9"
+content-hash = "e81a7cd31ed450dfcc92470a17b9a7677d7850ffa86e027526cc8ca6a5213073"
