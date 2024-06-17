@@ -17,7 +17,7 @@ packages = [
 python = ">=3.8"
 cryptography = ">=40,<43"
 numpy = "<2"
-singer-sdk = "~=0.37.0"
+singer-sdk = "~=0.38.0"
 snowflake-sqlalchemy = "~=1.5.1"
 sqlalchemy = "<2"
 
@@ -25,7 +25,7 @@ sqlalchemy = "<2"
 coverage = ">=7.2.7"
 pytest = ">=7.4.3"
 pytest-xdist = ">=3.3.1"
-singer-sdk = { version="~=0.37.0", extras = ["testing"] }
+singer-sdk = { version="~=0.38.0", extras = ["testing"] }
 
 [tool.ruff]
 line-length = 120
