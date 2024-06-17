@@ -16,6 +16,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.8"
 cryptography = ">=40,<43"
+numpy = "<2"
 singer-sdk = "~=0.37.0"
 snowflake-sqlalchemy = "~=1.5.1"
 sqlalchemy = "<2"
