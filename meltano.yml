@@ -74,6 +74,11 @@ plugins:
       kind: object
       label: Stream Maps
       name: stream_maps
+    - description: If browser based SSO authentication should be used. See [SSO browser authentication](https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate#using-single-sign-on-sso-through-a-web-browser).
+      kind: boolean
+      label: Use browser authentication
+      name: use_browser_authentication
+      value: false
     - description: The login name for your Snowflake user.
       kind: string
       label: User
@@ -86,4 +91,12 @@ plugins:
     - - account
       - database
       - password
+      - user
+    - - account
+      - database
+      - private_key_path
+      - user
+    - - account
+      - database
+      - use_browser_authentication
       - user

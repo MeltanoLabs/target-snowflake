@@ -79,6 +79,12 @@ class TargetSnowflake(SQLTarget):
             default=True,
             description="Whether to remove batch files after processing.",
         ),
+        th.Property(
+            "use_browser_authentication",
+            th.BooleanType,
+            default=False,
+            description="Whether to use SSO authentication using an external browser.",
+        ),
     ).to_dict()
 
     default_sink_class = SnowflakeSink
