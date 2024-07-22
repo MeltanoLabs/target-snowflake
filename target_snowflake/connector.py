@@ -355,7 +355,7 @@ class SnowflakeConnector(SQLConnector):
             )
         return column_selections
 
-    def _get_merge_from_stage_statement(  # noqa: ANN202, PLR0913
+    def _get_merge_from_stage_statement(  # noqa: ANN202
         self,
         full_table_name: str,
         schema: dict,
@@ -477,7 +477,7 @@ class SnowflakeConnector(SQLConnector):
             )
             conn.execute(file_format_statement, **kwargs)
 
-    def merge_from_stage(  # noqa: PLR0913
+    def merge_from_stage(
         self,
         full_table_name: str,
         schema: dict,
