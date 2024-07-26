@@ -456,6 +456,33 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
             """,
         )
 
+class SnowflakeTargetExistingReservedNameTableAlter(SnowflakeTargetExistingTable):
+    name = "existing_reserved_name_table_alter"
+    # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
+
+    def setup(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f'{self.target.config['database']}.{self.target.config['default_target_schema']}."ORDER"'.upper()
+        connector.connection.execute(
+            f"""
+            CREATE OR REPLACE TABLE {table} (
+                ID VARCHAR(16777216),
+                COL_STR VARCHAR(16777216),
+                COL_TS TIMESTAMP_NTZ(9),
+                COL_INT STRING,
+                COL_BOOL BOOLEAN,
+                COL_VARIANT VARIANT,
+                _SDC_BATCHED_AT TIMESTAMP_NTZ(9),
+                _SDC_DELETED_AT VARCHAR(16777216),
+                _SDC_EXTRACTED_AT TIMESTAMP_NTZ(9),
+                _SDC_RECEIVED_AT TIMESTAMP_NTZ(9),
+                _SDC_SEQUENCE NUMBER(38,0),
+                _SDC_TABLE_VERSION NUMBER(38,0),
+                PRIMARY KEY (ID)
+            )
+            """,
+        )
+
 
 class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
     name = "type_edge_cases"
@@ -539,6 +566,7 @@ target_tests = TestSuite(
         SnowflakeTargetColonsInColName,
         SnowflakeTargetExistingTable,
         SnowflakeTargetExistingTableAlter,
+        SnowflakeTargetExistingReservedNameTableAlter,
         SnowflakeTargetTypeEdgeCasesTest,
         SnowflakeTargetColumnOrderMismatch,
     ],
