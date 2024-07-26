@@ -456,6 +456,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
             """,
         )
 
+
 class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
     name = "existing_reserved_name_table_alter"
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
@@ -488,6 +489,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
             """,
         )
 
+
 class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
     # Contains reserved words from
     # https://docs.snowflake.com/en/sql-reference/reserved-keywords
@@ -508,7 +510,6 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
         assert result.rowcount == 1
         row = result.first()
         assert len(row) == 12, f"Row has unexpected length {len(row)}"
-
 
 
 class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
