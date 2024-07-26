@@ -456,6 +456,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
             """,
         )
 
+
 class SnowflakeTargetExistingReservedNameTableAlter(SnowflakeTargetExistingTable):
     name = "existing_reserved_name_table_alter"
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
