@@ -456,9 +456,14 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
             """,
         )
 
-class SnowflakeTargetExistingReservedNameTableAlter(SnowflakeTargetExistingTable):
+class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
     name = "existing_reserved_name_table_alter"
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
 
     def setup(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
@@ -482,6 +487,28 @@ class SnowflakeTargetExistingReservedNameTableAlter(SnowflakeTargetExistingTable
             )
             """,
         )
+
+class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
+    # Contains reserved words from
+    # https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # Syncs records then alters schema by adding a non-reserved word column.
+    name = "reserved_words_in_table"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f'{self.target.config['database']}.{self.target.config['default_target_schema']}."ORDER"'.upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 1
+        row = result.first()
+        assert len(row) == 12, f"Row has unexpected length {len(row)}"
+
 
 
 class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
@@ -567,6 +594,7 @@ target_tests = TestSuite(
         SnowflakeTargetExistingTable,
         SnowflakeTargetExistingTableAlter,
         SnowflakeTargetExistingReservedNameTableAlter,
+        SnowflakeTargetReservedWordsInTable,
         SnowflakeTargetTypeEdgeCasesTest,
         SnowflakeTargetColumnOrderMismatch,
     ],
