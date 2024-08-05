@@ -21,7 +21,7 @@ from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 from target_snowflake.connector import SnowflakeConnector
 
 if t.TYPE_CHECKING:
-    from singer_sdk import PluginBase, SQLConnector
+    from singer_sdk import PluginBase
 
 DEFAULT_BATCH_CONFIG = {
     "encoding": {"format": "jsonl", "compression": "gzip"},
@@ -29,7 +29,7 @@ DEFAULT_BATCH_CONFIG = {
 }
 
 
-class SnowflakeSink(SQLSink):
+class SnowflakeSink(SQLSink[SnowflakeConnector]):
     """Snowflake target sink class."""
 
     connector_class = SnowflakeConnector
@@ -40,7 +40,7 @@ class SnowflakeSink(SQLSink):
         stream_name: str,
         schema: dict,
         key_properties: list[str] | None,
-        connector: SQLConnector | None = None,
+        connector: SnowflakeConnector | None = None,
     ) -> None:
         """Initialize Snowflake Sink."""
         self.target = target
