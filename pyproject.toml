@@ -16,7 +16,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.8"
 cryptography = ">=40,<43"
-singer-sdk = "~=0.38.0"
+singer-sdk = "~=0.39.0"
 snowflake-sqlalchemy = "~=1.6.1"
 snowflake-connector-python = { version = "<4.0.0", extras = ["secure-local-storage"] }
 sqlalchemy = "<2"
@@ -25,7 +25,7 @@ sqlalchemy = "<2"
 coverage = ">=7.2.7"
 pytest = ">=7.4.3"
 pytest-xdist = ">=3.3.1"
-singer-sdk = { version="~=0.38.0", extras = ["testing"] }
+singer-sdk = { version="~=0.39.0", extras = ["testing"] }
 
 [tool.ruff]
 line-length = 120
