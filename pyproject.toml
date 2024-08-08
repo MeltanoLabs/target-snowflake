@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "meltanolabs-target-snowflake"
 version = "0.0.0"
-description = "`target-snowflake` is a Singer target for Snowflake, built with the Meltano SDK for Singer Targets."
+description = "Singer target for Snowflake, built with the Meltano SDK for Singer Targets."
 readme = "README.md"
 authors = ["Ken Payne"]
 keywords = [
