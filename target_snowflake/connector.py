@@ -13,7 +13,7 @@ from singer_sdk.connectors import SQLConnector
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
-from sqlalchemy.sql import quoted_name, text
+from sqlalchemy.sql import text
 
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
