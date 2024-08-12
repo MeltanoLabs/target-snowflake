@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 from operator import contains, eq
 from typing import TYPE_CHECKING, Any, Iterable, Sequence, cast
 
