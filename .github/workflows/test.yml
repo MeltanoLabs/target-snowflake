@@ -41,4 +41,4 @@ jobs:
         poetry install
     - name: Test with pytest
       run: |
-        poetry run pytest -s -n auto
+        poetry run pytest -n auto
