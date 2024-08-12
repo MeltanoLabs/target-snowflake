@@ -12,7 +12,7 @@ from singer_sdk.connectors import SQLConnector
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
-from sqlalchemy.sql import quoted_name, text
+from sqlalchemy.sql import text
 
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
@@ -191,7 +191,7 @@ class SnowflakeConnector(SQLConnector):
         # Make quoted column names upper case because we create them that way
         # and the metadata that SQLAlchemy returns is case insensitive only for non-quoted
         # column names so these will look like they dont exist yet.
-        if '"' in formatter.format_collation(column_name):
+        if '"' in formatter.quote(column_name):
             column_name = column_name.upper()
 
         try:
@@ -209,6 +209,18 @@ class SnowflakeConnector(SQLConnector):
             raise
 
     @staticmethod
+    def get_column_add_ddl(
+        table_name: str,
+        column_name: str,
+        column_type: sqlalchemy.types.TypeEngine,
+    ) -> sqlalchemy.DDL:
+        return SQLConnector.get_column_add_ddl(
+            SnowflakeConnector._escape_full_table_name(table_name),
+            column_name,
+            column_type,
+        )
+
+    @staticmethod
     def get_column_rename_ddl(
         table_name: str,
         column_name: str,
@@ -218,9 +230,9 @@ class SnowflakeConnector(SQLConnector):
         # Since we build the ddl manually we can't rely on SQLAlchemy to
         # quote column names automatically.
         return SQLConnector.get_column_rename_ddl(
-            table_name,
-            formatter.format_collation(column_name),
-            formatter.format_collation(new_column_name),
+            SnowflakeConnector._escape_full_table_name(table_name),
+            formatter.quote(column_name),
+            formatter.quote(new_column_name),
         )
 
     @staticmethod
@@ -244,11 +256,12 @@ class SnowflakeConnector(SQLConnector):
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         # Since we build the ddl manually we can't rely on SQLAlchemy to
         # quote column names automatically.
+        escaped_full_table_name = SnowflakeConnector._escape_full_table_name(table_name)
         return sqlalchemy.DDL(
             "ALTER TABLE %(table_name)s ALTER COLUMN %(column_name)s SET DATA TYPE %(column_type)s",
             {
-                "table_name": table_name,
-                "column_name": formatter.format_collation(column_name),
+                "table_name": escaped_full_table_name,
+                "column_name": formatter.quote(column_name),
                 "column_type": column_type,
             },
         )
@@ -310,7 +323,7 @@ class SnowflakeConnector(SQLConnector):
         # Make quoted schema names upper case because we create them that way
         # and the metadata that SQLAlchemy returns is case insensitive only for
         # non-quoted schema names so these will look like they dont exist yet.
-        if '"' in formatter.format_collation(schema_name):
+        if '"' in formatter.quote(schema_name):
             schema_name = schema_name.upper()
         return schema_name in schema_names
 
@@ -342,7 +355,7 @@ class SnowflakeConnector(SQLConnector):
     ) -> list:
         column_selections = []
         for property_name, property_def in schema["properties"].items():
-            clean_property_name = formatter.format_collation(property_name)
+            clean_property_name = formatter.quote(property_name)
             clean_alias = clean_property_name
             if '"' in clean_property_name:
                 clean_alias = clean_property_name.upper()
@@ -372,8 +385,8 @@ class SnowflakeConnector(SQLConnector):
         )
 
         # use UPPER from here onwards
-        formatted_properties = [formatter.format_collation(col) for col in schema["properties"]]
-        formatted_key_properties = [formatter.format_collation(col) for col in key_properties]
+        formatted_properties = [formatter.quote(col) for col in schema["properties"]]
+        formatted_key_properties = [formatter.quote(col) for col in key_properties]
         join_expr = " and ".join(
             [f"d.{key} = s.{key}" for key in formatted_key_properties],
         )
@@ -386,9 +399,10 @@ class SnowflakeConnector(SQLConnector):
         )
         dedup_cols = ", ".join(list(formatted_key_properties))
         dedup = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} ORDER BY SEQ8() DESC) = 1"
+        escaped_full_table_name = self._escape_full_table_name(full_table_name)
         return (
             text(
-                f"merge into {quoted_name(full_table_name, quote=True)} d using "  # noqa: ISC003
+                f"merge into {escaped_full_table_name} d using "  # noqa: ISC003
                 + f"(select {json_casting_selects} from '@~/target-snowflake/{sync_id}'"  # noqa: S608
                 + f"(file_format => {file_format}) {dedup}) s "
                 + f"on {join_expr} "
@@ -411,9 +425,10 @@ class SnowflakeConnector(SQLConnector):
             column_selections,
             "col_alias",
         )
+        escaped_full_table_name = self._escape_full_table_name(full_table_name)
         return (
             text(
-                f"copy into {full_table_name} {col_alias_selects} from "  # noqa: ISC003
+                f"copy into {escaped_full_table_name} {col_alias_selects} from "  # noqa: ISC003
                 + f"(select {json_casting_selects} from "  # noqa: S608
                 + f"'@~/target-snowflake/{sync_id}')"
                 + f"file_format = (format_name='{file_format}')",
@@ -634,3 +649,9 @@ class SnowflakeConnector(SQLConnector):
                 sql_type,
             )
             raise
+
+    @staticmethod
+    def _escape_full_table_name(full_table_name: str) -> str:
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
+        db_name, schema_name, table_name = SQLConnector().parse_full_table_name(full_table_name)
+        return f"{formatter.quote(db_name)}.{formatter.quote(schema_name)}.{formatter.quote(table_name)}"
