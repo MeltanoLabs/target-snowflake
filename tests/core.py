@@ -509,7 +509,7 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
         )
         assert result.rowcount == 1
         row = result.first()
-        assert len(row) == 12, f"Row has unexpected length {len(row)}"
+        assert len(row) == 13, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):

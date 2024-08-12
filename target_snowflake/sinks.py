@@ -99,10 +99,10 @@ class SnowflakeSink(SQLSink):
         name: str,
         object_type: str | None = None,
     ) -> str:
+        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         if object_type and object_type != "column":
             return super().conform_name(name=name, object_type=object_type)
-        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
-        if '"' not in formatter.format_collation(name.lower()):
+        if '"' not in formatter.quote(name.lower()):
             name = name.lower()
         return name
 
