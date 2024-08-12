@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from operator import contains, eq
 from typing import TYPE_CHECKING, Any, Iterable, Sequence, cast
 
@@ -11,6 +12,7 @@ from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
+from snowflake.sqlalchemy.custom_commands import CopyInto, MergeInto
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 from sqlalchemy.sql import quoted_name, text
 
@@ -386,6 +388,21 @@ class SnowflakeConnector(SQLConnector):
         )
         dedup_cols = ", ".join(list(formatted_key_properties))
         dedup = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} ORDER BY SEQ8() DESC) = 1"
+
+        table = self.get_table(full_table_name)
+        columns = self.get_table_columns(full_table_name, column_names=column_selections)
+        merge = MergeInto(
+            target=table,
+            source=text(f"""
+                (select {json_casting_selects} from '@~/target-snowflake/{sync_id}'
+                (file_format => {file_format}) {dedup}) s
+            """),  # noqa: S608
+            on=join_expr,
+        )
+        merge.when_matched_then_update()
+        merge.when_not_matched_then_insert().values(**columns)
+        print(">>> MERGE INTO:", merge.compile(self._engine), file=sys.stderr)
+
         return (
             text(
                 f"merge into {quoted_name(full_table_name, quote=True)} d using "  # noqa: ISC003
@@ -411,6 +428,16 @@ class SnowflakeConnector(SQLConnector):
             column_selections,
             "col_alias",
         )
+        table = self.get_table(full_table_name)
+        copy_into = CopyInto(
+            from_=text(f"""
+                (select {json_casting_selects} from '@~/target-snowflake/{sync_id}')
+            """),  # noqa: S608
+            into=table,
+            formatter=None,
+        )
+        print(">>> COPY INTO:", copy_into.compile(self._engine), file=sys.stderr)
+
         return (
             text(
                 f"copy into {full_table_name} {col_alias_selects} from "  # noqa: ISC003
