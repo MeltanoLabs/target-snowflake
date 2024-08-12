@@ -29,7 +29,7 @@ DEFAULT_BATCH_CONFIG = {
 }
 
 
-class SnowflakeSink(SQLSink):
+class SnowflakeSink(SQLSink[SnowflakeConnector]):
     """Snowflake target sink class."""
 
     connector_class = SnowflakeConnector
@@ -64,7 +64,8 @@ class SnowflakeSink(SQLSink):
 
     @property
     def table_name(self) -> str:
-        return super().table_name.upper()
+        table = super().table_name
+        return self.connector.dialect.identifier_preparer.quote(table).upper()
 
     def setup(self) -> None:
         """Set up Sink.

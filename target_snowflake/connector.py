@@ -12,7 +12,7 @@ from singer_sdk.connectors import SQLConnector
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
-from sqlalchemy.sql import quoted_name, text
+from sqlalchemy.sql import text
 
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
@@ -60,6 +60,11 @@ class SnowflakeConnector(SQLConnector):
         self.table_cache: dict = {}
         self.schema_cache: dict = {}
         super().__init__(*args, **kwargs)
+
+    @property
+    def dialect(self) -> SnowflakeDialect:
+        """Return a Snowflake dialect instance."""
+        return self._engine.dialect
 
     def get_table_columns(
         self,
@@ -388,7 +393,7 @@ class SnowflakeConnector(SQLConnector):
         dedup = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} ORDER BY SEQ8() DESC) = 1"
         return (
             text(
-                f"merge into {quoted_name(full_table_name, quote=True)} d using "  # noqa: ISC003
+                f"merge into {full_table_name} d using "  # noqa: ISC003
                 + f"(select {json_casting_selects} from '@~/target-snowflake/{sync_id}'"  # noqa: S608
                 + f"(file_format => {file_format}) {dedup}) s "
                 + f"on {join_expr} "
