@@ -30,7 +30,7 @@ singer-sdk = { version="~=0.39.0", extras = ["testing"] }
 [tool.ruff]
 line-length = 120
 src = ["target_snowflake"]
-target-version = "py37"
+target-version = "py38"
 
 [tool.ruff.lint]
 ignore = [
