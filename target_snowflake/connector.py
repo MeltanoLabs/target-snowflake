@@ -62,62 +62,6 @@ class SnowflakeConnector(SQLConnector):
         self.schema_cache: dict = {}
         super().__init__(*args, **kwargs)
 
-    def create_empty_table(
-        self,
-        full_table_name: str,
-        schema: dict,
-        primary_keys: t.Sequence[str] | None = None,
-        partition_keys: list[str] | None = None,
-        as_temp_table: bool = False,  # noqa: FBT001, FBT002
-    ) -> None:
-        """Create an empty target table.
-
-        Args:
-            full_table_name: the target table name.
-            schema: the JSON schema for the new table.
-            primary_keys: list of key properties.
-            partition_keys: list of partition keys.
-            as_temp_table: True to create a temp table.
-
-        Raises:
-            NotImplementedError: if temp tables are unsupported and as_temp_table=True.
-            RuntimeError: if a variant schema is passed with no properties defined.
-        """
-        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
-        if as_temp_table:
-            msg = "Temporary tables are not supported."
-            raise NotImplementedError(msg)
-
-        _ = partition_keys  # Not supported in generic implementation.
-
-        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-        columns = []
-        primary_keys = primary_keys or []
-        try:
-            properties: dict = schema["properties"]
-        except KeyError as e:
-            msg = f"Schema for '{full_table_name}' does not define properties: {schema}"
-            raise RuntimeError(msg) from e
-        formatted_pks = []
-        for property_name, property_jsonschema in properties.items():
-            column_type = self.to_sql_type(property_jsonschema)
-            column_def = f"{formatter.quote(property_name)} {column_type}"
-            if property_name in primary_keys:
-                formatted_pks.append(formatter.quote(property_name))
-            columns.append(column_def)
-        pks = ""
-        if formatted_pks:
-            pks = f", PRIMARY KEY ({', '.join(formatted_pks)})"
-        column_definitions_str = ",\n    ".join(columns)
-        create_table_sql = f"""
-        CREATE TABLE {formatter.quote(schema_name)}.{formatter.quote(table_name)} (
-            {column_definitions_str}
-            {pks}
-        )
-        """
-        with self._engine.connect() as conn:
-            conn.execute(sqlalchemy.DDL(create_table_sql))
-
     def get_table_columns(
         self,
         full_table_name: str,
