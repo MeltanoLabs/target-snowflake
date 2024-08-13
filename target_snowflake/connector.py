@@ -61,11 +61,6 @@ class SnowflakeConnector(SQLConnector):
         self.schema_cache: dict = {}
         super().__init__(*args, **kwargs)
 
-    @property
-    def dialect(self) -> SnowflakeDialect:
-        """Return a Snowflake dialect instance."""
-        return self._engine.dialect
-
     def get_table_columns(
         self,
         full_table_name: str,

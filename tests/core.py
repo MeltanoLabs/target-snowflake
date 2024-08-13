@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 from pathlib import Path
 
 import pytest
@@ -25,9 +24,6 @@ from singer_sdk.testing.target_tests import (
     TargetSpecialCharsInAttributes,
 )
 from singer_sdk.testing.templates import TargetFileTestTemplate
-
-if t.TYPE_CHECKING:
-    from target_snowflake.connector import SnowflakeConnector
 
 
 class SnowflakeTargetArrayData(TargetArrayData):
@@ -69,7 +65,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
 
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
     def validate(self) -> None:
-        connector: SnowflakeConnector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
         table_schema = connector.get_table(table)
         expected_types = {
