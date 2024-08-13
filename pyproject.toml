@@ -22,7 +22,7 @@ sqlalchemy = "<2"
 
 [tool.poetry.dependencies.singer-sdk]
 git = "https://github.com/meltano/sdk.git"
-rev = "edgarrmondragon/refactor/handle-sql-ident-normalization"
+rev = "edgarrmondragon/refactor/backwards-compat-sql-ident-quoting"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=7.2.7"
@@ -31,7 +31,7 @@ pytest-xdist = ">=3.3.1"
 
 [tool.poetry.group.dev.dependencies.singer-sdk]
 git = "https://github.com/meltano/sdk.git"
-rev = "edgarrmondragon/refactor/handle-sql-ident-normalization"
+rev = "edgarrmondragon/refactor/backwards-compat-sql-ident-quoting"
 extras = ["testing"]
 
 [tool.ruff]
