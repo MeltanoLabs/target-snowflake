@@ -458,6 +458,61 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
         )
 
 
+class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
+    name = "existing_reserved_name_table_alter"
+    # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
+
+    def setup(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
+        connector.connection.execute(
+            f"""
+            CREATE OR REPLACE TABLE {table} (
+                ID VARCHAR(16777216),
+                COL_STR VARCHAR(16777216),
+                COL_TS TIMESTAMP_NTZ(9),
+                COL_INT STRING,
+                COL_BOOL BOOLEAN,
+                COL_VARIANT VARIANT,
+                _SDC_BATCHED_AT TIMESTAMP_NTZ(9),
+                _SDC_DELETED_AT VARCHAR(16777216),
+                _SDC_EXTRACTED_AT TIMESTAMP_NTZ(9),
+                _SDC_RECEIVED_AT TIMESTAMP_NTZ(9),
+                _SDC_SEQUENCE NUMBER(38,0),
+                _SDC_TABLE_VERSION NUMBER(38,0),
+                PRIMARY KEY (ID)
+            )
+            """,
+        )
+
+
+class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
+    # Contains reserved words from
+    # https://docs.snowflake.com/en/sql-reference/reserved-keywords
+    # Syncs records then alters schema by adding a non-reserved word column.
+    name = "reserved_words_in_table"
+
+    @property
+    def singer_filepath(self) -> Path:
+        current_dir = Path(__file__).resolve().parent
+        return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
+
+    def validate(self) -> None:
+        connector = self.target.default_sink_class.connector_class(self.target.config)
+        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
+        result = connector.connection.execute(
+            f"select * from {table}",
+        )
+        assert result.rowcount == 1
+        row = result.first()
+        assert len(row) == 13, f"Row has unexpected length {len(row)}"
+
+
 class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
     name = "type_edge_cases"
 
@@ -540,6 +595,8 @@ target_tests = TestSuite(
         SnowflakeTargetColonsInColName,
         SnowflakeTargetExistingTable,
         SnowflakeTargetExistingTableAlter,
+        SnowflakeTargetExistingReservedNameTableAlter,
+        SnowflakeTargetReservedWordsInTable,
         SnowflakeTargetTypeEdgeCasesTest,
         SnowflakeTargetColumnOrderMismatch,
     ],
