@@ -9,7 +9,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
-from singer_sdk.connectors.sql import FullyQualifiedName
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
@@ -21,10 +20,6 @@ if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
 
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
-
-
-class SnowflakeFullyQualifiedName(FullyQualifiedName):
-    pass
 
 
 class TypeMap:
@@ -644,34 +639,3 @@ class SnowflakeConnector(SQLConnector):
                 sql_type,
             )
             raise
-
-    def get_fully_qualified_name(
-        self,
-        table_name: str | None = None,
-        schema_name: str | None = None,
-        db_name: str | None = None,
-        delimiter: str = ".",
-    ) -> SnowflakeFullyQualifiedName:
-        """Concatenates a fully qualified name from the parts.
-
-        Snowflake-specific implementation.
-
-        Args:
-            table_name: The name of the table.
-            schema_name: The name of the schema. Defaults to None.
-            db_name: The name of the database. Defaults to None.
-            delimiter: Generally: '.' for SQL names and '-' for Singer names.
-
-        Raises:
-            ValueError: If all 3 name parts not supplied.
-
-        Returns:
-            The fully qualified name as a string.
-        """
-        return SnowflakeFullyQualifiedName(
-            table=table_name,
-            schema=schema_name,
-            database=db_name,
-            delimiter=delimiter,
-            dialect=self._dialect,
-        )
