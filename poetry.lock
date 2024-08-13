@@ -1381,7 +1381,7 @@ files = [
 
 [[package]]
 name = "singer-sdk"
-version = "0.39.1.post9.dev0+a0879553"
+version = "0.39.1.post9.dev0+477a5eb6"
 description = "A framework for building Singer taps"
 optional = false
 python-versions = ">=3.8"
@@ -1422,8 +1422,8 @@ testing = ["pytest (>=7.2.1)"]
 [package.source]
 type = "git"
 url = "https://github.com/meltano/sdk.git"
-reference = "edgarrmondragon/refactor/backwards-compat-sql-ident-quoting"
-resolved_reference = "a0879553d2719ff2bfad3330226fa04313143540"
+reference = "main"
+resolved_reference = "477a5eb6879b9e133f1b43b821c26d590ab183bf"
 
 [[package]]
 name = "six"
@@ -1670,4 +1670,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8"
-content-hash = "bf521892d016bdac4a9682fd565f676cf54f03d5cc420197be807c411454263f"
+content-hash = "402111680005ad5ee46f107e93bec652bfa60edcd6d490009651d3fa7f7460dd"
