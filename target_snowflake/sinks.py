@@ -29,7 +29,7 @@ DEFAULT_BATCH_CONFIG = {
 }
 
 
-class SnowflakeSink(SQLSink):
+class SnowflakeSink(SQLSink[SnowflakeConnector]):
     """Snowflake target sink class."""
 
     connector_class = SnowflakeConnector
