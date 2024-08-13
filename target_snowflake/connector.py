@@ -9,6 +9,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
+from singer_sdk.connectors.sql import FullyQualifiedName
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
@@ -42,6 +43,23 @@ def evaluate_typemaps(type_maps, compare_value, unmatched_value):  # noqa: ANN00
         if type_map.match(compare_value):
             return type_map.map_value
     return unmatched_value
+
+
+class SnowflakeFullyQualifiedName(FullyQualifiedName):
+    def __init__(
+        self,
+        *,
+        table: str | None = None,
+        schema: str | None = None,
+        database: str | None = None,
+        delimiter: str = ".",
+        dialect: SnowflakeDialect,
+    ) -> None:
+        self.dialect = dialect
+        super().__init__(table=table, schema=schema, database=database, delimiter=delimiter)
+
+    def prepare_part(self, part: str) -> str:
+        return self.dialect.identifier_preparer.quote(part)
 
 
 class SnowflakeConnector(SQLConnector):
@@ -634,3 +652,18 @@ class SnowflakeConnector(SQLConnector):
                 sql_type,
             )
             raise
+
+    def get_fully_qualified_name(
+        self,
+        table_name: str | None = None,
+        schema_name: str | None = None,
+        db_name: str | None = None,
+        delimiter: str = ".",
+    ) -> SnowflakeFullyQualifiedName:
+        return SnowflakeFullyQualifiedName(
+            table=table_name,
+            schema=schema_name,
+            database=db_name,
+            delimiter=delimiter,
+            dialect=self._dialect,
+        )
