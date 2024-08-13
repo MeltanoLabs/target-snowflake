@@ -64,8 +64,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
     @property
     def table_name(self) -> str:
-        table = super().table_name
-        return self.connector.dialect.identifier_preparer.quote(table).upper()
+        return super().table_name.upper()
 
     def setup(self) -> None:
         """Set up Sink.
