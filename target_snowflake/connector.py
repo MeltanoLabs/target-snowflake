@@ -406,7 +406,7 @@ class SnowflakeConnector(SQLConnector):
         dedup = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} ORDER BY SEQ8() DESC) = 1"
         return (
             text(
-                f"merge into {full_table_name} d using "  # noqa: ISC003
+                f"merge into {full_table_name} d using "  # noqa: ISC003, S608
                 + f"(select {json_casting_selects} from '@~/target-snowflake/{sync_id}'"  # noqa: S608
                 + f"(file_format => {file_format}) {dedup}) s "
                 + f"on {join_expr} "
@@ -431,7 +431,7 @@ class SnowflakeConnector(SQLConnector):
         )
         return (
             text(
-                f"copy into {full_table_name} {col_alias_selects} from "  # noqa: ISC003
+                f"copy into {full_table_name} {col_alias_selects} from "  # noqa: ISC003, S608
                 + f"(select {json_casting_selects} from "  # noqa: S608
                 + f"'@~/target-snowflake/{sync_id}')"
                 + f"file_format = (format_name='{file_format}')",
