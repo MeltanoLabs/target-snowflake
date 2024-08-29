@@ -70,5 +70,5 @@ jobs:
         poetry run pytest -n auto
     - uses: actions/upload-artifact@v4
       with:
-        name: snowflake-logs-py${{ matrix.python-version }}-${{ runner.os }}
+        name: snowflake-logs-py${{ matrix.python-version }}-${{ matrix.os }}
         path: snowflake.log
