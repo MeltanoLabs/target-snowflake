@@ -1,8 +1,13 @@
 version: 1
 disable_existing_loggers: false
+formatters:
+  simple:
+    format: "{name} {pathname} {levelname} {message}"
+    style: "{"
 handlers:
   snowflake:
     class: logging.FileHandler
+    formatter: simple
     filename: snowflake.log
 loggers:
   snowflake.connector:
