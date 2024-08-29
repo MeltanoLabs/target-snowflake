@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      SINGER_SDK_LOG_CONFIG: ./target_snowflake_logging.yaml
       TARGET_SNOWFLAKE_USER: ${{secrets.TARGET_SNOWFLAKE_USER}}
       TARGET_SNOWFLAKE_PASSWORD: ${{secrets.TARGET_SNOWFLAKE_PASSWORD}}
       TARGET_SNOWFLAKE_ACCOUNT: ${{secrets.TARGET_SNOWFLAKE_ACCOUNT}}
