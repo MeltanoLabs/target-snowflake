@@ -2,7 +2,7 @@ version: 1
 disable_existing_loggers: false
 formatters:
   simple:
-    format: "{name} {pathname} {levelname} {message}"
+    format: "{levelname} | {name}| {pathname} | {message}"
     style: "{"
 handlers:
   snowflake:
