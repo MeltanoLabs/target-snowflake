@@ -18,7 +18,7 @@ python = ">=3.8"
 cryptography = ">=40,<44"
 snowflake-sqlalchemy = "~=1.6.1"
 snowflake-connector-python = { version = "<4.0.0", extras = ["secure-local-storage"] }
-sqlalchemy = "<2"
+sqlalchemy = "<3"
 
 [tool.poetry.dependencies.singer-sdk]
 version = "~=0.40.0a1"
