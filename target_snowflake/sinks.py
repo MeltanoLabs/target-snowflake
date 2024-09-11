@@ -190,7 +190,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
             if self.key_properties:
                 # merge into destination table
-                self.connector.merge_from_stage(
+                record_count = self.connector.merge_from_stage(
                     full_table_name=full_table_name,
                     schema=self.schema,
                     sync_id=sync_id,
@@ -199,12 +199,15 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                 )
 
             else:
-                self.connector.copy_from_stage(
+                record_count = self.connector.copy_from_stage(
                     full_table_name=full_table_name,
                     schema=self.schema,
                     sync_id=sync_id,
                     file_format=file_format,
                 )
+
+            with self.record_counter_metric as counter:
+                counter.increment(record_count)
 
         finally:
             self.logger.debug("Cleaning up after batch processing")
