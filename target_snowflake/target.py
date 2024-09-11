@@ -14,6 +14,8 @@ class TargetSnowflake(SQLTarget):
     """Target for Snowflake."""
 
     name = "target-snowflake"
+    package_name = "meltanolabs_target_snowflake"
+
     # From https://docs.snowflake.com/en/user-guide/sqlalchemy.html#connection-parameters
     config_jsonschema = th.PropertiesList(
         th.Property(

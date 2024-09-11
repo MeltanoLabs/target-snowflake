@@ -1,6 +1,24 @@
 name: Test target-snowflake
 
-on: [push]
+on:
+  push:
+    branches: [main]
+    paths:
+    - .github/workflows/test.yml
+    - target_snowflake/**
+    - tests/**
+    - poetry.lock
+    - pyproject.toml
+    - tox.ini
+  pull_request:
+    branches: [main]
+    paths:
+    - .github/workflows/test.yml
+    - target_snowflake/**
+    - tests/**
+    - poetry.lock
+    - pyproject.toml
+    - tox.ini
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -11,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      SINGER_SDK_LOG_CONFIG: ./target_snowflake_logging.yaml
       TARGET_SNOWFLAKE_USER: ${{secrets.TARGET_SNOWFLAKE_USER}}
       TARGET_SNOWFLAKE_PASSWORD: ${{secrets.TARGET_SNOWFLAKE_PASSWORD}}
       TARGET_SNOWFLAKE_ACCOUNT: ${{secrets.TARGET_SNOWFLAKE_ACCOUNT}}
@@ -21,12 +40,18 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-        - "3.8"
-        - "3.9"
-        - "3.10"
-        - "3.11"
         - "3.12"
-        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        - "3.11"
+        - "3.10"
+        - "3.9"
+        - "3.8"
+        os:
+        - ubuntu-latest
+        include:
+        - python-version: "3.12"
+          os: "macos-latest"
+        - python-version: "3.12"
+          os: "windows-latest"
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -38,7 +63,12 @@ jobs:
         pip install poetry
     - name: Install dependencies
       run: |
+        poetry env use python${{ matrix.python-version }}
         poetry install
     - name: Test with pytest
       run: |
         poetry run pytest -n auto
+    - uses: actions/upload-artifact@v4
+      with:
+        name: snowflake-logs-py${{ matrix.python-version }}-${{ matrix.os }}
+        path: snowflake.log
