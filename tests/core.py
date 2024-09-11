@@ -505,9 +505,7 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
-        result = connector.connection.execute(
-            f"select * from {table}",
-        )
+        result = connector.connection.execute(sa.text(f"select * from {table}"))
         assert result.rowcount == 1
         row = result.first()
         assert len(row) == 13, f"Row has unexpected length {len(row)}"
