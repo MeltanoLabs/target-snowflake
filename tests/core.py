@@ -471,7 +471,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
         connector.connection.execute(
-            f"""
+            sa.text(f"""
             CREATE OR REPLACE TABLE {table} (
                 ID VARCHAR(16777216),
                 COL_STR VARCHAR(16777216),
@@ -487,7 +487,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
                 _SDC_TABLE_VERSION NUMBER(38,0),
                 PRIMARY KEY (ID)
             )
-            """,
+            """),
         )
 
 
