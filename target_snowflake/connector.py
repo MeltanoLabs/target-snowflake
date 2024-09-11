@@ -477,7 +477,7 @@ class SnowflakeConnector(SQLConnector):
                 )
                 # sqlalchemy.text stripped a slash, which caused windows to fail so we used bound parameters instead
                 # See https://github.com/MeltanoLabs/target-snowflake/issues/87 for more information about this error
-                conn.execute(put_statement, file_uri=file_uri, **kwargs)
+                conn.execute(put_statement, {"file_uri": file_uri, **kwargs})
 
     def create_file_format(self, file_format: str) -> None:
         """Create a file format in the schema.
