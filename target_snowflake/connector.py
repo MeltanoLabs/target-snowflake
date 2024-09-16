@@ -192,11 +192,11 @@ class SnowflakeConnector(SQLConnector):
             connect_args=connect_args,
             echo=False,
         )
-        connection = engine.connect()
-        db_names = [db[1] for db in connection.execute(text("SHOW DATABASES;")).fetchall()]
-        if self.config["database"] not in db_names:
-            msg = f"Database '{self.config['database']}' does not exist or the user/role doesn't have access to it."
-            raise Exception(msg)  # noqa: TRY002
+        with engine.connect() as conn:
+            db_names = [db[1] for db in conn.execute(text("SHOW DATABASES;")).fetchall()]
+            if self.config["database"] not in db_names:
+                msg = f"Database '{self.config['database']}' does not exist or the user/role doesn't have access to it."
+                raise Exception(msg)  # noqa: TRY002
         return engine
 
     def prepare_column(
