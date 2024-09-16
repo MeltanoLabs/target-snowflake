@@ -38,6 +38,7 @@ jobs:
       TARGET_SNOWFLAKE_ROLE: ${{secrets.TARGET_SNOWFLAKE_ROLE}}
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         python-version:
         - "3.12"

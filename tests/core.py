@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
-import sqlalchemy
+import sqlalchemy as sa
 from singer_sdk.testing.suites import TestSuite
 from singer_sdk.testing.target_tests import (
     TargetArrayData,
@@ -33,7 +33,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
         result = connector.connection.execute(
-            f"select * from {table} order by 1",
+            sa.text(f"select * from {table} order by 1"),
         )
         assert result.rowcount == 4
         row = result.first()
@@ -45,7 +45,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
         assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
         table_schema = connector.get_table(table)
         expected_types = {
-            "id": sqlalchemy.DECIMAL,
+            "id": sa.DECIMAL,
             "fruits": sct.VARIANT,
             "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
             "_sdc_batched_at": sct.TIMESTAMP_NTZ,
@@ -69,8 +69,8 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
         table_schema = connector.get_table(table)
         expected_types = {
-            "id": sqlalchemy.VARCHAR,
-            "isdeleted": sqlalchemy.types.BOOLEAN,
+            "id": sa.VARCHAR,
+            "isdeleted": sa.types.BOOLEAN,
             "createddate": sct.TIMESTAMP_NTZ,
             "createdbyid": sct.STRING,
             "lastmodifieddate": sct.TIMESTAMP_NTZ,
@@ -79,8 +79,8 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
             "forecastingtypeid": sct.STRING,
             "forecastingitemcategory": sct.STRING,
             "displayposition": sct.NUMBER,
-            "isadjustable": sqlalchemy.types.BOOLEAN,
-            "isowneradjustable": sqlalchemy.types.BOOLEAN,
+            "isadjustable": sa.types.BOOLEAN,
+            "isowneradjustable": sa.types.BOOLEAN,
             "age": sct.NUMBER,
             "newcamelcasedattribute": sct.STRING,
             "_attribute_startswith_underscore": sct.STRING,
@@ -107,7 +107,7 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
         result = connector.connection.execute(
-            f"select * from {table} order by 1",
+            sa.text(f"select * from {table} order by 1"),
         )
         expected_value = {
             1: 100,
@@ -150,7 +150,7 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
         )
         connector.connection.execute(
-            f"select * from {table} order by 1",
+            sa.text(f"select * from {table} order by 1"),
         )
 
         table_schema = connector.get_table(table)
@@ -185,7 +185,7 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
                 f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             )
             connector.connection.execute(
-                f"select * from {table} order by 1",
+                sa.text(f"select * from {table} order by 1"),
             )
             # TODO: more assertions
 
@@ -241,7 +241,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
                 f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             )
             result = connector.connection.execute(
-                f"select * from {table} order by 1",
+                sa.text(f"select * from {table} order by 1"),
             )
             assert result.rowcount == 2
             row = result.first()
@@ -276,7 +276,7 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
         result = connector.connection.execute(
-            f"select * from {table} order by 1",
+            sa.text(f"select * from {table} order by 1"),
         )
         assert result.rowcount == 6
         row = result.first()
@@ -291,7 +291,7 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
             "id": sct.NUMBER,
             "a1": sct.DOUBLE,
             "a2": sct.STRING,
-            "a3": sqlalchemy.types.BOOLEAN,
+            "a3": sa.types.BOOLEAN,
             "a4": sct.VARIANT,
             "a5": sct.VARIANT,
             "a6": sct.NUMBER,
@@ -325,7 +325,7 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            sa.text(f"select * from {table}"),
         )
         assert result.rowcount == 2
         row = result.first()
@@ -347,7 +347,7 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            sa.text(f"select * from {table}"),
         )
         assert result.rowcount == 1
         row = result.first()
@@ -366,7 +366,7 @@ class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            sa.text(f"select * from {table}"),
         )
         assert result.rowcount == 1
         row = result.first()
@@ -400,7 +400,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         connector.connection.execute(
-            f"""
+            sa.text(f"""
             CREATE OR REPLACE TABLE {table} (
                 ID VARCHAR(16777216),
                 COL_STR VARCHAR(16777216),
@@ -416,14 +416,14 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
                 _SDC_TABLE_VERSION NUMBER(38,0),
                 PRIMARY KEY (ID)
             )
-            """,
+            """),
         )
 
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         result = connector.connection.execute(
-            f"select * from {table}",
+            sa.text(f"select * from {table}"),
         )
         assert result.rowcount == 1
         row = result.first()
@@ -438,7 +438,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         connector.connection.execute(
-            f"""
+            sa.text(f"""
             CREATE OR REPLACE TABLE {table} (
                 ID VARCHAR(16777216),
                 COL_STR VARCHAR(16777216),
@@ -454,7 +454,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
                 _SDC_TABLE_VERSION NUMBER(38,0),
                 PRIMARY KEY (ID)
             )
-            """,
+            """),
         )
 
 
@@ -471,7 +471,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
         connector.connection.execute(
-            f"""
+            sa.text(f"""
             CREATE OR REPLACE TABLE {table} (
                 ID VARCHAR(16777216),
                 COL_STR VARCHAR(16777216),
@@ -487,7 +487,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
                 _SDC_TABLE_VERSION NUMBER(38,0),
                 PRIMARY KEY (ID)
             )
-            """,
+            """),
         )
 
 
@@ -505,9 +505,7 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
-        result = connector.connection.execute(
-            f"select * from {table}",
-        )
+        result = connector.connection.execute(sa.text(f"select * from {table}"))
         assert result.rowcount == 1
         row = result.first()
         assert len(row) == 13, f"Row has unexpected length {len(row)}"
@@ -554,13 +552,13 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         # Seed the 2 columns from tap schema and an unused third column to assert explicit inserts are working
         connector.connection.execute(
-            f"""
+            sa.text(f"""
             CREATE OR REPLACE TABLE {table} (
                 COL1 VARCHAR(16777216),
                 COL3 TIMESTAMP_NTZ(9),
                 COL2 BOOLEAN
             )
-            """,
+            """),
         )
 
     @property

@@ -469,7 +469,7 @@ class SnowflakeConnector(SQLConnector):
             sync_id: The sync ID for the batch.
             files: The files containing records to upload.
         """
-        with self._connect() as conn:
+        with self._connect() as conn, conn.begin():
             for file_uri in files:
                 put_statement, kwargs = self._get_put_statement(
                     sync_id=sync_id,
@@ -477,7 +477,7 @@ class SnowflakeConnector(SQLConnector):
                 )
                 # sqlalchemy.text stripped a slash, which caused windows to fail so we used bound parameters instead
                 # See https://github.com/MeltanoLabs/target-snowflake/issues/87 for more information about this error
-                conn.execute(put_statement, file_uri=file_uri, **kwargs)
+                conn.execute(put_statement, {"file_uri": file_uri, **kwargs})
 
     def create_file_format(self, file_format: str) -> None:
         """Create a file format in the schema.
@@ -485,7 +485,7 @@ class SnowflakeConnector(SQLConnector):
         Args:
             file_format: The name of the file format.
         """
-        with self._connect() as conn:
+        with self._connect() as conn, conn.begin():
             file_format_statement, kwargs = self._get_file_format_statement(
                 file_format=file_format,
             )
@@ -510,7 +510,7 @@ class SnowflakeConnector(SQLConnector):
             schema: The schema of the data.
             key_properties: The primary key properties of the data.
         """
-        with self._connect() as conn:
+        with self._connect() as conn, conn.begin():
             merge_statement, kwargs = self._get_merge_from_stage_statement(
                 full_table_name=full_table_name,
                 schema=schema,
@@ -536,7 +536,7 @@ class SnowflakeConnector(SQLConnector):
             sync_id: The sync ID for the batch.
             file_format: The name of the file format.
         """
-        with self._connect() as conn:
+        with self._connect() as conn, conn.begin():
             copy_statement, kwargs = self._get_copy_statement(
                 full_table_name=full_table_name,
                 schema=schema,
@@ -552,7 +552,7 @@ class SnowflakeConnector(SQLConnector):
         Args:
             file_format: The name of the file format.
         """
-        with self._connect() as conn:
+        with self._connect() as conn, conn.begin():
             drop_statement, kwargs = self._get_drop_file_format_statement(
                 file_format=file_format,
             )
@@ -565,7 +565,7 @@ class SnowflakeConnector(SQLConnector):
         Args:
             sync_id: The sync ID for the batch.
         """
-        with self._connect() as conn:
+        with self._connect() as conn, conn.begin():
             remove_statement, kwargs = self._get_stage_files_remove_statement(
                 sync_id=sync_id,
             )
