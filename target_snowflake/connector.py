@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 from functools import cached_property
 from operator import contains, eq
 from pathlib import Path
@@ -63,6 +64,15 @@ class SnowflakeFullyQualifiedName(FullyQualifiedName):
 
     def prepare_part(self, part: str) -> str:
         return self.dialect.identifier_preparer.quote(part)
+
+
+class SnowflakeAuthMethod(Enum):
+    """Supported methods to authenticate to snowflake"""
+
+    BROWSER = 1
+    PASSWORD = 2
+    PRIVATE_KEY = 3
+    PRIVATE_KEY_PATH = 4
 
 
 class SnowflakeConnector(SQLConnector):
@@ -150,22 +160,25 @@ class SnowflakeConnector(SQLConnector):
         )
 
     @cached_property
-    def auth_method(self):
+    def auth_method(self) -> SnowflakeAuthMethod:
         """Validate & return the authentication method based on config."""
         if self.config.get("use_browser_authentication"):
-            return "browser_authentication"
+            return SnowflakeAuthMethod.BROWSER
 
         valid_auth_methods = {"private_key", "private_key_path", "password"}
         config_auth_methods = [x for x in self.config if x in valid_auth_methods]
-        if len(config_auth_methods) == 1:
-            return config_auth_methods[0]
-
-        msg = (
-            "Neither password nor private key was provided for "
-            "authentication. For password-less browser authentication via SSO, "
-            "set use_browser_authentication config option to True."
-        )
-        raise ConfigValidationError(msg)
+        if len(config_auth_methods) != 1:
+            msg = (
+                "Neither password nor private key was provided for "
+                "authentication. For password-less browser authentication via SSO, "
+                "set use_browser_authentication config option to True."
+            )
+            raise ConfigValidationError(msg)
+        if config_auth_methods[0] == "private_key":
+            return SnowflakeAuthMethod.PRIVATE_KEY
+        if config_auth_methods[0] == "private_key_path":
+            return SnowflakeAuthMethod.PRIVATE_KEY_PATH
+        return SnowflakeAuthMethod.PASSWORD
 
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
@@ -179,9 +192,9 @@ class SnowflakeConnector(SQLConnector):
             "database": config["database"],
         }
 
-        if self.auth_method == "browser_authentication":
+        if self.auth_method == SnowflakeAuthMethod.BROWSER:
             params["authenticator"] = "externalbrowser"
-        elif self.auth_method == "password":
+        elif self.auth_method == SnowflakeAuthMethod.PASSWORD:
             params["password"] = config["password"]
 
         for option in ["warehouse", "role"]:
@@ -209,7 +222,7 @@ class SnowflakeConnector(SQLConnector):
                 "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
             },
         }
-        if self.auth_method in ["private_key", "private_key_path"]:
+        if self.auth_method in [SnowflakeAuthMethod.PRIVATE_KEY, SnowflakeAuthMethod.PRIVATE_KEY_PATH]:
             connect_args["private_key"] = self.get_private_key()
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
