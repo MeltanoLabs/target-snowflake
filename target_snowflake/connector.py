@@ -71,8 +71,7 @@ class SnowflakeAuthMethod(Enum):
 
     BROWSER = 1
     PASSWORD = 2
-    PRIVATE_KEY = 3
-    PRIVATE_KEY_PATH = 4
+    KEY_PAIR = 3
 
 
 class SnowflakeConnector(SQLConnector):
@@ -174,10 +173,8 @@ class SnowflakeConnector(SQLConnector):
                 "set use_browser_authentication config option to True."
             )
             raise ConfigValidationError(msg)
-        if config_auth_methods[0] == "private_key":
-            return SnowflakeAuthMethod.PRIVATE_KEY
-        if config_auth_methods[0] == "private_key_path":
-            return SnowflakeAuthMethod.PRIVATE_KEY_PATH
+        if config_auth_methods[0] in ["private_key", "private_key_path"]:
+            return SnowflakeAuthMethod.KEY_PAIR
         return SnowflakeAuthMethod.PASSWORD
 
     def get_sqlalchemy_url(self, config: dict) -> str:
@@ -222,7 +219,7 @@ class SnowflakeConnector(SQLConnector):
                 "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
             },
         }
-        if self.auth_method in [SnowflakeAuthMethod.PRIVATE_KEY, SnowflakeAuthMethod.PRIVATE_KEY_PATH]:
+        if self.auth_method == SnowflakeAuthMethod.KEY_PAIR:
             connect_args["private_key"] = self.get_private_key()
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
