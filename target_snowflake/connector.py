@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from functools import cached_property
 from operator import contains, eq
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Sequence, cast
 
 import snowflake.sqlalchemy.custom_types as sct
@@ -10,6 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
 from singer_sdk.connectors.sql import FullyQualifiedName
+from singer_sdk.exceptions import ConfigValidationError
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
@@ -124,6 +127,46 @@ class SnowflakeConnector(SQLConnector):
 
         return sql_type
 
+    def get_private_key(self):
+        """Get private key from the right location."""
+        phrase = self.config.get("private_key_passphrase")
+        encoded_passphrase = phrase.encode() if phrase else None
+        if "private_key_path" in self.config:
+            with Path.open(self.config["private_key_path"], "rb") as key:
+                key_content = key.read()
+        else:
+            key_content = self.config["private_key"].encode()
+
+        p_key = serialization.load_pem_private_key(
+            key_content,
+            password=encoded_passphrase,
+            backend=default_backend(),
+        )
+
+        return p_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+
+    @cached_property
+    def auth_method(self):
+        """Validate & return the authentication method based on config."""
+        if self.config.get("use_browser_authentication"):
+            return "browser_authentication"
+
+        valid_auth_methods = {"private_key", "private_key_path", "password"}
+        config_auth_methods = [x for x in self.config if x in valid_auth_methods]
+        if len(config_auth_methods) == 1:
+            return config_auth_methods[0]
+
+        msg = (
+            "Neither password nor private key was provided for "
+            "authentication. For password-less browser authentication via SSO, "
+            "set use_browser_authentication config option to True."
+        )
+        raise ConfigValidationError(msg)
+
     def get_sqlalchemy_url(self, config: dict) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
 
@@ -136,17 +179,10 @@ class SnowflakeConnector(SQLConnector):
             "database": config["database"],
         }
 
-        if config.get("use_browser_authentication"):
+        if self.auth_method == "browser_authentication":
             params["authenticator"] = "externalbrowser"
-        elif "password" in config:
+        elif self.auth_method == "password":
             params["password"] = config["password"]
-        elif "private_key_path" not in config:
-            msg = (
-                "Neither password nor private_key_path was provided for "
-                "authentication. For password-less browser authentication via SSO, "
-                "set use_browser_authentication config option to True."
-            )
-            raise Exception(msg)  # noqa: TRY002
 
         for option in ["warehouse", "role"]:
             if config.get(option):
@@ -173,20 +209,8 @@ class SnowflakeConnector(SQLConnector):
                 "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
             },
         }
-        if "private_key_path" in self.config:
-            with open(self.config["private_key_path"], "rb") as private_key_file:  # noqa: PTH123
-                private_key = serialization.load_pem_private_key(
-                    private_key_file.read(),
-                    password=self.config["private_key_passphrase"].encode()
-                    if "private_key_passphrase" in self.config
-                    else None,
-                    backend=default_backend(),
-                )
-                connect_args["private_key"] = private_key.private_bytes(
-                    encoding=serialization.Encoding.DER,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption(),
-                )
+        if self.auth_method in ["private_key", "private_key_path"]:
+            connect_args["private_key"] = self.get_private_key()
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
             connect_args=connect_args,

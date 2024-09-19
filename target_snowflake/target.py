@@ -31,10 +31,23 @@ class TargetSnowflake(SQLTarget):
             description="The password for your Snowflake user.",
         ),
         th.Property(
+            "private_key",
+            th.StringType,
+            required=False,
+            secret=True,
+            description=(
+                "The private key contents. For KeyPair authentication either "
+                "private_key or private_key_path must be provided."
+            ),
+        ),
+        th.Property(
             "private_key_path",
             th.StringType,
             required=False,
-            description="Path to file containing private key.",
+            description=(
+                "Path to file containing private key. For KeyPair authentication either "
+                "private_key or private_key_path must be provided."
+            ),
         ),
         th.Property(
             "private_key_passphrase",
