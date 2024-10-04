@@ -553,7 +553,8 @@ class SnowflakeConnector(SQLConnector):
                 key_properties=key_properties,
             )
             self.logger.debug("Merging with SQL: %s", merge_statement)
-            conn.execute(merge_statement, **kwargs)
+            result = conn.execute(merge_statement, **kwargs)
+            return result.rowcount
 
     def copy_from_stage(
         self,
@@ -578,7 +579,8 @@ class SnowflakeConnector(SQLConnector):
                 file_format=file_format,
             )
             self.logger.debug("Copying with SQL: %s", copy_statement)
-            conn.execute(copy_statement, **kwargs)
+            result = conn.execute(copy_statement, **kwargs)
+            return result.rowcount
 
     def drop_file_format(self, file_format: str) -> None:
         """Drop a file format in the schema.

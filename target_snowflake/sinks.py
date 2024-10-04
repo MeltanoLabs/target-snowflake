@@ -171,7 +171,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         self,
         full_table_name: str,
         files: t.Sequence[str],
-    ) -> None:
+    ) -> int:
         """Process a batch file with the given batch context.
 
         Args:
@@ -190,7 +190,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
             if self.key_properties:
                 # merge into destination table
-                self.connector.merge_from_stage(
+                record_count = self.connector.merge_from_stage(
                     full_table_name=full_table_name,
                     schema=self.schema,
                     sync_id=sync_id,
@@ -199,7 +199,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                 )
 
             else:
-                self.connector.copy_from_stage(
+                record_count = self.connector.copy_from_stage(
                     full_table_name=full_table_name,
                     schema=self.schema,
                     sync_id=sync_id,
@@ -217,6 +217,8 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                     if os.path.exists(file_path):  # noqa: PTH110
                         os.remove(file_path)  # noqa: PTH107
 
+        return record_count
+
     def process_batch_files(
         self,
         encoding: BaseBatchFileEncoding,
@@ -232,7 +234,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             NotImplementedError: If the batch file encoding is not supported.
         """
         if encoding.format == BatchFileFormat.JSONL:
-            self.insert_batch_files_via_internal_stage(
+            record_count = self.insert_batch_files_via_internal_stage(
                 full_table_name=self.full_table_name,
                 files=files,
             )
@@ -241,6 +243,9 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             raise NotImplementedError(
                 msg,
             )
+
+        with self.record_counter_metric as counter:
+            counter.increment(record_count)
 
     # TODO: remove after https://github.com/meltano/sdk/issues/1819 is fixed
     def _singer_validate_message(self, record: dict) -> None:
