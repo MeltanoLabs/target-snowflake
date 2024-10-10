@@ -217,7 +217,7 @@ class SnowflakeConnector(SQLConnector):
         connect_args = {
             "session_parameters": {
                 "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
-                "client_session_keep_alive": "TRUE", # See https://github.com/snowflakedb/snowflake-connector-python/issues/218
+                "client_session_keep_alive": "TRUE",  # See https://github.com/snowflakedb/snowflake-connector-python/issues/218
             },
         }
         if self.auth_method == SnowflakeAuthMethod.KEY_PAIR:
