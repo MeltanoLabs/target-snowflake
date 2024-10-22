@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from enum import Enum
 from functools import cached_property
 from operator import contains, eq
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Sequence, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
