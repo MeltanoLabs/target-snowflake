@@ -266,8 +266,10 @@ class SnowflakeConnector(SQLConnector):
     def prepare_primary_key(self, *, full_table_name: str | FullyQualifiedName, primary_keys: Sequence[str]) -> None:
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
         meta = sa.MetaData(schema=schema_name)
-        meta.reflect(bind=self._engine, only=[table_name])
-        table = meta.tables[full_table_name]  # type: ignore[index]
+        table = sa.Table(table_name, meta, schema=schema_name)
+        inspector = sa.inspect(self._engine)
+        inspector.reflect_table(table, None)
+
         current_pk_cols = [col.name for col in table.primary_key.columns]
 
         # Nothing to do
