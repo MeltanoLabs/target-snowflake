@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
 from enum import Enum
 from functools import cached_property
 from operator import contains, eq
@@ -23,6 +22,8 @@ from sqlalchemy.sql import text
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     from sqlalchemy.engine import Engine
 
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
