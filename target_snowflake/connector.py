@@ -4,7 +4,7 @@ from enum import Enum
 from functools import cached_property
 from operator import contains, eq
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Sequence, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
@@ -22,6 +22,8 @@ from sqlalchemy.sql import text
 from target_snowflake.snowflake_types import NUMBER, TIMESTAMP_NTZ, VARIANT
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     from sqlalchemy.engine import Engine
 
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
