@@ -27,6 +27,7 @@ concurrency:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       SINGER_SDK_LOG_CONFIG: ./target_snowflake_logging.yaml
