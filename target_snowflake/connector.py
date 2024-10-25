@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import urllib.parse
 from enum import Enum
 from functools import cached_property
 from operator import contains, eq
@@ -194,7 +195,7 @@ class SnowflakeConnector(SQLConnector):
         if self.auth_method == SnowflakeAuthMethod.BROWSER:
             params["authenticator"] = "externalbrowser"
         elif self.auth_method == SnowflakeAuthMethod.PASSWORD:
-            params["password"] = config["password"]
+            params["password"] = urllib.parse.quote(config["password"])
 
         for option in ["warehouse", "role"]:
             if config.get(option):
