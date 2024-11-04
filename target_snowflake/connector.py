@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import snowflake.sqlalchemy.custom_types as sct
-import sqlalchemy
+import sqlalchemy as sa
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from singer_sdk import typing as th
@@ -98,7 +98,7 @@ class SnowflakeConnector(SQLConnector):
         self,
         full_table_name: str,
         column_names: list[str] | None = None,
-    ) -> dict[str, sqlalchemy.Column]:
+    ) -> dict[str, sa.Column]:
         """Return a list of table columns.
 
         Args:
@@ -111,11 +111,11 @@ class SnowflakeConnector(SQLConnector):
         if full_table_name in self.table_cache:
             return self.table_cache[full_table_name]
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-        inspector = sqlalchemy.inspect(self._engine)
+        inspector = sa.inspect(self._engine)
         columns = inspector.get_columns(table_name, schema_name)
 
         parsed_columns = {
-            col_meta["name"]: sqlalchemy.Column(
+            col_meta["name"]: sa.Column(
                 col_meta["name"],
                 self._convert_type(col_meta["type"]),
                 nullable=col_meta.get("nullable", False),
@@ -225,7 +225,7 @@ class SnowflakeConnector(SQLConnector):
         }
         if self.auth_method == SnowflakeAuthMethod.KEY_PAIR:
             connect_args["private_key"] = self.get_private_key()
-        engine = sqlalchemy.create_engine(
+        engine = sa.create_engine(
             self.sqlalchemy_url,
             connect_args=connect_args,
             echo=False,
@@ -241,7 +241,7 @@ class SnowflakeConnector(SQLConnector):
         self,
         full_table_name: str,
         column_name: str,
-        sql_type: sqlalchemy.types.TypeEngine,
+        sql_type: sa.types.TypeEngine,
     ) -> None:
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         # Make quoted column names upper case because we create them that way
@@ -264,12 +264,44 @@ class SnowflakeConnector(SQLConnector):
             )
             raise
 
+    def prepare_primary_key(self, *, full_table_name: str | FullyQualifiedName, primary_keys: Sequence[str]) -> None:
+        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
+        meta = sa.MetaData(schema=schema_name)
+        table = sa.Table(table_name, meta, schema=schema_name)
+        inspector = sa.inspect(self._engine)
+        inspector.reflect_table(table, None)
+
+        current_pk_cols = [col.name for col in table.primary_key.columns]
+
+        # Nothing to do
+        if current_pk_cols == primary_keys:
+            return
+
+        new_pk = sa.PrimaryKeyConstraint(*primary_keys)
+
+        # If table has no primary key, add the provided one
+        if not current_pk_cols:
+            with self._connect() as conn, conn.begin():
+                table.append_constraint(new_pk)
+                conn.execute(sa.schema.AddConstraint(new_pk).against(table))
+                return
+
+        # Drop the existing primary key
+        with self._connect() as conn, conn.begin():
+            conn.execute(sa.schema.DropConstraint(table.primary_key).against(table))
+
+        # Add the new primary key
+        if primary_keys:
+            with self._connect() as conn, conn.begin():
+                table.append_constraint(new_pk)
+                conn.execute(sa.schema.AddConstraint(new_pk).against(table))
+
     @staticmethod
     def get_column_rename_ddl(
         table_name: str,
         column_name: str,
         new_column_name: str,
-    ) -> sqlalchemy.DDL:
+    ) -> sa.DDL:
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         # Since we build the ddl manually we can't rely on SQLAlchemy to
         # quote column names automatically.
@@ -283,8 +315,8 @@ class SnowflakeConnector(SQLConnector):
     def get_column_alter_ddl(
         table_name: str,
         column_name: str,
-        column_type: sqlalchemy.types.TypeEngine,
-    ) -> sqlalchemy.DDL:
+        column_type: sa.types.TypeEngine,
+    ) -> sa.DDL:
         """Get the alter column DDL statement.
 
         Override this if your database uses a different syntax for altering columns.
@@ -300,7 +332,7 @@ class SnowflakeConnector(SQLConnector):
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         # Since we build the ddl manually we can't rely on SQLAlchemy to
         # quote column names automatically.
-        return sqlalchemy.DDL(
+        return sa.DDL(
             "ALTER TABLE %(table_name)s ALTER COLUMN %(column_name)s SET DATA TYPE %(column_type)s",
             {
                 "table_name": table_name,
@@ -318,7 +350,7 @@ class SnowflakeConnector(SQLConnector):
         return jsonschema_type
 
     @staticmethod
-    def to_sql_type(jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
+    def to_sql_type(jsonschema_type: dict) -> sa.types.TypeEngine:
         """Return a JSON Schema representation of the provided type.
 
         Uses custom Snowflake types from [snowflake-sqlalchemy](https://github.com/snowflakedb/snowflake-sqlalchemy/blob/main/src/snowflake/sqlalchemy/custom_types.py)
@@ -338,9 +370,9 @@ class SnowflakeConnector(SQLConnector):
         # define type maps
         string_submaps = [
             TypeMap(eq, TIMESTAMP_NTZ(), "date-time"),
-            TypeMap(contains, sqlalchemy.types.TIME(), "time"),
-            TypeMap(eq, sqlalchemy.types.DATE(), "date"),
-            TypeMap(eq, sqlalchemy.types.VARCHAR(maxlength), None),
+            TypeMap(contains, sa.types.TIME(), "time"),
+            TypeMap(eq, sa.types.DATE(), "date"),
+            TypeMap(eq, sa.types.VARCHAR(maxlength), None),
         ]
         type_maps = [
             TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),  # noqa: SLF001
@@ -355,12 +387,12 @@ class SnowflakeConnector(SQLConnector):
         else:
             target_type = evaluate_typemaps(type_maps, jsonschema_type, target_type)
 
-        return cast(sqlalchemy.types.TypeEngine, target_type)
+        return cast(sa.types.TypeEngine, target_type)
 
     def schema_exists(self, schema_name: str) -> bool:
         if schema_name in self.schema_cache:
             return True
-        schema_names = sqlalchemy.inspect(self._engine).get_schema_names()
+        schema_names = sa.inspect(self._engine).get_schema_names()
         self.schema_cache = schema_names
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         # Make quoted schema names upper case because we create them that way
@@ -665,7 +697,7 @@ class SnowflakeConnector(SQLConnector):
         self,
         full_table_name: str,
         column_name: str,
-        sql_type: sqlalchemy.types.TypeEngine,
+        sql_type: sa.types.TypeEngine,
     ) -> None:
         """Adapt table column type to support the new JSON schema type.
 
@@ -680,7 +712,7 @@ class SnowflakeConnector(SQLConnector):
         try:
             super()._adapt_column_type(full_table_name, column_name, sql_type)
         except Exception:
-            current_type: sqlalchemy.types.TypeEngine = self._get_column_type(
+            current_type: sa.types.TypeEngine = self._get_column_type(
                 full_table_name,
                 column_name,
             )

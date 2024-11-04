@@ -16,6 +16,7 @@ from singer_sdk.testing.target_tests import (
     TargetInvalidSchemaTest,
     TargetNoPrimaryKeys,
     TargetOptionalAttributes,
+    TargetPrimaryKeyUpdates,
     TargetRecordBeforeSchemaTest,
     TargetRecordMissingKeyProperty,
     TargetRecordMissingRequiredProperty,
@@ -581,6 +582,7 @@ target_tests = TestSuite(
         # TODO: Not available in the SDK yet
         # TargetMultipleStateMessages,
         TargetNoPrimaryKeys,  # Implicitly asserts no pk is handled
+        TargetPrimaryKeyUpdates,  # Implicitly asserts pk updates are handled
         TargetOptionalAttributes,  # Implicitly asserts nullable fields handled
         SnowflakeTargetRecordBeforeSchemaTest,
         SnowflakeTargetRecordMissingKeyProperty,
