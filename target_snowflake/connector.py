@@ -317,8 +317,7 @@ class SnowflakeConnector(SQLConnector):
             jsonschema_type["maxLength"] = SNOWFLAKE_MAX_STRING_LENGTH
         return jsonschema_type
 
-    @staticmethod
-    def to_sql_type(jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
+    def to_sql_type(self, jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
         """Return a JSON Schema representation of the provided type.
 
         Uses custom Snowflake types from [snowflake-sqlalchemy](https://github.com/snowflakedb/snowflake-sqlalchemy/blob/main/src/snowflake/sqlalchemy/custom_types.py)
@@ -331,7 +330,7 @@ class SnowflakeConnector(SQLConnector):
         """
         # start with default implementation
         jsonschema_type = SnowflakeConnector._conform_max_length(jsonschema_type)
-        target_type = SQLConnector.to_sql_type(jsonschema_type)
+        target_type = super().to_sql_type(jsonschema_type)
         # snowflake max and default varchar length
         # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
         maxlength = jsonschema_type.get("maxLength", SNOWFLAKE_MAX_STRING_LENGTH)
