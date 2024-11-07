@@ -22,7 +22,7 @@ snowflake-connector-python = { version = "<4.0.0", extras = ["secure-local-stora
 sqlalchemy = "~=2.0.31"
 
 [tool.poetry.dependencies.singer-sdk]
-version = "~=0.41.0"
+version = "~=0.42.0b1"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=7.2.7"
@@ -30,7 +30,7 @@ pytest = ">=7.4.3"
 pytest-xdist = ">=3.3.1"
 
 [tool.poetry.group.dev.dependencies.singer-sdk]
-version="~=0.41.0"
+version="~=0.42.0b1"
 extras = ["testing"]
 
 [tool.ruff]
