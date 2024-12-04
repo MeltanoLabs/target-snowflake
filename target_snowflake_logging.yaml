@@ -11,5 +11,5 @@ handlers:
     filename: snowflake.log
 loggers:
   snowflake.connector:
-#     level: DEBUG
+    level: DEBUG
     handlers: [ snowflake ]
