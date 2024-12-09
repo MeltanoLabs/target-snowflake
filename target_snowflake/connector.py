@@ -89,6 +89,8 @@ class SnowflakeConnector(SQLConnector):
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
 
+    max_varchar_length = SNOWFLAKE_MAX_STRING_LENGTH
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.table_cache: dict = {}
         self.schema_cache: dict = {}
@@ -309,14 +311,6 @@ class SnowflakeConnector(SQLConnector):
             },
         )
 
-    @staticmethod
-    def _conform_max_length(jsonschema_type):  # noqa: ANN205, ANN001
-        """Alter jsonschema representations to limit max length to Snowflake's VARCHAR length."""
-        max_length = jsonschema_type.get("maxLength")
-        if max_length and max_length > SNOWFLAKE_MAX_STRING_LENGTH:
-            jsonschema_type["maxLength"] = SNOWFLAKE_MAX_STRING_LENGTH
-        return jsonschema_type
-
     def to_sql_type(self, jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
         """Return a JSON Schema representation of the provided type.
 
@@ -329,7 +323,6 @@ class SnowflakeConnector(SQLConnector):
             The SQLAlchemy type representation of the data type.
         """
         # start with default implementation
-        jsonschema_type = SnowflakeConnector._conform_max_length(jsonschema_type)
         target_type = super().to_sql_type(jsonschema_type)
         # snowflake max and default varchar length
         # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
