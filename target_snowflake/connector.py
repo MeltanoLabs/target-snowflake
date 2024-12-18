@@ -3,7 +3,7 @@ from __future__ import annotations
 import urllib.parse
 from enum import Enum
 from functools import cached_property
-from operator import contains, eq
+from operator import eq
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -13,7 +13,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from singer_sdk import typing as th
 from singer_sdk.connectors import SQLConnector
-from singer_sdk.connectors.sql import FullyQualifiedName
+from singer_sdk.connectors.sql import FullyQualifiedName, JSONSchemaToSQL
 from singer_sdk.exceptions import ConfigValidationError
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.engine import Engine
 
+# TODO: Remove this when when JSON schema to SQL is stable
 SNOWFLAKE_MAX_STRING_LENGTH = 16777216
 
 
@@ -88,6 +89,8 @@ class SnowflakeConnector(SQLConnector):
     allow_column_alter: bool = True  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
+
+    max_varchar_length = 16_777_216
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.table_cache: dict = {}
@@ -317,6 +320,16 @@ class SnowflakeConnector(SQLConnector):
             jsonschema_type["maxLength"] = SNOWFLAKE_MAX_STRING_LENGTH
         return jsonschema_type
 
+    @cached_property
+    def jsonschema_to_sql(self) -> JSONSchemaToSQL:
+        to_sql = super().jsonschema_to_sql
+        to_sql.register_type_handler("integer", NUMBER)
+        to_sql.register_type_handler("object", VARIANT)
+        to_sql.register_type_handler("array", VARIANT)
+        to_sql.register_type_handler("number", sct.DOUBLE)
+        to_sql.register_format_handler("date-time", TIMESTAMP_NTZ)
+        return to_sql
+
     def to_sql_type(self, jsonschema_type: dict) -> sqlalchemy.types.TypeEngine:
         """Return a JSON Schema representation of the provided type.
 
@@ -336,23 +349,12 @@ class SnowflakeConnector(SQLConnector):
         maxlength = jsonschema_type.get("maxLength", SNOWFLAKE_MAX_STRING_LENGTH)
         # define type maps
         string_submaps = [
-            TypeMap(eq, TIMESTAMP_NTZ(), "date-time"),
-            TypeMap(contains, sqlalchemy.types.TIME(), "time"),
-            TypeMap(eq, sqlalchemy.types.DATE(), "date"),
             TypeMap(eq, sqlalchemy.types.VARCHAR(maxlength), None),
-        ]
-        type_maps = [
-            TypeMap(th._jsonschema_type_check, NUMBER(), ("integer",)),  # noqa: SLF001
-            TypeMap(th._jsonschema_type_check, VARIANT(), ("object",)),  # noqa: SLF001
-            TypeMap(th._jsonschema_type_check, VARIANT(), ("array",)),  # noqa: SLF001
-            TypeMap(th._jsonschema_type_check, sct.DOUBLE(), ("number",)),  # noqa: SLF001
         ]
         # apply type maps
         if th._jsonschema_type_check(jsonschema_type, ("string",)):  # noqa: SLF001
             datelike_type = th.get_datelike_property_type(jsonschema_type)
             target_type = evaluate_typemaps(string_submaps, datelike_type, target_type)
-        else:
-            target_type = evaluate_typemaps(type_maps, jsonschema_type, target_type)
 
         return cast(sqlalchemy.types.TypeEngine, target_type)
 
