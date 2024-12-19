@@ -586,7 +586,7 @@ target_tests = TestSuite(
         SnowflakeTargetRecordMissingKeyProperty,
         SnowflakeTargetRecordMissingRequiredProperty,
         SnowflakeTargetSchemaNoProperties,
-        # SnowflakeTargetSchemaUpdates,
+        SnowflakeTargetSchemaUpdates,
         TargetSpecialCharsInAttributes,  # Implicitly asserts special chars handled
         SnowflakeTargetReservedWords,
         SnowflakeTargetReservedWordsNoKeyProps,
