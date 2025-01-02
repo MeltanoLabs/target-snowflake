@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy as sa
+from requests.structures import CaseInsensitiveDict
 from singer_sdk.testing.suites import TestSuite
 from singer_sdk.testing.target_tests import (
     TargetArrayData,
@@ -44,17 +45,19 @@ class SnowflakeTargetArrayData(TargetArrayData):
 
         assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
         table_schema = connector.get_table(table)
-        expected_types = {
-            "id": sa.DECIMAL,
-            "fruits": sct.VARIANT,
-            "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_batched_at": sct.TIMESTAMP_NTZ,
-            "_sdc_received_at": sct.TIMESTAMP_NTZ,
-            "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_sync_started_at": sct.NUMBER,
-            "_sdc_table_version": sct.NUMBER,
-            "_sdc_sequence": sct.NUMBER,
-        }
+        expected_types = CaseInsensitiveDict(
+            {
+                "id": sa.DECIMAL,
+                "fruits": sct.VARIANT,
+                "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+                "_sdc_received_at": sct.TIMESTAMP_NTZ,
+                "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_sync_started_at": sct.NUMBER,
+                "_sdc_table_version": sct.NUMBER,
+                "_sdc_sequence": sct.NUMBER,
+            },
+        )
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
             assert isinstance(
@@ -68,30 +71,32 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
         table_schema = connector.get_table(table)
-        expected_types = {
-            "id": sa.VARCHAR,
-            "isdeleted": sa.types.BOOLEAN,
-            "createddate": sct.TIMESTAMP_NTZ,
-            "createdbyid": sct.STRING,
-            "lastmodifieddate": sct.TIMESTAMP_NTZ,
-            "lastmodifiedbyid": sct.STRING,
-            "systemmodstamp": sct.TIMESTAMP_NTZ,
-            "forecastingtypeid": sct.STRING,
-            "forecastingitemcategory": sct.STRING,
-            "displayposition": sct.NUMBER,
-            "isadjustable": sa.types.BOOLEAN,
-            "isowneradjustable": sa.types.BOOLEAN,
-            "age": sct.NUMBER,
-            "newcamelcasedattribute": sct.STRING,
-            "_attribute_startswith_underscore": sct.STRING,
-            "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_batched_at": sct.TIMESTAMP_NTZ,
-            "_sdc_received_at": sct.TIMESTAMP_NTZ,
-            "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_sync_started_at": sct.NUMBER,
-            "_sdc_table_version": sct.NUMBER,
-            "_sdc_sequence": sct.NUMBER,
-        }
+        expected_types = CaseInsensitiveDict(
+            {
+                "id": sa.VARCHAR,
+                "isdeleted": sa.types.BOOLEAN,
+                "createddate": sct.TIMESTAMP_NTZ,
+                "createdbyid": sct.STRING,
+                "lastmodifieddate": sct.TIMESTAMP_NTZ,
+                "lastmodifiedbyid": sct.STRING,
+                "systemmodstamp": sct.TIMESTAMP_NTZ,
+                "forecastingtypeid": sct.STRING,
+                "forecastingitemcategory": sct.STRING,
+                "displayposition": sct.NUMBER,
+                "isadjustable": sa.types.BOOLEAN,
+                "isowneradjustable": sa.types.BOOLEAN,
+                "age": sct.NUMBER,
+                "newcamelcasedattribute": sct.STRING,
+                "_attribute_startswith_underscore": sct.STRING,
+                "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+                "_sdc_received_at": sct.TIMESTAMP_NTZ,
+                "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_sync_started_at": sct.NUMBER,
+                "_sdc_table_version": sct.NUMBER,
+                "_sdc_sequence": sct.NUMBER,
+            },
+        )
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
             assert isinstance(
@@ -120,17 +125,19 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
             assert expected_value.get(row[0]) == row[1]
 
         table_schema = connector.get_table(table)
-        expected_types = {
-            "id": sct.NUMBER,
-            "metric": sct.NUMBER,
-            "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_batched_at": sct.TIMESTAMP_NTZ,
-            "_sdc_received_at": sct.TIMESTAMP_NTZ,
-            "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_sync_started_at": sct.NUMBER,
-            "_sdc_table_version": sct.NUMBER,
-            "_sdc_sequence": sct.NUMBER,
-        }
+        expected_types = CaseInsensitiveDict(
+            {
+                "id": sct.NUMBER,
+                "metric": sct.NUMBER,
+                "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+                "_sdc_received_at": sct.TIMESTAMP_NTZ,
+                "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_sync_started_at": sct.NUMBER,
+                "_sdc_table_version": sct.NUMBER,
+                "_sdc_sequence": sct.NUMBER,
+            },
+        )
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
             assert isinstance(
@@ -154,17 +161,19 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
         )
 
         table_schema = connector.get_table(table)
-        expected_types = {
-            "id": sct.STRING,
-            "clientname": sct.STRING,
-            "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_batched_at": sct.TIMESTAMP_NTZ,
-            "_sdc_received_at": sct.TIMESTAMP_NTZ,
-            "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_sync_started_at": sct.NUMBER,
-            "_sdc_table_version": sct.NUMBER,
-            "_sdc_sequence": sct.NUMBER,
-        }
+        expected_types = CaseInsensitiveDict(
+            {
+                "id": sct.STRING,
+                "clientname": sct.STRING,
+                "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+                "_sdc_received_at": sct.TIMESTAMP_NTZ,
+                "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_sync_started_at": sct.NUMBER,
+                "_sdc_table_version": sct.NUMBER,
+                "_sdc_sequence": sct.NUMBER,
+            },
+        )
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
             assert isinstance(
@@ -251,16 +260,18 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
                 assert len(row) == 1, f"Row has unexpected length {len(row)}"
 
             table_schema = connector.get_table(table)
-            expected_types = {
-                "object_store": sct.VARIANT,
-                "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
-                "_sdc_batched_at": sct.TIMESTAMP_NTZ,
-                "_sdc_received_at": sct.TIMESTAMP_NTZ,
-                "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
-                "_sdc_sync_started_at": sct.NUMBER,
-                "_sdc_table_version": sct.NUMBER,
-                "_sdc_sequence": sct.NUMBER,
-            }
+            expected_types = CaseInsensitiveDict(
+                {
+                    "object_store": sct.VARIANT,
+                    "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+                    "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+                    "_sdc_received_at": sct.TIMESTAMP_NTZ,
+                    "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                    "_sdc_sync_started_at": sct.NUMBER,
+                    "_sdc_table_version": sct.NUMBER,
+                    "_sdc_sequence": sct.NUMBER,
+                },
+            )
             for column in table_schema.columns:
                 assert column.name in expected_types, f"Column {column.name} not found in expected types"
                 assert isinstance(
@@ -287,21 +298,23 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
             assert len(row) == 7, f"Row has unexpected length {len(row)}"
 
         table_schema = connector.get_table(table)
-        expected_types = {
-            "id": sct.NUMBER,
-            "a1": sct.DOUBLE,
-            "a2": sct.STRING,
-            "a3": sa.types.BOOLEAN,
-            "a4": sct.VARIANT,
-            "a5": sct.VARIANT,
-            "a6": sct.NUMBER,
-            "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_batched_at": sct.TIMESTAMP_NTZ,
-            "_sdc_received_at": sct.TIMESTAMP_NTZ,
-            "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_table_version": sct.NUMBER,
-            "_sdc_sequence": sct.NUMBER,
-        }
+        expected_types = CaseInsensitiveDict(
+            {
+                "id": sct.NUMBER,
+                "a1": sct.DOUBLE,
+                "a2": sct.STRING,
+                "a3": sa.types.BOOLEAN,
+                "a4": sct.VARIANT,
+                "a5": sct.VARIANT,
+                "a6": sct.NUMBER,
+                "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+                "_sdc_received_at": sct.TIMESTAMP_NTZ,
+                "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_table_version": sct.NUMBER,
+                "_sdc_sequence": sct.NUMBER,
+            },
+        )
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
             assert isinstance(
@@ -523,19 +536,21 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         table_schema = connector.get_table(table)
-        expected_types = {
-            "id": sct.NUMBER,
-            "col_max_length_str": sct.STRING,
-            "col_multiple_of": sct.DOUBLE,
-            "col_multiple_of_int": sct.DOUBLE,
-            "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_batched_at": sct.TIMESTAMP_NTZ,
-            "_sdc_received_at": sct.TIMESTAMP_NTZ,
-            "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
-            "_sdc_sync_started_at": sct.NUMBER,
-            "_sdc_table_version": sct.NUMBER,
-            "_sdc_sequence": sct.NUMBER,
-        }
+        expected_types = CaseInsensitiveDict(
+            {
+                "id": sct.NUMBER,
+                "col_max_length_str": sct.STRING,
+                "col_multiple_of": sct.DOUBLE,
+                "col_multiple_of_int": sct.DOUBLE,
+                "_sdc_extracted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_batched_at": sct.TIMESTAMP_NTZ,
+                "_sdc_received_at": sct.TIMESTAMP_NTZ,
+                "_sdc_deleted_at": sct.TIMESTAMP_NTZ,
+                "_sdc_sync_started_at": sct.NUMBER,
+                "_sdc_table_version": sct.NUMBER,
+                "_sdc_sequence": sct.NUMBER,
+            },
+        )
         for column in table_schema.columns:
             assert column.name in expected_types, f"Column {column.name} not found in expected types"
             assert isinstance(

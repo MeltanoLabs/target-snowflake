@@ -28,6 +28,7 @@ version = "~=0.43.0"
 coverage = ">=7.2.7"
 pytest = ">=7.4.3"
 pytest-xdist = ">=3.3.1"
+requests = ">=2.32.3"
 
 [tool.poetry.group.dev.dependencies.singer-sdk]
 version="~=0.43.0"
