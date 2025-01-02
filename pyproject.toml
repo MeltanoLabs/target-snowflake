@@ -16,8 +16,8 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-cryptography = ">=40,<44"
-snowflake-sqlalchemy = "~=1.7.0"
+cryptography = ">=40"
+snowflake-sqlalchemy = "==1.7.1"
 snowflake-connector-python = { version = "<4.0.0", extras = ["secure-local-storage"] }
 sqlalchemy = "~=2.0.31"
 
@@ -40,8 +40,6 @@ target-version = "py39"
 
 [tool.ruff.lint]
 ignore = [
-    "ANN101",  # missing-type-self
-    "ANN102",  # missing-type-cls
     "ANN201",
     "TD",
     "D",
