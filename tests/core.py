@@ -469,7 +469,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
 
     def setup(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
+        table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
         connector.connection.execute(
             sa.text(f"""
             CREATE OR REPLACE TABLE {table} (
@@ -504,7 +504,7 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
 
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
-        table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.\"order\"".upper()
+        table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
         result = connector.connection.execute(sa.text(f"select * from {table}"))
         assert result.rowcount == 1
         row = result.first()
