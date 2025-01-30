@@ -1454,14 +1454,12 @@ files = [
 
 [[package]]
 name = "singer-sdk"
-version = "0.43.1"
+version = "0.44.0.post4.dev0+a4f663e5"
 description = "A framework for building Singer taps"
 optional = false
 python-versions = ">=3.9"
-files = [
-    {file = "singer_sdk-0.43.1-py3-none-any.whl", hash = "sha256:bd03da661317907b26db6806f1adb2a365c6183889f981602a405f8f784aa1ba"},
-    {file = "singer_sdk-0.43.1.tar.gz", hash = "sha256:4941208e95bde7865943b06677536aee316a755b5b3b7af0a6ef7717454e8645"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 backoff = {version = ">=2.0.0", markers = "python_version < \"4\""}
@@ -1476,7 +1474,7 @@ joblib = ">=1.3.0"
 jsonpath-ng = ">=1.5.3"
 jsonschema = ">=4.16.0"
 packaging = ">=23.1"
-pytest = {version = ">=7.2.1", optional = true, markers = "extra == \"docs\" or extra == \"testing\""}
+pytest = {version = ">=7.2.1", optional = true, markers = "extra == \"testing\""}
 python-dotenv = ">=0.20"
 PyYAML = ">=6.0"
 referencing = ">=0.30.0"
@@ -1486,6 +1484,10 @@ simpleeval = ">=0.9.13,<1.0.1 || >1.0.1"
 simplejson = ">=3.17.6"
 sqlalchemy = ">=1.4,<3.0"
 typing-extensions = ">=4.5.0"
+urllib3 = [
+    {version = "<2", markers = "python_version < \"3.10\""},
+    {version = "*", markers = "python_version >= \"3.10\""},
+]
 
 [package.extras]
 docs = ["furo (>=2024.5.6)", "myst-parser (>=3)", "pytest (>=7.2.1)", "sphinx (>=7)", "sphinx-copybutton (>=0.5.2)", "sphinx-inline-tabs (>=2023.4.21)", "sphinx-notfound-page (>=1.0.0)", "sphinx-reredirects (>=0.1.5)"]
@@ -1495,6 +1497,12 @@ parquet = ["numpy (>=1.22)", "numpy (>=1.22,<2.1)", "pyarrow (>=13)"]
 s3 = ["fs-s3fs (>=1.1.1)", "s3fs (>=2024.9.0)"]
 ssh = ["paramiko (>=3.3.0)"]
 testing = ["pytest (>=7.2.1)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/meltano/sdk.git"
+reference = "HEAD"
+resolved_reference = "a4f663e5cbf8c435771b766a464c84113036a44b"
 
 [[package]]
 name = "six"
@@ -1793,4 +1801,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9"
-content-hash = "5677f85dad263ad3ba9530124c2fd998fffcf4ff43063c4a51fa36cef1d61679"
+content-hash = "e81a7cd31ed450dfcc92470a17b9a7677d7850ffa86e027526cc8ca6a5213073"
