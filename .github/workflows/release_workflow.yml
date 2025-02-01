@@ -40,4 +40,4 @@ jobs:
         overwrite: true
         file_glob: true
     - name: Publish
-      uses: pypa/gh-action-pypi-publish@v1.12.3
+      uses: pypa/gh-action-pypi-publish@v1.12.4
