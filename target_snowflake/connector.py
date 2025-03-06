@@ -120,8 +120,13 @@ class SnowflakeConnector(SQLConnector):
         phrase = self.config.get("private_key_passphrase")
         encoded_passphrase = phrase.encode() if phrase else None
         if "private_key_path" in self.config:
-            with Path(self.config["private_key_path"]).open("rb") as key:
-                key_content = key.read()
+            self.logger.debug("Reading private key from file: %s", self.config["private_key_path"])
+            key_path = Path(self.config["private_key_path"])
+            if not key_path.is_file():
+                error_message = f"Private key file not found: {key_path}"
+                raise FileNotFoundError(error_message)
+            with key_path.open("rb") as key_file:
+                key_content = key_file.read()
         else:
             key_content = self.config["private_key"].encode()
 
