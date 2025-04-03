@@ -16,7 +16,6 @@ from cryptography.hazmat.primitives import serialization
 from singer_sdk.connectors import SQLConnector
 from singer_sdk.connectors.sql import FullyQualifiedName, JSONSchemaToSQL
 from singer_sdk.exceptions import ConfigValidationError
-from singer_sdk.helpers._compat import SingerSDKDeprecationWarning
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
@@ -137,7 +136,7 @@ class SnowflakeConnector(SQLConnector):
             if "-----BEGIN " in private_key:
                 warn(
                     "Use base64 encoded private key instead of PEM format. ",
-                    SingerSDKDeprecationWarning,
+                    DeprecationWarning,
                     stacklevel=2,
                 )
                 self.logger.info("Private key is in PEM format.")
