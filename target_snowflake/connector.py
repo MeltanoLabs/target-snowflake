@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import urllib.parse
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from warnings import warn
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
@@ -128,8 +131,23 @@ class SnowflakeConnector(SQLConnector):
             with key_path.open("rb") as key_file:
                 key_content = key_file.read()
         else:
-            key_content = self.config["private_key"].encode()
-
+            private_key = self.config["private_key"]
+            self.logger.debug("Reading private key from config")
+            if "-----BEGIN " in private_key:
+                warn(
+                    "Use base64 encoded private key instead of PEM format",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                self.logger.info("Private key is in PEM format")
+                key_content = private_key.encode()
+            else:
+                try:
+                    self.logger.debug("Private key is in base64 format")
+                    key_content = base64.b64decode(private_key)
+                except binascii.Error as e:
+                    error_message = f"Invalid private key format: {e}"
+                    raise ValueError(error_message) from e
         p_key = serialization.load_pem_private_key(
             key_content,
             password=encoded_passphrase,
