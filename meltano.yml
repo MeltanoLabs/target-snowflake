@@ -1,92 +1,18 @@
 version: 1
 send_anonymous_usage_stats: true
-project_id: "target-snowflake"
+project_id: target-snowflake
+default_environment: dev
+environments:
+- name: dev
 plugins:
-  extractors: []
   loaders:
-  - name: "target-snowflake"
-    namespace: "target_snowflake"
+  - name: target-snowflake
+    namespace: target_snowflake
     pip_url: -e .
     capabilities:
     - about
     - schema-flattening
     - stream-maps
-    config:
-      start_date: '2010-01-01T00:00:00Z'
-    settings:
-    - description: Your account identifier. See [Account Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html).
-      kind: string
-      label: Account
-      name: account
-    - description: Whether to add metadata columns.
-      kind: boolean
-      label: Add Record Metadata
-      name: add_record_metadata
-      value: true
-    - description: Whether to remove batch files after processing.
-      kind: boolean
-      label: Clean Up Batch Files
-      name: clean_up_batch_files
-      value: true
-    - description: The initial database for the Snowflake session.
-      kind: string
-      label: Database
-      name: database
-    - description: The default target database schema name to use for all streams.
-      kind: string
-      label: Default Target Schema
-      name: default_target_schema
-    - description: "'True' to enable schema flattening and automatically expand nested\
-        \ properties."
-      kind: boolean
-      label: Flattening Enabled
-      name: flattening_enabled
-    - description: The max depth to flatten schemas.
-      kind: integer
-      label: Flattening Max Depth
-      name: flattening_max_depth
-    - description: The password for your Snowflake user.
-      kind: password
-      label: Password
-      name: password
-    - description: Path to file containing private key
-      kind: string
-      label: Private Key Path
-      name: private_key_path
-    - description: Passphrase to decrypt private key if encrypted
-      label: Private Key Passphrase
-      kind: password
-      name: private_key_passphrase
-    - description: The initial role for the session.
-      kind: string
-      label: Role
-      name: role
-    - description: The initial schema for the Snowflake session.
-      kind: string
-      label: Schema
-      name: schema
-    - description: User-defined config values to be used within map expressions.
-      kind: object
-      label: Stream Map Config
-      name: stream_map_config
-    - description: Config object for stream maps capability. For more information check
-        out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html).
-      kind: object
-      label: Stream Maps
-      name: stream_maps
-    - description: If browser based SSO authentication should be used. See [SSO browser authentication](https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate#using-single-sign-on-sso-through-a-web-browser).
-      kind: boolean
-      label: Use browser authentication
-      name: use_browser_authentication
-      value: false
-    - description: The login name for your Snowflake user.
-      kind: string
-      label: User
-      name: user
-    - description: The initial warehouse for the session.
-      kind: string
-      label: Warehouse
-      name: warehouse
     settings_group_validation:
     - - account
       - database
@@ -98,5 +24,91 @@ plugins:
       - user
     - - account
       - database
+      - private_key
+      - user
+    - - account
+      - database
       - use_browser_authentication
       - user
+    settings:
+    - name: account
+      kind: string
+      label: Account
+      description: Your account identifier. See [Account
+        Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html).
+    - name: add_record_metadata
+      kind: boolean
+      value: true
+      label: Add Record Metadata
+      description: Whether to add metadata columns.
+    - name: clean_up_batch_files
+      kind: boolean
+      value: true
+      label: Clean Up Batch Files
+      description: Whether to remove batch files after processing.
+    - name: database
+      kind: string
+      label: Database
+      description: The initial database for the Snowflake session.
+    - name: default_target_schema
+      kind: string
+      label: Default Target Schema
+      description: The default target database schema name to use for all streams.
+    - name: flattening_enabled
+      kind: boolean
+      label: Flattening Enabled
+      description: "'True' to enable schema flattening and automatically expand nested
+        properties."
+    - name: flattening_max_depth
+      kind: integer
+      label: Flattening Max Depth
+      description: The max depth to flatten schemas.
+    - name: password
+      kind: string
+      label: Password
+      description: The password for your Snowflake user.
+      sensitive: true
+    - name: private_key_path
+      kind: string
+      label: Private Key Path
+      description: Path to file containing private key
+    - name: private_key
+      kind: string
+      label: Private Key
+      description: The private key for your Snowflake user.
+    - name: private_key_passphrase
+      kind: string
+      label: Private Key Passphrase
+      description: Passphrase to decrypt private key if encrypted
+      sensitive: true
+    - name: role
+      kind: string
+      label: Role
+      description: The initial role for the session.
+    - name: schema
+      kind: string
+      label: Schema
+      description: The initial schema for the Snowflake session.
+    - name: stream_map_config
+      kind: object
+      label: Stream Map Config
+      description: User-defined config values to be used within map expressions.
+    - name: stream_maps
+      kind: object
+      label: Stream Maps
+      description: Config object for stream maps capability. For more information
+        check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html).
+    - name: use_browser_authentication
+      kind: boolean
+      value: false
+      label: Use browser authentication
+      description: If browser based SSO authentication should be used. See [SSO browser
+        authentication](https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate#using-single-sign-on-sso-through-a-web-browser).
+    - name: user
+      kind: string
+      label: User
+      description: The login name for your Snowflake user.
+    - name: warehouse
+      kind: string
+      label: Warehouse
+      description: The initial warehouse for the session.
