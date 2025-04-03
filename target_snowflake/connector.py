@@ -132,7 +132,7 @@ class SnowflakeConnector(SQLConnector):
                 key_content = key_file.read()
         else:
             private_key = self.config["private_key"]
-            self.logger.debug("Reading private key from config: %s", private_key)
+            self.logger.debug("Reading private key from config.")
             if "-----BEGIN " in private_key:
                 warn(
                     "Use base64 encoded private key instead of PEM format",
