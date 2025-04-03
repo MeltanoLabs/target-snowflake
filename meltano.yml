@@ -1,6 +1,9 @@
 version: 1
 send_anonymous_usage_stats: true
 project_id: "target-snowflake"
+default_environment: dev
+environments:
+  - name: dev
 plugins:
   extractors: []
   loaders:
@@ -11,8 +14,6 @@ plugins:
     - about
     - schema-flattening
     - stream-maps
-    config:
-      start_date: '2010-01-01T00:00:00Z'
     settings:
     - description: Your account identifier. See [Account Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html).
       kind: string
@@ -53,6 +54,10 @@ plugins:
       kind: string
       label: Private Key Path
       name: private_key_path
+    - description: The private key for your Snowflake user.
+      kind: string
+      label: Private Key
+      name: private_key
     - description: Passphrase to decrypt private key if encrypted
       label: Private Key Passphrase
       kind: password
