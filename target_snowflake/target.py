@@ -36,8 +36,9 @@ class TargetSnowflake(SQLTarget):
             required=False,
             secret=True,
             description=(
-                "The private key contents. For KeyPair authentication either "
-                "private_key or private_key_path must be provided."
+                "The private key contents, in PEM or base64-encoding format. "
+                "For KeyPair authentication either `private_key` or `private_key_path` "
+                "must be provided."
             ),
         ),
         th.Property(
