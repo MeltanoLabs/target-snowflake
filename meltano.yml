@@ -34,7 +34,7 @@ plugins:
     - name: account
       kind: string
       label: Account
-      description: Your account identifier. See [Account 
+      description: Your account identifier. See [Account
         Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html).
     - name: add_record_metadata
       kind: boolean
