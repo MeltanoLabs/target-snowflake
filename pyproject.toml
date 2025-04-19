@@ -41,6 +41,7 @@ target-version = "py39"
 [tool.ruff.lint]
 ignore = [
     "ANN201",
+    "COM812",
     "TD",
     "D",
     "FIX",
