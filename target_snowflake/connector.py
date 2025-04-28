@@ -46,6 +46,14 @@ class SnowflakeFullyQualifiedName(FullyQualifiedName):
         return self.dialect.identifier_preparer.quote(part)
 
 
+class JSONSchemaToSnowflake(JSONSchemaToSQL):
+    def handle_multiple_types(self, types: Sequence[str]) -> sqlalchemy.types.TypeEngine:
+        if "object" in types or "array" in types:
+            return VARIANT()
+
+        return super().handle_multiple_types(types)
+
+
 class SnowflakeAuthMethod(Enum):
     """Supported methods to authenticate to snowflake"""
 
@@ -67,6 +75,7 @@ class SnowflakeConnector(SQLConnector):
     allow_temp_tables: bool = True  # Whether temp tables are supported.
 
     max_varchar_length = 16_777_216
+    jsonschema_to_sql_converter = JSONSchemaToSnowflake
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.table_cache: dict = {}
