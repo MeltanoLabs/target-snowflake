@@ -16,7 +16,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-certifi = "2025.1.31"  # See https://github.com/certifi/python-certifi/issues/349
+certifi = "2025.4.26"  # See https://github.com/certifi/python-certifi/issues/349
 cryptography = ">=40"
 snowflake-sqlalchemy = "==1.7.3"
 snowflake-connector-python = { version = "~=3.15", extras = ["secure-local-storage"] }
