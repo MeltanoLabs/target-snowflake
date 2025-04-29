@@ -19,7 +19,7 @@ python = ">=3.9"
 certifi = "2025.1.31"  # See https://github.com/certifi/python-certifi/issues/349
 cryptography = ">=40"
 snowflake-sqlalchemy = "==1.7.3"
-snowflake-connector-python = { version = "~=3.15.0", extras = ["secure-local-storage"] }
+snowflake-connector-python = { version = "~=3.15", extras = ["secure-local-storage"] }
 sqlalchemy = "~=2.0.31"
 
 [tool.poetry.dependencies.singer-sdk]
