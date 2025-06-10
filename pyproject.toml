@@ -18,7 +18,7 @@ packages = [
 python = ">=3.9"
 certifi = "2025.4.26"  # See https://github.com/certifi/python-certifi/issues/349
 cryptography = ">=40"
-snowflake-sqlalchemy = "==1.7.3"
+snowflake-sqlalchemy = "==1.7.4"
 snowflake-connector-python = { version = "~=3.15", extras = ["secure-local-storage"] }
 sqlalchemy = "~=2.0.31"
 
