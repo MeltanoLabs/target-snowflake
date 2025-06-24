@@ -448,10 +448,10 @@ class SnowflakeConnector(SQLConnector):
             {},
         )
 
-    def _get_file_format_statement(self, file_format):  # noqa: ANN202, ANN001
+    def _get_file_format_statement(self, file_format: str) -> tuple[sqlalchemy.TextClause, dict]:
         """Get Snowflake CREATE FILE FORMAT statement."""
         return (
-            text(f"create or replace file format {file_format}type = 'JSON' compression = 'AUTO'"),
+            text(f"create or replace file format {file_format} type = 'JSON' compression = 'AUTO'"),
             {},
         )
 
