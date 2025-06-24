@@ -10,7 +10,7 @@ if t.TYPE_CHECKING:
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:  # noqa: ARG001
     """Session Finish."""
-    import logging
+    import logging  # noqa: PLC0415
 
     loggers: list[logging.Logger] = [
         logging.getLogger(),
