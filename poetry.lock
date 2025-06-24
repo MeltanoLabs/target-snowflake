@@ -1725,14 +1725,14 @@ secure-local-storage = ["keyring (>=23.1.0,<26.0.0)"]
 
 [[package]]
 name = "snowflake-sqlalchemy"
-version = "1.7.4"
+version = "1.7.5"
 description = "Snowflake SQLAlchemy Dialect"
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "snowflake_sqlalchemy-1.7.4-py3-none-any.whl", hash = "sha256:52e14adf13640ff5543c32a4f0600fdb1e49c5862413ba5e27b08693c8676f82"},
-    {file = "snowflake_sqlalchemy-1.7.4.tar.gz", hash = "sha256:a509ca0f11c5b19a242157189ad20a3ee9598aa391fcbac3ae3e6cf53251a6cb"},
+    {file = "snowflake_sqlalchemy-1.7.5-py3-none-any.whl", hash = "sha256:3179890681e6f49f20b7dd5482eb56f32b95d6817fe44a45fb74461120619983"},
+    {file = "snowflake_sqlalchemy-1.7.5.tar.gz", hash = "sha256:48928dfec75d3410b1117c69c6eff99304a62af0509e5d3a3fd3c5f9d2d1879c"},
 ]
 
 [package.dependencies]
@@ -1998,4 +1998,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,!=3.9.0,!=3.9.1"
-content-hash = "021c7e6aea6b5fc6b036f28d662edb0d0f63092c13aefa9bb1adc20d39190733"
+content-hash = "93a920143d13ec17803261d1cfcc807a12b71a4ae5cad84befc1a1503ee5062d"
