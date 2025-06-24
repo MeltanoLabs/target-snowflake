@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "feat(deps): "
+      prefix: "fix(deps): "
       prefix-development: "chore(deps-dev): "
     versioning-strategy: increase-if-necessary
     groups:
