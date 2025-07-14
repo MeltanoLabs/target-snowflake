@@ -111,6 +111,12 @@ class TargetSnowflake(SQLTarget):
             default=False,
             description="Whether to use SSO authentication using an external browser.",
         ),
+        th.Property(
+            "use_timestamp_tz",
+            th.BooleanType,
+            default=False,
+            description="Whether to use `TIMESTAMP_TZ` over `TIMESTAMP_NTZ` for date-time properties.",
+        ),
     ).to_dict()
 
     default_sink_class = SnowflakeSink

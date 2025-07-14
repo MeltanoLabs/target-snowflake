@@ -6,6 +6,14 @@ import typing as t
 import snowflake.sqlalchemy.custom_types as sct
 
 
+class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
+    """Snowflake TIMESTAMP_TZ type."""
+
+    @property
+    def python_type(self):
+        return dt.datetime
+
+
 class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
     """Snowflake TIMESTAMP_NTZ type."""
 
