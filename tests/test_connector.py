@@ -36,6 +36,21 @@ def test_jsonschema_to_sql(connector: SnowflakeConnector, schema: dict, expected
     sql_type = connector.to_sql_type(schema)
     assert isinstance(sql_type, expected_type)
 
+@pytest.mark.parametrize(
+    ("config", "expected_type"),
+    [
+        ({"use_timestamp_tz": True}, sct.TIMESTAMP_TZ),
+        ({"use_timestamp_tz": False}, sct.TIMESTAMP_NTZ),
+        ({"use_timestamp_tz": None}, sct.TIMESTAMP_NTZ),
+        ({}, sct.TIMESTAMP_NTZ),
+    ],
+)
+def test_datetime_to_sql(connector: SnowflakeConnector, config: dict, expected_type: type[sa.types.TypeEngine]):
+    connector.config.update(config)
+    schema = {"type": ["string", "null"], "format": "date-time"}
+    sql_type = connector.to_sql_type(schema)
+    assert isinstance(sql_type, expected_type)
+
 
 def test_to_sql_type_with_max_varchar_length(connector: SnowflakeConnector):
     sql_type = connector.to_sql_type({"type": "string", "maxLength": 1_000_000})
