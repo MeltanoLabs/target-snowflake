@@ -333,7 +333,9 @@ class SnowflakeConnector(SQLConnector):
         to_sql.register_type_handler("object", VARIANT)
         to_sql.register_type_handler("array", VARIANT)
         to_sql.register_type_handler("number", sct.DOUBLE)
-        to_sql.register_format_handler("date-time", TIMESTAMP_TZ if self.config["use_timestamp_tz"] else TIMESTAMP_NTZ)
+        to_sql.register_format_handler(
+            "date-time", TIMESTAMP_TZ if self.config.get("use_timestamp_tz") else TIMESTAMP_NTZ
+        )
         return to_sql
 
     def schema_exists(self, schema_name: str) -> bool:
