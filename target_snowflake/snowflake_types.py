@@ -4,6 +4,8 @@ import datetime as dt
 import typing as t
 
 import snowflake.sqlalchemy.custom_types as sct
+from sqlalchemy.types import DateTime
+from typing_extensions import override
 
 
 class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
@@ -12,6 +14,10 @@ class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
     @property
     def python_type(self):
         return dt.datetime
+
+    @override
+    def as_generic(self, **kwargs: t.Any):
+        return DateTime(timezone=True)
 
 
 class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
@@ -23,6 +29,10 @@ class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
     @property
     def python_type(self):
         return dt.datetime
+
+    @override
+    def as_generic(self, **kwargs: t.Any):
+        return DateTime()
 
 
 class NUMBER(sct.NUMBER):
