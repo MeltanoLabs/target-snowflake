@@ -23,6 +23,7 @@ from sqlalchemy.sql import text
 
 from target_snowflake.snowflake_types import (
     NUMBER,
+    TIMESTAMP_LTZ,
     TIMESTAMP_NTZ,
     TIMESTAMP_TZ,
     VARIANT,
@@ -66,6 +67,19 @@ class SnowflakeAuthMethod(Enum):
     PASSWORD = 2
     KEY_PAIR = 3
 
+class SnowflakeTimestampType(str, Enum):
+    """Supported Snowflake timestamp types."""
+
+    TIMESTAMP_TZ = "TIMESTAMP_TZ"
+    TIMESTAMP_LTZ = "TIMESTAMP_LTZ"
+    TIMESTAMP_NTZ = "TIMESTAMP_NTZ"
+
+
+TIMESTAMP_TYPES = {
+    SnowflakeTimestampType.TIMESTAMP_TZ: TIMESTAMP_TZ,
+    SnowflakeTimestampType.TIMESTAMP_LTZ: TIMESTAMP_LTZ,
+    SnowflakeTimestampType.TIMESTAMP_NTZ: TIMESTAMP_NTZ,
+}
 
 class SnowflakeConnector(SQLConnector):
     """Snowflake Target Connector.
@@ -333,9 +347,7 @@ class SnowflakeConnector(SQLConnector):
         to_sql.register_type_handler("object", VARIANT)
         to_sql.register_type_handler("array", VARIANT)
         to_sql.register_type_handler("number", sct.DOUBLE)
-        to_sql.register_format_handler(
-            "date-time", TIMESTAMP_TZ if self.config.get("use_timestamp_tz") else TIMESTAMP_NTZ
-        )
+        to_sql.register_format_handler("date-time", TIMESTAMP_TYPES[self.config["timestamp_type"]])
         return to_sql
 
     def schema_exists(self, schema_name: str) -> bool:

@@ -6,7 +6,7 @@ import pytest
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy as sa
 
-from target_snowflake.connector import SnowflakeConnector
+from target_snowflake.connector import SnowflakeConnector, SnowflakeTimestampType
 from target_snowflake.snowflake_types import NUMBER, VARIANT
 
 
@@ -39,10 +39,9 @@ def test_jsonschema_to_sql(connector: SnowflakeConnector, schema: dict, expected
 @pytest.mark.parametrize(
     ("config", "expected_type"),
     [
-        ({"use_timestamp_tz": True}, sct.TIMESTAMP_TZ),
-        ({"use_timestamp_tz": False}, sct.TIMESTAMP_NTZ),
-        ({"use_timestamp_tz": None}, sct.TIMESTAMP_NTZ),
-        ({}, sct.TIMESTAMP_NTZ),
+        ({"timestamp_type": SnowflakeTimestampType.TIMESTAMP_TZ}, sct.TIMESTAMP_TZ),
+        ({"timestamp_type": SnowflakeTimestampType.TIMESTAMP_LTZ}, sct.TIMESTAMP_LTZ),
+        ({"timestamp_type": SnowflakeTimestampType.TIMESTAMP_NTZ}, sct.TIMESTAMP_NTZ),
     ],
 )
 def test_datetime_to_sql(connector: SnowflakeConnector, config: dict, expected_type: type[sa.types.TypeEngine]):

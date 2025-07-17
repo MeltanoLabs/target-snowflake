@@ -19,6 +19,17 @@ class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
     def as_generic(self, **kwargs: t.Any):
         return DateTime(timezone=True)
 
+class TIMESTAMP_LTZ(sct.TIMESTAMP_LTZ):  # noqa: N801
+    """Snowflake TIMESTAMP_LTZ type."""
+
+    @property
+    def python_type(self):
+        return dt.datetime
+
+    @override
+    def as_generic(self, **kwargs: t.Any):
+        return DateTime(timezone=True)
+
 
 class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
     """Snowflake TIMESTAMP_NTZ type."""

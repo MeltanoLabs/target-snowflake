@@ -8,6 +8,7 @@ import click
 from singer_sdk import typing as th
 from singer_sdk.target_base import SQLTarget
 
+from target_snowflake.connector import SnowflakeTimestampType
 from target_snowflake.initializer import initializer
 from target_snowflake.sinks import SnowflakeSink
 
@@ -112,10 +113,11 @@ class TargetSnowflake(SQLTarget):
             description="Whether to use SSO authentication using an external browser.",
         ),
         th.Property(
-            "use_timestamp_tz",
-            th.BooleanType,
-            default=False,
-            description="Whether to use `TIMESTAMP_TZ` over `TIMESTAMP_NTZ` for date-time properties.",
+            "timestamp_type",
+            th.StringType,
+            allowed_values=[t.name for t in SnowflakeTimestampType],
+            default=SnowflakeTimestampType.TIMESTAMP_NTZ,
+            description="Snowflake timestamp type to use for date-time properties.",
         ),
     ).to_dict()
 
