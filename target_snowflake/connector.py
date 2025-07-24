@@ -272,6 +272,10 @@ class SnowflakeConnector(SQLConnector):
             )
             raise
 
+    def _create_empty_column(self, full_table_name, column_name, sql_type):
+        super()._create_empty_column(full_table_name, column_name, sql_type)
+        self.table_cache.pop(full_table_name, None)
+
     @staticmethod
     def get_column_rename_ddl(
         table_name: str,
