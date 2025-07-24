@@ -272,7 +272,7 @@ class SnowflakeConnector(SQLConnector):
             )
             raise
 
-    def _create_empty_column(self, full_table_name, column_name, sql_type):
+    def _create_empty_column(self, full_table_name, column_name, sql_type) -> None:  # noqa: ANN001
         super()._create_empty_column(full_table_name, column_name, sql_type)
         self.table_cache.pop(full_table_name, None)
 
