@@ -67,6 +67,7 @@ class SnowflakeAuthMethod(Enum):
     PASSWORD = 2
     KEY_PAIR = 3
 
+
 class SnowflakeTimestampType(str, Enum):
     """Supported Snowflake timestamp types."""
 
@@ -80,6 +81,7 @@ TIMESTAMP_TYPES = {
     SnowflakeTimestampType.TIMESTAMP_LTZ: TIMESTAMP_LTZ,
     SnowflakeTimestampType.TIMESTAMP_NTZ: TIMESTAMP_NTZ,
 }
+
 
 class SnowflakeConnector(SQLConnector):
     """Snowflake Target Connector.

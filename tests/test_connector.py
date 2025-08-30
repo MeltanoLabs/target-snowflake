@@ -36,6 +36,7 @@ def test_jsonschema_to_sql(connector: SnowflakeConnector, schema: dict, expected
     sql_type = connector.to_sql_type(schema)
     assert isinstance(sql_type, expected_type)
 
+
 @pytest.mark.parametrize(
     ("config", "expected_type"),
     [
