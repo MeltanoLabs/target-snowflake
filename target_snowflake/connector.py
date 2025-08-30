@@ -77,9 +77,9 @@ class SnowflakeTimestampType(str, Enum):
 
 
 TIMESTAMP_TYPES = {
-    SnowflakeTimestampType.TIMESTAMP_TZ: TIMESTAMP_TZ,
-    SnowflakeTimestampType.TIMESTAMP_LTZ: TIMESTAMP_LTZ,
-    SnowflakeTimestampType.TIMESTAMP_NTZ: TIMESTAMP_NTZ,
+    SnowflakeTimestampType.TIMESTAMP_TZ.value: TIMESTAMP_TZ,
+    SnowflakeTimestampType.TIMESTAMP_LTZ.value: TIMESTAMP_LTZ,
+    SnowflakeTimestampType.TIMESTAMP_NTZ.value: TIMESTAMP_NTZ,
 }
 
 
