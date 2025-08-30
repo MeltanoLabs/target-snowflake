@@ -11,6 +11,7 @@ from warnings import warn
 
 import snowflake.sqlalchemy.custom_types as sct
 import sqlalchemy
+import sqlalchemy.sql.type_api
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from singer_sdk.connectors import SQLConnector
@@ -76,7 +77,7 @@ class SnowflakeTimestampType(str, Enum):
     TIMESTAMP_NTZ = "TIMESTAMP_NTZ"
 
 
-TIMESTAMP_TYPES = {
+TIMESTAMP_TYPES: dict[str, type[sqlalchemy.sql.type_api.TypeEngine]] = {
     SnowflakeTimestampType.TIMESTAMP_TZ.value: TIMESTAMP_TZ,
     SnowflakeTimestampType.TIMESTAMP_LTZ.value: TIMESTAMP_LTZ,
     SnowflakeTimestampType.TIMESTAMP_NTZ.value: TIMESTAMP_NTZ,
@@ -349,7 +350,15 @@ class SnowflakeConnector(SQLConnector):
         to_sql.register_type_handler("object", VARIANT)
         to_sql.register_type_handler("array", VARIANT)
         to_sql.register_type_handler("number", sct.DOUBLE)
-        to_sql.register_format_handler("date-time", TIMESTAMP_TYPES[self.config["timestamp_type"]])
+        to_sql.register_format_handler(
+            "date-time",
+            TIMESTAMP_TYPES[
+                self.config.get(
+                    "timestamp_type",
+                    SnowflakeTimestampType.TIMESTAMP_NTZ.value,
+                )
+            ],
+        )
         return to_sql
 
     def schema_exists(self, schema_name: str) -> bool:
