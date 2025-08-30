@@ -115,8 +115,8 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "timestamp_type",
             th.StringType,
-            allowed_values=[t.name for t in SnowflakeTimestampType],
-            default=SnowflakeTimestampType.TIMESTAMP_NTZ,
+            allowed_values=[t.value for t in SnowflakeTimestampType],
+            default=SnowflakeTimestampType.TIMESTAMP_NTZ.value,
             description="Snowflake timestamp type to use for date-time properties.",
         ),
     ).to_dict()
