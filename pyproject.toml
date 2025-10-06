@@ -25,11 +25,11 @@ sqlalchemy = "~=2.0.31"
 
 [tool.poetry.dependencies.singer-sdk]
 extras = ["sql"]
-version = "~=0.49.0"
+version = "~=0.50.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=7.2.7"
-pytest = ">=7.4.3"
+pytest = ">=8"
 pytest-xdist = ">=3.3.1"
 
 [tool.poetry.group.dev.dependencies.singer-sdk]
