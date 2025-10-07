@@ -8,7 +8,7 @@ import click
 from singer_sdk import typing as th
 from singer_sdk.target_base import SQLTarget
 
-from target_snowflake.connector import SnowflakeTimestampType
+from target_snowflake.connector import DEFAULT_TIMESTAMP_TYPE, SnowflakeTimestampType
 from target_snowflake.initializer import initializer
 from target_snowflake.sinks import SnowflakeSink
 
@@ -115,8 +115,8 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "timestamp_type",
             th.StringType,
-            allowed_values=[t.value for t in SnowflakeTimestampType],
-            default=SnowflakeTimestampType.TIMESTAMP_NTZ.value,
+            allowed_values=[t.name for t in SnowflakeTimestampType],
+            default=DEFAULT_TIMESTAMP_TYPE.name,
             description="Snowflake timestamp type to use for date-time properties.",
         ),
     ).to_dict()
