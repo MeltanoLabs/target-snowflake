@@ -4,6 +4,7 @@ import datetime as dt
 import typing as t
 
 import snowflake.sqlalchemy.custom_types as sct
+from sqlalchemy.types import DateTime
 
 
 class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
@@ -15,6 +16,9 @@ class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
     @property
     def python_type(self):
         return dt.datetime
+
+    def as_generic(self, **kwargs: t.Any):  # noqa: ARG002
+        return DateTime()
 
 
 class NUMBER(sct.NUMBER):
