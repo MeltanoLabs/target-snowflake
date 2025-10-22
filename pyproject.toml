@@ -16,7 +16,7 @@ packages = [
 requires-poetry = ">=2.0"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4"
+python = ">=3.10"
 certifi = "2025.10.5"
 cryptography = ">=40"
 snowflake-sqlalchemy = "==1.7.7"

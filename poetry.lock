@@ -31,6 +31,7 @@ description = "Function decoration for backoff and retry"
 optional = false
 python-versions = ">=3.7,<4.0"
 groups = ["main", "dev"]
+markers = "python_version < \"4\""
 files = [
     {file = "backoff-2.2.1-py3-none-any.whl", hash = "sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8"},
     {file = "backoff-2.2.1.tar.gz", hash = "sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba"},
@@ -2015,5 +2016,5 @@ type = ["pytest-mypy"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.10,<4"
-content-hash = "11b65248cbb6b1ffd47e1eaad7d2f535ee9ed9b3d7a5b97a43ef70f10f327ef2"
+python-versions = ">=3.10"
+content-hash = "0b68784f9fbbaeb5b0b6fe28512d35ec5904d9347b9ee7ccedf4c43940f88e3b"
