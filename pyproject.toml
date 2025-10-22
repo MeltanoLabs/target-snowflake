@@ -25,7 +25,7 @@ sqlalchemy = "~=2.0.31"
 
 [tool.poetry.dependencies.singer-sdk]
 extras = ["sql"]
-version = "~=0.51.0"
+version = "~=0.52.1"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=7.2.7"

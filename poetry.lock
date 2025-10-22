@@ -1631,18 +1631,18 @@ files = [
 
 [[package]]
 name = "singer-sdk"
-version = "0.51.0"
+version = "0.52.1"
 description = "A framework for building Singer taps and targets"
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "singer_sdk-0.51.0-py3-none-any.whl", hash = "sha256:5066f854becb5b899f8d2cadb030871f4e2b36bebff11e78fea06603e203b22a"},
-    {file = "singer_sdk-0.51.0.tar.gz", hash = "sha256:25a3285d26837bfe399b0bb542621752d8e42ab1c395b4fb3ccd3de3d488f71a"},
+    {file = "singer_sdk-0.52.1-py3-none-any.whl", hash = "sha256:294cbb2aac425b57c067dcb6b88c280a21a7447a76fa90e48f7f7fa7d07009b2"},
+    {file = "singer_sdk-0.52.1.tar.gz", hash = "sha256:cf6606f6b10555e8fd5560d5f39a7ba1b53eae3bc41cb4a8c10ab20d382c136c"},
 ]
 
 [package.dependencies]
-backoff = ">=2.0.0,<4"
+backoff = {version = ">=2.2.0", markers = "python_version < \"4\""}
 backports-datetime-fromisoformat = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
 click = ">=8.2,<9"
 fsspec = ">=2024.9.0"
@@ -2016,4 +2016,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4"
-content-hash = "47fdfad2568d467195b62c85be41663eed02ec1f8acb1345cba37b989eeae887"
+content-hash = "11b65248cbb6b1ffd47e1eaad7d2f535ee9ed9b3d7a5b97a43ef70f10f327ef2"
