@@ -1,45 +1,59 @@
-[tool.poetry]
+[build-system]
+requires = [
+  "poetry-core==2.2.1",
+  "poetry-dynamic-versioning==1.9.1",
+]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[project]
 name = "meltanolabs-target-snowflake"
-version = "0.0.0"
+dynamic = ["version"]
 description = "Singer target for Snowflake, built with the Meltano SDK for Singer Targets."
 readme = "README.md"
-authors = ["Ken Payne"]
-maintainers = ["Meltano Team and Community <hello@meltano.com>"]
 keywords = [
     "ELT",
     "Snowflake",
 ]
 license = "Apache-2.0"
-packages = [
-    { include = "target_snowflake" }
+license-files = [ "LICENSE" ]
+authors = [ { name = "Ken Payne" } ]
+maintainers = [ { name = "Meltano Team and Community", email = "hello@meltano.com" } ]
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
-requires-poetry = ">=2.0"
+dependencies = [
+  "certifi==2025.10.5",
+  "cryptography>=40",
+  "singer-sdk[sql]~=0.52.1",
+  "snowflake-connector-python[secure-local-storage]~=3.15",
+  "snowflake-sqlalchemy==1.7.7",
+  "sqlalchemy~=2.0.31",
+]
+scripts.target-snowflake = "target_snowflake.target:TargetSnowflake.cli"
 
-[tool.poetry.dependencies]
-python = ">=3.10"
-certifi = "2025.10.5"
-cryptography = ">=40"
-snowflake-sqlalchemy = "==1.7.7"
-snowflake-connector-python = { version = "~=3.15", extras = ["secure-local-storage"] }
-sqlalchemy = "~=2.0.31"
+[dependency-groups]
+dev = [
+  "coverage>=7.2.7",
+  "pytest>=8",
+  "pytest-xdist>=3.3.1",
+  "singer-sdk[testing]",
+]
 
-[tool.poetry.dependencies.singer-sdk]
-extras = ["sql"]
-version = "~=0.52.1"
-
-[tool.poetry.group.dev.dependencies]
-coverage = ">=7.2.7"
-pytest = ">=8"
-pytest-xdist = ">=3.3.1"
-
-[tool.poetry.group.dev.dependencies.singer-sdk]
-version = "*"
-extras = ["testing"]
+[tool.poetry]
+packages = [
+  { include = "target_snowflake" }
+]
+requires-poetry = ">=2.2"
+version = "0.0.0"
 
 [tool.ruff]
 line-length = 120
-src = ["target_snowflake"]
-target-version = "py310"
 
 [tool.ruff.lint]
 ignore = [
@@ -64,18 +78,10 @@ required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[build-system]
-requires = ["poetry-core>=1.0.8", "poetry-dynamic-versioning"]
-build-backend = "poetry_dynamic_versioning.backend"
-
-[tool.poetry.scripts]
-# CLI declaration
-target-snowflake = 'target_snowflake.target:TargetSnowflake.cli'
-
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
-style = "semver"
+style = "pep440"
 
 [tool.pytest.ini_options]
 addopts = '--durations=10'

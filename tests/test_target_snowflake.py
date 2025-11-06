@@ -8,8 +8,8 @@ import uuid
 from typing import Any
 
 import pytest
-import sqlalchemy as sa
 from singer_sdk.testing import TargetTestRunner, get_target_test_class
+from sqlalchemy import text
 
 from target_snowflake.target import TargetSnowflake
 
@@ -47,11 +47,11 @@ class BaseSnowflakeTargetTests:
         https://github.com/meltano/sdk/tree/main/tests/samples
         """
         connection.execute(
-            sa.text(f"create schema {runner.config['database']}.{runner.config['default_target_schema']}"),
+            text(f"create schema {runner.config['database']}.{runner.config['default_target_schema']}"),
         )
         yield
         connection.execute(
-            sa.text(f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}"),
+            text(f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}"),
         )
 
 
