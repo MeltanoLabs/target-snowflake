@@ -114,18 +114,18 @@ testing = ["jaraco.test", "pytest (!=8.0.*)", "pytest (>=6,!=8.1.*)", "pytest-ch
 
 [[package]]
 name = "boto3"
-version = "1.40.67"
+version = "1.40.71"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "boto3-1.40.67-py3-none-any.whl", hash = "sha256:3d06e9b3c7abedb8253c7d75b9ab27005480ca1e6e448d1f3c3cc3e209673ca0"},
-    {file = "boto3-1.40.67.tar.gz", hash = "sha256:3e4317139ace6d44658b8e1f2b5b6612f05b45720721841c90cdee45b02aa514"},
+    {file = "boto3-1.40.71-py3-none-any.whl", hash = "sha256:4ac9ee8d1629e45d6b6adc727795d1fc9852e998cd1a73e4eda50f6120677bab"},
+    {file = "boto3-1.40.71.tar.gz", hash = "sha256:6d38e0250154552658be92a62cd48adf8ca8fd4abc181fb52d13371b53179503"},
 ]
 
 [package.dependencies]
-botocore = ">=1.40.67,<1.41.0"
+botocore = ">=1.40.71,<1.41.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.14.0,<0.15.0"
 
@@ -134,14 +134,14 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.40.67"
+version = "1.40.71"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "botocore-1.40.67-py3-none-any.whl", hash = "sha256:e49e61f6718e8bc8b34e9bb8a97f16c8dc560485faef4981b55d76f825c9d78a"},
-    {file = "botocore-1.40.67.tar.gz", hash = "sha256:cc086f39c877aee0ea8dc88ef69062c9f395b9d30d49bfcfac7b8b7e61864b3a"},
+    {file = "botocore-1.40.71-py3-none-any.whl", hash = "sha256:4c05907b2a56b1f6fd70403fbae0f09a4758b95758192db5ff93c0e9940a11bb"},
+    {file = "botocore-1.40.71.tar.gz", hash = "sha256:7ed28c2e092fc0d67fbfba818fbdccc92426b452cc936bf034db6de717e0d068"},
 ]
 
 [package.dependencies]
@@ -661,14 +661,14 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "execnet"
-version = "2.1.1"
+version = "2.1.2"
 description = "execnet: rapid multi-Python deployment"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
-    {file = "execnet-2.1.1-py3-none-any.whl", hash = "sha256:26dee51f1b80cebd6d0ca8e74dd8745419761d3bef34163928cbebbdc4749fdc"},
-    {file = "execnet-2.1.1.tar.gz", hash = "sha256:5189b52c6121c24feae288166ab41b32549c7e2348652736540b9e6e7d4e72e3"},
+    {file = "execnet-2.1.2-py3-none-any.whl", hash = "sha256:67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec"},
+    {file = "execnet-2.1.2.tar.gz", hash = "sha256:63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd"},
 ]
 
 [package.extras]
@@ -1204,14 +1204,14 @@ test = ["pretend", "pytest (>=3.0.1)", "pytest-rerunfailures"]
 
 [[package]]
 name = "pytest"
-version = "9.0.0"
+version = "9.0.1"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "pytest-9.0.0-py3-none-any.whl", hash = "sha256:e5ccdf10b0bac554970ee88fc1a4ad0ee5d221f8ef22321f9b7e4584e19d7f96"},
-    {file = "pytest-9.0.0.tar.gz", hash = "sha256:8f44522eafe4137b0f35c9ce3072931a788a21ee40a2ed279e817d3cc16ed21e"},
+    {file = "pytest-9.0.1-py3-none-any.whl", hash = "sha256:67be0030d194df2dfa7b556f2e56fb3c3315bd5c8822c6951162b92b32ce7dad"},
+    {file = "pytest-9.0.1.tar.gz", hash = "sha256:3e9c069ea73583e255c3b21cf46b8d3c56f6e3a1a8f6da94ccb0fcf57b9d73c8"},
 ]
 
 [package.dependencies]
@@ -1569,15 +1569,15 @@ crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
 
 [[package]]
 name = "secretstorage"
-version = "3.4.0"
+version = "3.4.1"
 description = "Python bindings to FreeDesktop.org Secret Service API"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "sys_platform == \"linux\""
 files = [
-    {file = "secretstorage-3.4.0-py3-none-any.whl", hash = "sha256:0e3b6265c2c63509fb7415717607e4b2c9ab767b7f344a57473b779ca13bd02e"},
-    {file = "secretstorage-3.4.0.tar.gz", hash = "sha256:c46e216d6815aff8a8a18706a2fbfd8d53fcbb0dce99301881687a1b0289ef7c"},
+    {file = "secretstorage-3.4.1-py3-none-any.whl", hash = "sha256:c55d57b4da3de568d8c3af89dad244ab24c35ca1da8625fc1b550edf005ebc41"},
+    {file = "secretstorage-3.4.1.tar.gz", hash = "sha256:a799acf5be9fb93db609ebaa4ab6e8f1f3ed5ae640e0fa732bfea59e9c3b50e8"},
 ]
 
 [package.dependencies]
@@ -2041,14 +2041,14 @@ files = [
 
 [[package]]
 name = "universal-pathlib"
-version = "0.3.4"
+version = "0.3.5"
 description = "pathlib api extended to use fsspec backends"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "universal_pathlib-0.3.4-py3-none-any.whl", hash = "sha256:69b6250d9a79dbc33a9e6a7b0e732aece8b0e178fe0af35f104b4e207fd9d5ae"},
-    {file = "universal_pathlib-0.3.4.tar.gz", hash = "sha256:8472df61ea931eb7e8158abf5a12ec9c45103dc58716c0103cf5e88712fa357a"},
+    {file = "universal_pathlib-0.3.5-py3-none-any.whl", hash = "sha256:123275e22a6798df40019c3f72728ff37f73aba8734116ae51b08c4b78598f20"},
+    {file = "universal_pathlib-0.3.5.tar.gz", hash = "sha256:e3a9bf8a4e73e25c95c86af5028345013701355e8d573e68dd1ffeeb18fa71b7"},
 ]
 
 [package.dependencies]
@@ -2056,7 +2056,7 @@ fsspec = ">=2024.5.0"
 pathlib-abc = ">=0.5.1,<0.6.0"
 
 [package.extras]
-dev = ["adlfs (>=2024)", "cheroot", "fsspec[adl,gcs,github,http,s3,smb,ssh] (>=2024.5.0)", "gcsfs (>=2024.5.0)", "moto[s3,server]", "s3fs (>=2024.5.0)", "typing_extensions ; python_version < \"3.11\"", "webdav4[fsspec]", "wsgidav"]
+dev = ["adlfs (>=2024)", "cheroot", "fsspec[adl,gcs,github,http,s3,smb,ssh] (>=2024.5.0)", "gcsfs (>=2024.5.0)", "huggingface_hub", "moto[s3,server]", "s3fs (>=2024.5.0)", "typing_extensions ; python_version < \"3.11\"", "webdav4[fsspec]", "wsgidav"]
 dev-third-party = ["pydantic", "pydantic-settings"]
 tests = ["mypy (>=1.10.0)", "packaging", "pydantic (>=2)", "pylint (>=2.17.4)", "pytest (>=8)", "pytest-cov (>=4.1.0)", "pytest-mock (>=3.12.0)", "pytest-mypy-plugins (>=3.1.2)", "pytest-sugar (>=0.9.7)"]
 typechecking = ["mypy (>=1.10.0)", "pytest-mypy-plugins (>=3.1.2)"]
