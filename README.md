@@ -64,7 +64,7 @@ Run the following command to get started with the interactive CLI.
 Note - the CLI will print the SQL queries it is planning to run and confirm with you before it makes any changes.
 
 ```bash
-poetry run target-snowflake --initialize
+uv run target-snowflake --initialize
 
 # Alternatively using Meltano CLI
 meltano invoke target-snowflake --initialize
@@ -98,8 +98,8 @@ tap-carbon-intensity | target-snowflake --config /path/to/target-snowflake-confi
 ### Initialize your Development Environment
 
 ```bash
-pipx install poetry
-poetry install
+curl -LsSf https://astral.sh/uv/install.sh | sh  # or see https://docs.astral.sh/uv/getting-started/installation/
+uv sync --all-extras --dev
 ```
 
 ### Create and Run Tests
@@ -108,13 +108,13 @@ Create tests within the `target_snowflake/tests` subfolder and
   then run:
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
-You can also test the `target-snowflake` CLI interface directly using `poetry run`:
+You can also test the `target-snowflake` CLI interface directly using `uv run`:
 
 ```bash
-poetry run target-snowflake --help
+uv run target-snowflake --help
 ```
 
 ### Testing with [Meltano](https://meltano.com/)
@@ -127,11 +127,9 @@ Your project comes with a custom `meltano.yml` project file already created.
 Next, install Meltano (if you haven't already) and any needed plugins:
 
 ```bash
-# Install meltano
-pipx install meltano
 # Initialize meltano within this directory
 cd target-snowflake
-meltano install
+uvx meltano install
 ```
 
 Now you can test and orchestrate using Meltano:
