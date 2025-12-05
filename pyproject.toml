@@ -32,7 +32,7 @@ dependencies = [
     "cryptography>=40",
     "singer-sdk[sql]~=0.53.3",
     "snowflake-connector-python[secure-local-storage]~=3.15",
-    "snowflake-sqlalchemy==1.7.7",
+    "snowflake-sqlalchemy==1.8.0",
     "sqlalchemy~=2.0.31",
 ]
 
