@@ -28,7 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "certifi==2025.10.5",
+    "certifi==2025.11.12",
     "cryptography>=40",
     "singer-sdk[sql]~=0.53.3",
     "snowflake-connector-python[secure-local-storage]~=3.15",
