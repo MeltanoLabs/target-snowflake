@@ -96,6 +96,7 @@ class SnowflakeConnector(SQLConnector):
     allow_column_alter: bool = True  # Whether altering column types is supported.
     allow_merge_upsert: bool = False  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
+    allow_overwrite: bool = True
 
     max_varchar_length = 16_777_216
     jsonschema_to_sql_converter = JSONSchemaToSnowflake
