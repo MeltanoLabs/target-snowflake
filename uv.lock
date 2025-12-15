@@ -735,7 +735,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=40" },
     { name = "singer-sdk", extras = ["sql"], specifier = "~=0.53.3" },
     { name = "snowflake-connector-python", extras = ["secure-local-storage"], specifier = ">=3.15,<5.0" },
-    { name = "snowflake-sqlalchemy", specifier = "==1.8.0" },
+    { name = "snowflake-sqlalchemy", specifier = "==1.8.2" },
     { name = "sqlalchemy", specifier = "~=2.0.31" },
 ]
 
@@ -1331,15 +1331,15 @@ secure-local-storage = [
 
 [[package]]
 name = "snowflake-sqlalchemy"
-version = "1.8.0"
+version = "1.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "snowflake-connector-python" },
     { name = "sqlalchemy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/a5/540b4a291465903f328bb59c86a80bd825c3bfde8e270a1970c37a181a3d/snowflake_sqlalchemy-1.8.0.tar.gz", hash = "sha256:50f452850a968ca3358fda6c53b5c29203c16013afdb02ab90d79b53cf02407f", size = 122538, upload-time = "2025-12-04T20:13:23.01Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/0b/5e90eb28191ad6e0318254394c7e2902c4037fd566aa299dc8b5b16238f8/snowflake_sqlalchemy-1.8.2.tar.gz", hash = "sha256:91ca38719e117f94dd195ba94c22dd22f69c585b136ed129ba4e2dd93252b0c2", size = 122603, upload-time = "2025-12-10T08:33:49.116Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/91/61261b9e4d9af757ebab08fb50fc4e4045b3e304c812537a3173eff5bd38/snowflake_sqlalchemy-1.8.0-py3-none-any.whl", hash = "sha256:067d2f1509f8d57938d07b0d441ae3aa19ed07acf54d2aab7c29ebf5c1426cf5", size = 72728, upload-time = "2025-12-04T20:13:20.432Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/77/c3af74a84eb00c1004a8e3c8a98627a3eecb2563f4ee01e621326c947bce/snowflake_sqlalchemy-1.8.2-py3-none-any.whl", hash = "sha256:13ad79bf51654cdaaedfbcc60d20bee417c0a128f8710eabbf4aba65b50f6d3d", size = 72726, upload-time = "2025-12-10T08:33:48.106Z" },
 ]
 
 [[package]]
