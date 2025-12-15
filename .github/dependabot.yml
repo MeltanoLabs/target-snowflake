@@ -16,10 +16,6 @@ updates:
     groups:
       development-dependencies:
         dependency-type: development
-      runtime-dependencies:
-        dependency-type: production
-        update-types:
-          - "patch"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
