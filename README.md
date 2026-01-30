@@ -20,6 +20,7 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 | private_key                | False    | None                          | The private key contents. For KeyPair authentication either private_key or private_key_path must be provided.                                                                                                                                                                                    |
 | private_key_path           | False    | None                          | Path to file containing private key. For KeyPair authentication either private_key or private_key_path must be provided.                                                                                                                                                                         |
 | private_key_passphrase     | False    | None                          | Passphrase to decrypt private key if encrypted.                                                                                                                                                                                                                                                  |
+| oauth_access_token         | False    | None                          | OAuth2.0 access token for authentication. Token should be valid and not expired.                                                                                                                                                                                                                   |
 | account                    | True     | None                          | Your account identifier. See [Account Identifiers](https://docs.snowflake.com/en/user-guide/admin-account-identifier.html).                                                                                                                                                                      |
 | database                   | True     | None                          | The initial database for the Snowflake session.                                                                                                                                                                                                                                                  |
 | schema                     | False    | None                          | The initial schema for the Snowflake session.                                                                                                                                                                                                                                                    |
@@ -42,6 +43,57 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 | use_browser_authentication | False    | False                         | If authentication should be done using SSO (via external browser). See See [SSO browser authentication](https://docs.snowflake.com/en/developer-guide/node-js/nodejs-driver-authenticate#using-single-sign-on-sso-through-a-web-browser).                                                        |
 
 A full list of supported settings and capabilities is available by running: `target-snowflake --about`
+
+## Authentication
+
+Target-snowflake supports multiple authentication methods. You must provide exactly one of the following authentication methods:
+
+### 1. Password Authentication
+
+```bash
+export TARGET_SNOWFLAKE_USER="myuser"
+export TARGET_SNOWFLAKE_PASSWORD="mypassword"
+export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
+export TARGET_SNOWFLAKE_DATABASE="mydatabase"
+```
+
+### 2. Key Pair Authentication
+
+Using private key file:
+```bash
+export TARGET_SNOWFLAKE_USER="myuser"
+export TARGET_SNOWFLAKE_PRIVATE_KEY_PATH="/path/to/private_key.pem"
+export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
+export TARGET_SNOWFLAKE_DATABASE="mydatabase"
+```
+
+Using private key content:
+```bash
+export TARGET_SNOWFLAKE_USER="myuser"
+export TARGET_SNOWFLAKE_PRIVATE_KEY="<base64_encoded_private_key>"
+export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
+export TARGET_SNOWFLAKE_DATABASE="mydatabase"
+```
+
+### 3. Browser SSO Authentication
+
+```bash
+export TARGET_SNOWFLAKE_USER="myuser"
+export TARGET_SNOWFLAKE_USE_BROWSER_AUTHENTICATION="true"
+export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
+export TARGET_SNOWFLAKE_DATABASE="mydatabase"
+```
+
+### 4. OAuth Authentication
+
+```bash
+export TARGET_SNOWFLAKE_USER="myuser"
+export TARGET_SNOWFLAKE_OAUTH_ACCESS_TOKEN="your_oauth_access_token"
+export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
+export TARGET_SNOWFLAKE_DATABASE="mydatabase"
+```
+
+**Note:** OAuth tokens should be obtained from your OAuth provider (Azure AD, Okta, etc.) and must be valid and not expired. The target will use the token directly for authentication.
 
 ### Initializing a Snowflake Account
 
