@@ -44,57 +44,6 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 
 A full list of supported settings and capabilities is available by running: `target-snowflake --about`
 
-## Authentication
-
-Target-snowflake supports multiple authentication methods. You must provide exactly one of the following authentication methods:
-
-### 1. Password Authentication
-
-```bash
-export TARGET_SNOWFLAKE_USER="myuser"
-export TARGET_SNOWFLAKE_PASSWORD="mypassword"
-export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
-export TARGET_SNOWFLAKE_DATABASE="mydatabase"
-```
-
-### 2. Key Pair Authentication
-
-Using private key file:
-```bash
-export TARGET_SNOWFLAKE_USER="myuser"
-export TARGET_SNOWFLAKE_PRIVATE_KEY_PATH="/path/to/private_key.pem"
-export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
-export TARGET_SNOWFLAKE_DATABASE="mydatabase"
-```
-
-Using private key content:
-```bash
-export TARGET_SNOWFLAKE_USER="myuser"
-export TARGET_SNOWFLAKE_PRIVATE_KEY="<base64_encoded_private_key>"
-export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
-export TARGET_SNOWFLAKE_DATABASE="mydatabase"
-```
-
-### 3. Browser SSO Authentication
-
-```bash
-export TARGET_SNOWFLAKE_USER="myuser"
-export TARGET_SNOWFLAKE_USE_BROWSER_AUTHENTICATION="true"
-export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
-export TARGET_SNOWFLAKE_DATABASE="mydatabase"
-```
-
-### 4. OAuth Authentication
-
-```bash
-export TARGET_SNOWFLAKE_USER="myuser"
-export TARGET_SNOWFLAKE_OAUTH_ACCESS_TOKEN="your_oauth_access_token"
-export TARGET_SNOWFLAKE_ACCOUNT="myaccount"
-export TARGET_SNOWFLAKE_DATABASE="mydatabase"
-```
-
-**Note:** OAuth tokens should be obtained from your OAuth provider (Azure AD, Okta, etc.) and must be valid and not expired. The target will use the token directly for authentication.
-
 ### Initializing a Snowflake Account
 
 This target has an interactive feature that will help you get a Snowflake account initialized with everything needed to get started loading data.
