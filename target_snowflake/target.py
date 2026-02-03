@@ -113,6 +113,13 @@ class TargetSnowflake(SQLTarget):
             description="Whether to use SSO authentication using an external browser.",
         ),
         th.Property(
+            "oauth_access_token",
+            th.StringType,
+            required=False,
+            secret=True,
+            description="OAuth access token for authentication. Token should be valid and not expired.",
+        ),
+        th.Property(
             "timestamp_type",
             th.StringType,
             allowed_values=[t.name for t in SnowflakeTimestampType],
