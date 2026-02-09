@@ -103,7 +103,15 @@ class SnowflakeConnector(SQLConnector):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.table_cache: dict = {}
         self.schema_cache: dict = {}
+        self._inspector: sqlalchemy.Inspector | None = None
         super().__init__(*args, **kwargs)
+
+    @property
+    def inspector(self) -> sqlalchemy.Inspector:
+        """Return a cached Inspector instance for schema reflection."""
+        if self._inspector is None:
+            self._inspector = sqlalchemy.inspect(self._engine)
+        return self._inspector
 
     def get_table_columns(
         self,
@@ -122,7 +130,7 @@ class SnowflakeConnector(SQLConnector):
         if full_table_name in self.table_cache:
             return self.table_cache[full_table_name]
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-        inspector = sqlalchemy.inspect(self._engine)
+        inspector = self.inspector
         columns = inspector.get_columns(table_name, schema_name)
 
         parsed_columns = {
@@ -360,7 +368,7 @@ class SnowflakeConnector(SQLConnector):
     def schema_exists(self, schema_name: str) -> bool:
         if schema_name in self.schema_cache:
             return True
-        schema_names = sqlalchemy.inspect(self._engine).get_schema_names()
+        schema_names = self.inspector.get_schema_names()
         self.schema_cache = schema_names
         formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
         # Make quoted schema names upper case because we create them that way
