@@ -14,9 +14,8 @@ import sqlalchemy
 import sqlalchemy.sql.type_api
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from singer_sdk.connectors import SQLConnector
-from singer_sdk.connectors.sql import FullyQualifiedName, JSONSchemaToSQL
 from singer_sdk.exceptions import ConfigValidationError
+from singer_sdk.sql.connector import FullyQualifiedName, JSONSchemaToSQL, SQLConnector
 from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect

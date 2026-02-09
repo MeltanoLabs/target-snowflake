@@ -7,14 +7,14 @@ import typing as t
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from singer_sdk.batch import JSONLinesBatcher
+from singer_sdk.contrib.batch_encoder_jsonl import JSONLinesBatcher
 from singer_sdk.helpers._batch import (
     BaseBatchFileEncoding,
     BatchConfig,
     BatchFileFormat,
 )
 from singer_sdk.helpers._typing import conform_record_data_types
-from singer_sdk.sinks import SQLSink
+from singer_sdk.sql.sink import SQLSink
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 
