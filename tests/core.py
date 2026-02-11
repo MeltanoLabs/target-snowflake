@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
-from singer_sdk.testing.suites import TestSuite
+from singer_sdk.testing.suites import SingerTestSuite
 from singer_sdk.testing.target_tests import (
     TargetArrayData,
     TargetCamelcaseComplexSchema,
@@ -567,7 +567,7 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
 
-target_tests = TestSuite(
+target_tests = SingerTestSuite(
     kind="target",
     tests=[
         # Core

@@ -6,7 +6,7 @@ import logging.config
 
 import click
 from singer_sdk import typing as th
-from singer_sdk.target_base import SQLTarget
+from singer_sdk.sql.target import SQLTarget
 
 from target_snowflake.connector import DEFAULT_TIMESTAMP_TYPE, SnowflakeTimestampType
 from target_snowflake.initializer import initializer
@@ -131,7 +131,7 @@ class TargetSnowflake(SQLTarget):
     default_sink_class = SnowflakeSink
 
     @classmethod
-    def cb_inititalize(
+    def cb_initialize(
         cls: type[TargetSnowflake],
         ctx: click.Context,
         param: click.Option,  # noqa: ARG003
@@ -155,7 +155,7 @@ class TargetSnowflake(SQLTarget):
                     ["--initialize"],
                     is_flag=True,
                     help="Interactive Snowflake account initialization.",
-                    callback=cls.cb_inititalize,
+                    callback=cls.cb_initialize,
                     expose_value=False,
                 ),
             ],

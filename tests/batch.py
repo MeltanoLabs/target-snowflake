@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing as t
 from pathlib import Path
 
-from singer_sdk.testing.suites import TestSuite
+from singer_sdk.testing.suites import SingerTestSuite
 from singer_sdk.testing.target_tests import (
     TargetNoPrimaryKeys,
     TargetSpecialCharsInAttributes,
@@ -174,7 +174,7 @@ class SnowflakeTargetBatchSpecialCharsInAttributes(
     name = "batch_special_chars_in_attributes"
 
 
-batch_target_tests = TestSuite(
+batch_target_tests = SingerTestSuite(
     kind="target",
     tests=[
         # BATCH
