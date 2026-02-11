@@ -66,6 +66,7 @@ class SnowflakeAuthMethod(Enum):
     BROWSER = 1
     PASSWORD = 2
     KEY_PAIR = 3
+    OAUTH = 4
 
 
 class SnowflakeTimestampType(str, Enum):
@@ -208,7 +209,7 @@ class SnowflakeConnector(SQLConnector):
         if self.config.get("use_browser_authentication"):
             return SnowflakeAuthMethod.BROWSER
 
-        valid_auth_methods = {"private_key", "private_key_path", "password"}
+        valid_auth_methods = {"private_key", "private_key_path", "password", "oauth_access_token"}
         config_auth_methods = [x for x in self.config if x in valid_auth_methods]
         if len(config_auth_methods) != 1:
             msg = (
@@ -219,6 +220,8 @@ class SnowflakeConnector(SQLConnector):
             raise ConfigValidationError(msg)
         if config_auth_methods[0] in ["private_key", "private_key_path"]:
             return SnowflakeAuthMethod.KEY_PAIR
+        if config_auth_methods[0] in ["oauth_access_token"]:
+            return SnowflakeAuthMethod.OAUTH
         return SnowflakeAuthMethod.PASSWORD
 
     def get_sqlalchemy_url(self, config: dict) -> str:
@@ -237,6 +240,13 @@ class SnowflakeConnector(SQLConnector):
             params["authenticator"] = "externalbrowser"
         elif self.auth_method == SnowflakeAuthMethod.PASSWORD:
             params["password"] = urllib.parse.quote(config["password"])
+        elif self.auth_method == SnowflakeAuthMethod.OAUTH:
+            oauth_token = config.get("oauth_access_token", "")
+            if not oauth_token:
+                msg = "OAuth access token is required but not provided or is empty"
+                raise ConfigValidationError(msg)
+            params["authenticator"] = "oauth"
+            params["token"] = oauth_token
 
         for option in ["warehouse", "role"]:
             if config.get(option):
@@ -266,6 +276,9 @@ class SnowflakeConnector(SQLConnector):
         }
         if self.auth_method == SnowflakeAuthMethod.KEY_PAIR:
             connect_args["private_key"] = self.get_private_key()
+        elif self.auth_method == SnowflakeAuthMethod.OAUTH:
+            connect_args["token"] = self.config["oauth_access_token"]
+
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
             connect_args=connect_args,
