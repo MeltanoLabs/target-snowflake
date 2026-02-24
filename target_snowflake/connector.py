@@ -206,7 +206,7 @@ class SnowflakeConnector(SQLConnector):
         config_auth_methods = [x for x in self.config if x in valid_auth_methods]
         if len(config_auth_methods) != 1:
             msg = (
-                "Neither password nor private key was provided for "
+                "No password, private key, or OAuth token was provided for "
                 "authentication. For password-less browser authentication via SSO, "
                 "set use_browser_authentication config option to True."
             )
@@ -233,13 +233,6 @@ class SnowflakeConnector(SQLConnector):
             params["authenticator"] = "externalbrowser"
         elif self.auth_method == SnowflakeAuthMethod.PASSWORD:
             params["password"] = urllib.parse.quote(config["password"])
-        elif self.auth_method == SnowflakeAuthMethod.OAUTH:
-            oauth_token = config.get("oauth_access_token", "")
-            if not oauth_token:
-                msg = "OAuth access token is required but not provided or is empty"
-                raise ConfigValidationError(msg)
-            params["authenticator"] = "oauth"
-            params["token"] = oauth_token
 
         for option in ["warehouse", "role"]:
             if config.get(option):
@@ -270,7 +263,12 @@ class SnowflakeConnector(SQLConnector):
         if self.auth_method == SnowflakeAuthMethod.KEY_PAIR:
             connect_args["private_key"] = self.get_private_key()
         elif self.auth_method == SnowflakeAuthMethod.OAUTH:
-            connect_args["token"] = self.config["oauth_access_token"]
+            oauth_token = self.config.get("oauth_access_token", "")
+            if not oauth_token:
+                msg = "OAuth access token is required but not provided or is empty"
+                raise ConfigValidationError(msg)
+            connect_args["token"] = oauth_token
+            connect_args["authenticator"] = "oauth"
 
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
