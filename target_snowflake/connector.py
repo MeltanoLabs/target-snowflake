@@ -220,7 +220,7 @@ class SnowflakeConnector(SQLConnector):
             raise ConfigValidationError(msg)
         if config_auth_methods[0] in ["private_key", "private_key_path"]:
             return SnowflakeAuthMethod.KEY_PAIR
-        if config_auth_methods[0] in ["oauth_access_token"]:
+        if config_auth_methods[0] == "oauth_access_token":
             return SnowflakeAuthMethod.OAUTH
         return SnowflakeAuthMethod.PASSWORD
 
