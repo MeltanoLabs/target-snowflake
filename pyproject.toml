@@ -42,7 +42,7 @@ target-snowflake = "target_snowflake.target:TargetSnowflake.cli"
 [dependency-groups]
 dev = [
     "coverage>=7.2.7",
-    "pytest>=8",
+    "pytest>=9",
     "pytest-xdist>=3.3.1",
     "singer-sdk[testing]",
 ]
@@ -83,5 +83,13 @@ required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.pytest.ini_options]
-addopts = '--durations=10'
+[tool.pytest]
+addopts = [
+    "--durations=10",
+]
+filterwarnings = [
+    "error",
+    "once:`SQLConnector.create_sqlalchemy_connection` is deprecated:singer_sdk.helpers._compat.SingerSDKDeprecationWarning",
+    "once:`SQLConnector.connection` is deprecated:singer_sdk.helpers._compat.SingerSDKDeprecationWarning",
+]
+minversion = "9"
