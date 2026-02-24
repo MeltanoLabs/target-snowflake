@@ -247,20 +247,8 @@ class SnowflakeConnector(SQLConnector):
 
         return URL(**params)
 
-    def create_engine(self) -> Engine:
-        """Creates and returns a new engine. Do not call outside of _engine.
-
-        NOTE: Do not call this method. The only place that this method should
-        be called is inside the self._engine method. If you'd like to access
-        the engine on a connector, use self._engine.
-
-        This method exists solely so that tap/target developers can override it
-        on their subclass of SQLConnector to perform custom engine creation
-        logic.
-
-        Returns:
-            A new SQLAlchemy Engine.
-        """
+    def get_connect_args(self) -> dict[str, Any]:
+        """Get the connect args for the connector."""
         connect_args = {
             "session_parameters": {
                 "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
@@ -277,9 +265,25 @@ class SnowflakeConnector(SQLConnector):
             connect_args["token"] = oauth_token
             connect_args["authenticator"] = "oauth"
 
+        return connect_args
+
+    def create_engine(self) -> Engine:
+        """Creates and returns a new engine. Do not call outside of _engine.
+
+        NOTE: Do not call this method. The only place that this method should
+        be called is inside the self._engine method. If you'd like to access
+        the engine on a connector, use self._engine.
+
+        This method exists solely so that tap/target developers can override it
+        on their subclass of SQLConnector to perform custom engine creation
+        logic.
+
+        Returns:
+            A new SQLAlchemy Engine.
+        """
         engine = sqlalchemy.create_engine(
             self.sqlalchemy_url,
-            connect_args=connect_args,
+            connect_args=self.get_connect_args(),
             echo=False,
         )
         with engine.connect() as conn:

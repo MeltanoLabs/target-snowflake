@@ -23,7 +23,7 @@ class TestOAuthUnit:
         assert connector.auth_method == SnowflakeAuthMethod.OAUTH
 
     def test_empty_oauth_token_error(self):
-        """Test that empty OAuth token fails during URL generation."""
+        """Test that empty OAuth token fails during connect args generation."""
         config = {
             "account": "test_account",
             "user": "test_user",
@@ -34,9 +34,9 @@ class TestOAuthUnit:
         assert connector.auth_method == SnowflakeAuthMethod.OAUTH
         # Should fail early during URL generation
         with pytest.raises(ConfigValidationError, match="OAuth access token is required but not provided or is empty"):
-            connector.get_sqlalchemy_url(config)
+            connector.get_connect_args()
 
-    def test_oauth_url_generation(self):
+    def test_oauth_connect_args(self):
         """Test SQLAlchemy URL generation for OAuth."""
         config = {
             "account": "test_account",
@@ -45,10 +45,10 @@ class TestOAuthUnit:
             "oauth_access_token": "test_token_789",
         }
         connector = SnowflakeConnector(config=config)
-        url_str = str(connector.get_sqlalchemy_url(config))
+        connect_args = connector.get_connect_args()
 
-        assert "authenticator=oauth" in url_str
-        assert "token=test_token_789" in url_str
+        assert connect_args["authenticator"] == "oauth"
+        assert connect_args["token"] == "test_token_789"  # noqa: S105
 
     @pytest.mark.parametrize(
         ("auth_config", "expected_method"),
