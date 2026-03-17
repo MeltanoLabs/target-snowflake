@@ -86,10 +86,26 @@ convention = "google"
 [tool.pytest]
 addopts = [
     "--durations=10",
+    "-ra",
+    "--strict-config",
+    "--strict-markers",
 ]
 filterwarnings = [
     "error",
     "once:`SQLConnector.create_sqlalchemy_connection` is deprecated:singer_sdk.helpers._compat.SingerSDKDeprecationWarning",
     "once:`SQLConnector.connection` is deprecated:singer_sdk.helpers._compat.SingerSDKDeprecationWarning",
 ]
+log_level = "INFO"
 minversion = "9"
+strict = true
+testpaths = ["tests"]
+
+[tool.mypy]
+enable_error_code = [
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
+]
+strict = false
+warn_unreachable = true
+warn_unused_configs = true
