@@ -41,10 +41,19 @@ target-snowflake = "target_snowflake.target:TargetSnowflake.cli"
 
 [dependency-groups]
 dev = [
+    { include-group = "testing" },
+    { include-group = "typing" },
+]
+testing = [
     "coverage>=7.2.7",
     "pytest>=9",
     "pytest-xdist>=3.3.1",
     "singer-sdk[testing]",
+]
+typing = [
+    { include-group = "testing" },
+    "mypy>=1.19.1",
+    "ty>=0.0.25",
 ]
 
 [tool.hatch.version]
@@ -73,10 +82,6 @@ select = ["ALL"]
 [tool.ruff.lint.flake8-annotations]
 allow-star-arg-any = true
 
-[tool.ruff.lint.isort]
-known-first-party = ["target_snowflake"]
-required-imports = ["from __future__ import annotations"]
-
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S608", "PLR2004", "ANN"]
 
@@ -102,6 +107,8 @@ enable_error_code = [
   "redundant-expr",
   "truthy-bool",
 ]
+follow_untyped_imports = true
 strict = false
+warn_redundant_casts = true
 warn_unreachable = true
 warn_unused_configs = true

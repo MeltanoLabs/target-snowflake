@@ -1,0 +1,27 @@
+requires = [
+    "tox>=4.43",
+    "tox-uv",
+]
+env_list = [
+    "typing",
+    "test",
+]
+
+[env.test]
+description = "run tests on Python {py_dot_ver}"
+base_python = "3.14"  # TODO: Use .python-version (https://github.com/tox-dev/tox/issues/3894)
+
+[env.typing]
+description = "type checks"
+dependency_groups = [ "testing", "typing" ]
+labels = [ "check" ]
+commands = [
+    [ "mypy", "target_snowflake", "tests" ],
+    [ "ty", "check", "target_snowflake", "tests" ],
+]
+
+[env_run_base]
+runner = "uv-venv-lock-runner"
+pass_env = [ "TARGET_SNOWFLAKE_*" ]
+dependency_groups = [ "testing" ]
+commands = [ [ "pytest", { replace = "posargs", default = [ "tests" ], extend = true } ] ]

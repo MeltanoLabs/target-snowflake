@@ -9,7 +9,7 @@ on:
     - tests/**
     - uv.lock
     - pyproject.toml
-    - tox.ini
+    - tox.toml
   pull_request:
     branches: [main]
     paths:
@@ -18,7 +18,7 @@ on:
     - tests/**
     - uv.lock
     - pyproject.toml
-    - tox.ini
+    - tox.toml
   workflow_dispatch:
 
 concurrency:
@@ -32,15 +32,6 @@ jobs:
   pytest:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      SINGER_SDK_LOG_CONFIG: ./target_snowflake_logging.yaml
-      TARGET_SNOWFLAKE_USER: ${{secrets.TARGET_SNOWFLAKE_USER}}
-      TARGET_SNOWFLAKE_PASSWORD: ${{secrets.TARGET_SNOWFLAKE_PASSWORD}}
-      TARGET_SNOWFLAKE_ACCOUNT: ${{secrets.TARGET_SNOWFLAKE_ACCOUNT}}
-      TARGET_SNOWFLAKE_DATABASE: ${{secrets.TARGET_SNOWFLAKE_DATABASE}}
-      TARGET_SNOWFLAKE_WAREHOUSE: ${{secrets.TARGET_SNOWFLAKE_WAREHOUSE}}
-      TARGET_SNOWFLAKE_ROLE: ${{secrets.TARGET_SNOWFLAKE_ROLE}}
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -58,23 +49,25 @@ jobs:
           os: "macos-latest"
         - python-version: "3.14"
           os: "windows-latest"
+
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - name: Set up Python ${{ matrix.python-version }}
-      id: setup-python
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+    - uses: astral-sh/setup-uv@6ee6290f1cbc4156c0bdd66691b2c144ef8df19a # v7.4.0
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install uv
-      uses: astral-sh/setup-uv@6ee6290f1cbc4156c0bdd66691b2c144ef8df19a # v7.4.0
-      with:
         version: ">=0.9"
     - name: Install dependencies
-      env:
-        UV_PYTHON: ${{ steps.setup-python.outputs.python-path }}
       run: |
         uv sync --all-extras --dev
     - name: Test with pytest
+      env:
+        SINGER_SDK_LOG_CONFIG: ./target_snowflake_logging.yaml
+        TARGET_SNOWFLAKE_USER: ${{secrets.TARGET_SNOWFLAKE_USER}}
+        TARGET_SNOWFLAKE_PASSWORD: ${{secrets.TARGET_SNOWFLAKE_PASSWORD}}
+        TARGET_SNOWFLAKE_ACCOUNT: ${{secrets.TARGET_SNOWFLAKE_ACCOUNT}}
+        TARGET_SNOWFLAKE_DATABASE: ${{secrets.TARGET_SNOWFLAKE_DATABASE}}
+        TARGET_SNOWFLAKE_WAREHOUSE: ${{secrets.TARGET_SNOWFLAKE_WAREHOUSE}}
+        TARGET_SNOWFLAKE_ROLE: ${{secrets.TARGET_SNOWFLAKE_ROLE}}
       run: |
         uv run pytest -n auto
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
