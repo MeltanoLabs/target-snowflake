@@ -32,9 +32,9 @@ class BaseSnowflakeTargetTests:
 
     @pytest.fixture
     def connection(self, runner):
-        return runner.singer_class.default_sink_class.connector_class(
-            runner.config,
-        ).connection
+        connector = runner.singer_class.default_sink_class.connector_class(runner.config)
+        with connector.connect() as conn:
+            yield conn
 
     @pytest.fixture
     def resource(self, runner, connection):

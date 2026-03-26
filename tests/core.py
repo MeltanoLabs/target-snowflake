@@ -32,17 +32,18 @@ class SnowflakeTargetArrayData(TargetArrayData):
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
-        result = connector.connection.execute(
-            text(f"select * from {table} order by 1"),
-        )
-        assert result.rowcount == 4
-        row = result.first()
-        if self.target.config.get("add_record_metadata", True):
-            assert len(row) == 9, f"Row has unexpected length {len(row)}"
-        else:
-            assert len(row) == 2, f"Row has unexpected length {len(row)}"
+        with connector.connect() as conn:
+            result = conn.execute(
+                text(f"select * from {table} order by 1"),
+            )
+            assert result.rowcount == 4
+            row = result.first()
+            if self.target.config.get("add_record_metadata", True):
+                assert len(row) == 9, f"Row has unexpected length {len(row)}"
+            else:
+                assert len(row) == 2, f"Row has unexpected length {len(row)}"
 
-        assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
+            assert row[1] == '[\n  "apple",\n  "orange",\n  "pear"\n]'
         table_schema = connector.get_table(table)
         expected_types = {
             "id": types.DECIMAL,
@@ -106,18 +107,19 @@ class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
-        result = connector.connection.execute(
-            text(f"select * from {table} order by 1"),
-        )
-        expected_value = {
-            1: 100,
-            2: 20,
-        }
-        assert result.rowcount == 2
-        for row in result:
-            assert len(row) == 9, f"Row has unexpected length {len(row)}"
-            assert row[0] in expected_value
-            assert expected_value.get(row[0]) == row[1]
+        with connector.connect() as conn:
+            result = conn.execute(
+                text(f"select * from {table} order by 1"),
+            )
+            expected_value = {
+                1: 100,
+                2: 20,
+            }
+            assert result.rowcount == 2
+            for row in result:
+                assert len(row) == 9, f"Row has unexpected length {len(row)}"
+                assert row[0] in expected_value
+                assert expected_value.get(row[0]) == row[1]
 
         table_schema = connector.get_table(table)
         expected_types = {
@@ -149,9 +151,10 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
         )
-        connector.connection.execute(
-            text(f"select * from {table} order by 1"),
-        )
+        with connector.connect() as conn:
+            conn.execute(
+                text(f"select * from {table} order by 1"),
+            )
 
         table_schema = connector.get_table(table)
         expected_types = {
@@ -184,9 +187,10 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
             table = (
                 f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             )
-            connector.connection.execute(
-                text(f"select * from {table} order by 1"),
-            )
+            with connector.connect() as conn:
+                conn.execute(
+                    text(f"select * from {table} order by 1"),
+                )
             # TODO: more assertions
 
 
@@ -240,15 +244,16 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
             table = (
                 f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             )
-            result = connector.connection.execute(
-                text(f"select * from {table} order by 1"),
-            )
-            assert result.rowcount == 2
-            row = result.first()
-            if self.target.config.get("add_record_metadata", True):
-                assert len(row) == 8, f"Row has unexpected length {len(row)}"
-            else:
-                assert len(row) == 1, f"Row has unexpected length {len(row)}"
+            with connector.connect() as conn:
+                result = conn.execute(
+                    text(f"select * from {table} order by 1"),
+                )
+                assert result.rowcount == 2
+                row = result.first()
+                if self.target.config.get("add_record_metadata", True):
+                    assert len(row) == 8, f"Row has unexpected length {len(row)}"
+                else:
+                    assert len(row) == 1, f"Row has unexpected length {len(row)}"
 
             table_schema = connector.get_table(table)
             expected_types = {
@@ -275,16 +280,17 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
-        result = connector.connection.execute(
-            text(f"select * from {table} order by 1"),
-        )
-        assert result.rowcount == 6
-        row = result.first()
+        with connector.connect() as conn:
+            result = conn.execute(
+                text(f"select * from {table} order by 1"),
+            )
+            assert result.rowcount == 6
+            row = result.first()
 
-        if self.target.config.get("add_record_metadata", True):
-            assert len(row) == 13, f"Row has unexpected length {len(row)}"
-        else:
-            assert len(row) == 7, f"Row has unexpected length {len(row)}"
+            if self.target.config.get("add_record_metadata", True):
+                assert len(row) == 13, f"Row has unexpected length {len(row)}"
+            else:
+                assert len(row) == 7, f"Row has unexpected length {len(row)}"
 
         table_schema = connector.get_table(table)
         expected_types = {
@@ -324,12 +330,13 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
-        result = connector.connection.execute(
-            text(f"select * from {table}"),
-        )
-        assert result.rowcount == 2
-        row = result.first()
-        assert len(row) == 12, f"Row has unexpected length {len(row)}"
+        with connector.connect() as conn:
+            result = conn.execute(
+                text(f"select * from {table}"),
+            )
+            assert result.rowcount == 2
+            row = result.first()
+            assert len(row) == 12, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
@@ -346,12 +353,13 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
-        result = connector.connection.execute(
-            text(f"select * from {table}"),
-        )
-        assert result.rowcount == 1
-        row = result.first()
-        assert len(row) == 11, f"Row has unexpected length {len(row)}"
+        with connector.connect() as conn:
+            result = conn.execute(
+                text(f"select * from {table}"),
+            )
+            assert result.rowcount == 1
+            row = result.first()
+            assert len(row) == 11, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
@@ -365,12 +373,13 @@ class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
-        result = connector.connection.execute(
-            text(f"select * from {table}"),
-        )
-        assert result.rowcount == 1
-        row = result.first()
-        assert len(row) == 12, f"Row has unexpected length {len(row)}"
+        with connector.connect() as conn:
+            result = conn.execute(
+                text(f"select * from {table}"),
+            )
+            assert result.rowcount == 1
+            row = result.first()
+            assert len(row) == 12, f"Row has unexpected length {len(row)}"
         table_schema = connector.get_table(table)
         assert {column.name for column in table_schema.columns} == {
             "FOO::BAR",
@@ -399,8 +408,9 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
     def setup(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
-        connector.connection.execute(
-            text(f"""
+        with connector.connect() as conn:
+            conn.execute(
+                text(f"""
             CREATE OR REPLACE TABLE {table} (
                 ID VARCHAR(16777216),
                 COL_STR VARCHAR(16777216),
@@ -417,17 +427,18 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
                 PRIMARY KEY (ID)
             )
             """),
-        )
+            )
 
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
-        result = connector.connection.execute(
-            text(f"select * from {table}"),
-        )
-        assert result.rowcount == 1
-        row = result.first()
-        assert len(row) == 13, f"Row has unexpected length {len(row)}"
+        with connector.connect() as conn:
+            result = conn.execute(
+                text(f"select * from {table}"),
+            )
+            assert result.rowcount == 1
+            row = result.first()
+            assert len(row) == 13, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
@@ -437,8 +448,9 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
     def setup(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
-        connector.connection.execute(
-            text(f"""
+        with connector.connect() as conn:
+            conn.execute(
+                text(f"""
             CREATE OR REPLACE TABLE {table} (
                 ID VARCHAR(16777216),
                 COL_STR VARCHAR(16777216),
@@ -455,7 +467,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
                 PRIMARY KEY (ID)
             )
             """),
-        )
+            )
 
 
 class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
@@ -470,8 +482,9 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
     def setup(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
-        connector.connection.execute(
-            text(f"""
+        with connector.connect() as conn:
+            conn.execute(
+                text(f"""
             CREATE OR REPLACE TABLE {table} (
                 ID VARCHAR(16777216),
                 COL_STR VARCHAR(16777216),
@@ -488,7 +501,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
                 PRIMARY KEY (ID)
             )
             """),
-        )
+            )
 
 
 class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
@@ -505,10 +518,11 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
     def validate(self) -> None:
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
-        result = connector.connection.execute(text(f"select * from {table}"))
-        assert result.rowcount == 1
-        row = result.first()
-        assert len(row) == 13, f"Row has unexpected length {len(row)}"
+        with connector.connect() as conn:
+            result = conn.execute(text(f"select * from {table}"))
+            assert result.rowcount == 1
+            row = result.first()
+            assert len(row) == 13, f"Row has unexpected length {len(row)}"
 
 
 class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
@@ -551,15 +565,16 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         # Seed the 2 columns from tap schema and an unused third column to assert explicit inserts are working
-        connector.connection.execute(
-            text(f"""
+        with connector.connect() as conn:
+            conn.execute(
+                text(f"""
             CREATE OR REPLACE TABLE {table} (
                 COL1 VARCHAR(16777216),
                 COL3 TIMESTAMP_NTZ(9),
                 COL2 BOOLEAN
             )
             """),
-        )
+            )
 
     @property
     def singer_filepath(self) -> Path:

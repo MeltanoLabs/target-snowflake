@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import urllib.parse
+from contextlib import contextmanager
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
@@ -30,8 +31,9 @@ from target_snowflake.snowflake_types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Generator, Iterable, Sequence
 
+    import sqlalchemy as sa
     from sqlalchemy.engine import Engine
 
 
@@ -105,6 +107,12 @@ class SnowflakeConnector(SQLConnector):
         self.schema_cache: dict = {}
         self._inspector: sqlalchemy.Inspector | None = None
         super().__init__(*args, **kwargs)
+
+    @contextmanager
+    def connect(self) -> Generator[sa.Connection, None, None]:
+        """Return a SQLAlchemy connection context manager."""
+        with self._connect() as conn:
+            yield conn
 
     @property
     def inspector(self) -> sqlalchemy.Inspector:
