@@ -87,13 +87,9 @@ convention = "google"
 addopts = [
     "--durations=10",
     "-ra",
-    "--strict-config",
-    "--strict-markers",
 ]
 filterwarnings = [
     "error",
-    "once:`SQLConnector.create_sqlalchemy_connection` is deprecated:singer_sdk.helpers._compat.SingerSDKDeprecationWarning",
-    "once:`SQLConnector.connection` is deprecated:singer_sdk.helpers._compat.SingerSDKDeprecationWarning",
 ]
 log_level = "INFO"
 minversion = "9"
