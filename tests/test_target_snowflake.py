@@ -8,6 +8,7 @@ import uuid
 from typing import Any
 
 import pytest
+from dotenv import load_dotenv
 from singer_sdk.testing import TargetTestRunner, get_target_test_class
 from sqlalchemy import text
 
@@ -15,6 +16,8 @@ from target_snowflake.target import TargetSnowflake
 
 from .batch import batch_target_tests
 from .core import target_tests
+
+load_dotenv()
 
 SAMPLE_CONFIG: dict[str, Any] = {
     "user": os.environ["TARGET_SNOWFLAKE_USER"],

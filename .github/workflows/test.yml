@@ -5,10 +5,10 @@ on:
     branches: [main]
     paths:
     - .github/workflows/test.yml
+    - .pytest.toml
     - target_snowflake/**
     - tests/**
     - uv.lock
-    - pyproject.toml
     - tox.toml
   pull_request:
     branches: [main]
@@ -17,7 +17,6 @@ on:
     - target_snowflake/**
     - tests/**
     - uv.lock
-    - pyproject.toml
     - tox.toml
   workflow_dispatch:
 
@@ -38,9 +37,6 @@ jobs:
       matrix:
         python-version:
         - "3.14"
-        - "3.13"
-        - "3.12"
-        - "3.11"
         - "3.10"
         os:
         - ubuntu-latest
@@ -55,10 +51,7 @@ jobs:
     - uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
       with:
         python-version: ${{ matrix.python-version }}
-        version: ">=0.9"
-    - name: Install dependencies
-      run: |
-        uv sync --all-extras --dev
+        version: ">=0.11"
     - name: Test with pytest
       env:
         SINGER_SDK_LOG_CONFIG: ./target_snowflake_logging.yaml
@@ -68,8 +61,9 @@ jobs:
         TARGET_SNOWFLAKE_DATABASE: ${{secrets.TARGET_SNOWFLAKE_DATABASE}}
         TARGET_SNOWFLAKE_WAREHOUSE: ${{secrets.TARGET_SNOWFLAKE_WAREHOUSE}}
         TARGET_SNOWFLAKE_ROLE: ${{secrets.TARGET_SNOWFLAKE_ROLE}}
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
-        uv run pytest -n auto
+        uvx --with tox-uv tox -e $PYTHON_VERSION
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: snowflake-logs-py${{ matrix.python-version }}-${{ matrix.os }}

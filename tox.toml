@@ -1,5 +1,5 @@
 requires = [
-    "tox>=4.43",
+    "tox>=4.51",
     "tox-uv",
 ]
 env_list = [
@@ -8,12 +8,18 @@ env_list = [
 ]
 
 [env.test]
+runner = "uv-venv-lock-runner"
 description = "run tests on Python {py_dot_ver}"
-base_python = "3.14"  # TODO: Use .python-version (https://github.com/tox-dev/tox/issues/3894)
+base_python_file = [ ".python-version" ]
 
 [env.typing]
 description = "type checks"
-dependency_groups = [ "testing", "typing" ]
+deps = [
+    "mypy>=1.20",
+    "python-dotenv>=1.2",
+    "pytest>=9",
+    "ty>=0.0.30",
+]
 labels = [ "check" ]
 commands = [
     [ "mypy", "target_snowflake", "tests" ],
@@ -21,7 +27,12 @@ commands = [
 ]
 
 [env_run_base]
-runner = "uv-venv-lock-runner"
 pass_env = [ "TARGET_SNOWFLAKE_*" ]
-dependency_groups = [ "testing" ]
-commands = [ [ "pytest", { replace = "posargs", default = [ "tests" ], extend = true } ] ]
+deps = [
+    "coverage>=7.2.7",
+    "python-dotenv>=1.2",
+    "pytest>=9",
+    "pytest-xdist>=3.3.1",
+    "singer-sdk[testing]",
+]
+commands = [ [ "pytest", "-n=auto", { replace = "posargs", default = [ "tests" ], extend = true } ] ]
