@@ -1,0 +1,9 @@
+[version]
+fallback-version = "0.0.0"
+source = "vcs"
+
+[build.targets.sdist]
+include = ["target_snowflake"]
+
+[build.targets.wheel]
+include = ["target_snowflake"]
