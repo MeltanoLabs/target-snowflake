@@ -597,6 +597,7 @@ dependencies = [
     { name = "snowflake-connector-python", extra = ["secure-local-storage"] },
     { name = "snowflake-sqlalchemy" },
     { name = "sqlalchemy" },
+    { name = "typing-extensions" },
 ]
 
 [package.metadata]
@@ -607,6 +608,7 @@ requires-dist = [
     { name = "snowflake-connector-python", extras = ["secure-local-storage"], specifier = "~=4.0" },
     { name = "snowflake-sqlalchemy", specifier = "==1.9.0" },
     { name = "sqlalchemy", specifier = "~=2.0.31" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
 ]
 
 [[package]]

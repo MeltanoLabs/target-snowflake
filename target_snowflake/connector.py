@@ -21,6 +21,7 @@ from snowflake.sqlalchemy import URL
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 from sqlalchemy.sql import text
+from typing_extensions import override
 
 from target_snowflake.snowflake_types import (
     NUMBER,
@@ -41,15 +42,16 @@ class SnowflakeFullyQualifiedName(FullyQualifiedName):
     def __init__(
         self,
         *,
-        table: str | None = None,
+        table: str = "",
         schema: str | None = None,
         database: str | None = None,
         delimiter: str = ".",
-        dialect: SnowflakeDialect,
+        dialect: sa.Dialect,
     ) -> None:
         self.dialect = dialect
         super().__init__(table=table, schema=schema, database=database, delimiter=delimiter)
 
+    @override
     def prepare_part(self, part: str) -> str:
         return self.dialect.identifier_preparer.quote(part)
 
@@ -104,7 +106,7 @@ class SnowflakeConnector(SQLConnector):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.table_cache: dict = {}
-        self.schema_cache: dict = {}
+        self.schema_cache: list[str] = []
         self._inspector: sqlalchemy.Inspector | None = None
         super().__init__(*args, **kwargs)
 
@@ -123,7 +125,7 @@ class SnowflakeConnector(SQLConnector):
 
     def get_table_columns(
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         column_names: list[str] | None = None,
     ) -> dict[str, sqlalchemy.Column]:
         """Return a list of table columns.
@@ -257,7 +259,7 @@ class SnowflakeConnector(SQLConnector):
 
     def get_connect_args(self) -> dict[str, Any]:
         """Get the connect args for the connector."""
-        connect_args = {
+        connect_args: dict[str, Any] = {
             "session_parameters": {
                 "QUOTED_IDENTIFIERS_IGNORE_CASE": "TRUE",
             },
@@ -303,7 +305,7 @@ class SnowflakeConnector(SQLConnector):
 
     def prepare_column(
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         column_name: str,
         sql_type: sqlalchemy.types.TypeEngine,
     ) -> None:
@@ -330,7 +332,7 @@ class SnowflakeConnector(SQLConnector):
 
     @staticmethod
     def get_column_rename_ddl(
-        table_name: str,
+        table_name: str | FullyQualifiedName,
         column_name: str,
         new_column_name: str,
     ) -> sqlalchemy.DDL:
@@ -345,7 +347,7 @@ class SnowflakeConnector(SQLConnector):
 
     @staticmethod
     def get_column_alter_ddl(
-        table_name: str,
+        table_name: str | FullyQualifiedName,
         column_name: str,
         column_type: sqlalchemy.types.TypeEngine,
     ) -> sqlalchemy.DDL:
@@ -402,7 +404,7 @@ class SnowflakeConnector(SQLConnector):
 
     # Custom SQL get methods
 
-    def _get_put_statement(self, sync_id: str, file_uri: str) -> tuple[text, dict]:  # noqa: ARG002
+    def _get_put_statement(self, sync_id: str, file_uri: str) -> tuple[sa.TextClause, dict]:  # noqa: ARG002
         """Get Snowflake PUT statement."""
         return (text(f"put :file_uri '@~/target-snowflake/{sync_id}'"), {})
 
@@ -443,7 +445,7 @@ class SnowflakeConnector(SQLConnector):
 
     def _get_merge_from_stage_statement(  # noqa: ANN202
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         schema: dict,
         sync_id: str,
         file_format: str,
@@ -565,7 +567,7 @@ class SnowflakeConnector(SQLConnector):
 
     def merge_from_stage(
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         schema: dict,
         sync_id: str,
         file_format: str,
@@ -592,7 +594,7 @@ class SnowflakeConnector(SQLConnector):
 
     def copy_from_stage(
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         schema: dict,
         sync_id: str,
         file_format: str,
@@ -693,7 +695,7 @@ class SnowflakeConnector(SQLConnector):
 
     def _adapt_column_type(
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         column_name: str,
         sql_type: sqlalchemy.types.TypeEngine,
     ) -> None:
@@ -723,7 +725,7 @@ class SnowflakeConnector(SQLConnector):
             )
             raise
 
-    def get_fully_qualified_name(
+    def get_fully_qualified_name(  # type: ignore[override]
         self,
         table_name: str | None = None,
         schema_name: str | None = None,
@@ -731,7 +733,7 @@ class SnowflakeConnector(SQLConnector):
         delimiter: str = ".",
     ) -> SnowflakeFullyQualifiedName:
         return SnowflakeFullyQualifiedName(
-            table=table_name,
+            table=table_name,  # type: ignore[arg-type] # ty:ignore[invalid-argument-type]
             schema=schema_name,
             database=db_name,
             delimiter=delimiter,

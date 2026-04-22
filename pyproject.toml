@@ -34,6 +34,7 @@ dependencies = [
     "snowflake-connector-python[secure-local-storage]~=4.0",
     "snowflake-sqlalchemy==1.9.0",
     "sqlalchemy~=2.0.31",
+    "typing-extensions>=4.15.0",
 ]
 
 [project.scripts]

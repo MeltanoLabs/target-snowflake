@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
@@ -25,9 +26,13 @@ from singer_sdk.testing.target_tests import (
 from singer_sdk.testing.templates import TargetFileTestTemplate
 from sqlalchemy import text, types
 
+if TYPE_CHECKING:
+    from singer_sdk.sql import SQLTarget
+
 
 class SnowflakeTargetArrayData(TargetArrayData):
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
@@ -66,6 +71,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
 
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
         table_schema = connector.get_table(table)
@@ -103,6 +109,7 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
 
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
@@ -147,6 +154,7 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
         return "TestCamelcase"
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
@@ -182,6 +190,7 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
         return ["test_strings", "test_strings_in_objects", "test_strings_in_arrays"]
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         for table_name in self.stream_names:
             table = (
@@ -237,6 +246,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
         ]
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         for table_name in self.stream_names:
             connector = self.target.default_sink_class.connector_class(
                 self.target.config,
@@ -276,6 +286,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
@@ -328,6 +339,7 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
@@ -351,6 +363,7 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
@@ -371,6 +384,7 @@ class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
@@ -406,6 +420,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def setup(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
@@ -430,6 +445,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
             )
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
@@ -446,6 +462,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
 
     def setup(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
@@ -480,6 +497,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
 
     def setup(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
         with connector.connect() as conn:
@@ -516,6 +534,7 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
         with connector.connect() as conn:
@@ -534,6 +553,7 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         table_schema = connector.get_table(table)
@@ -562,6 +582,7 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
     name = "column_order_mismatch"
 
     def setup(self) -> None:
+        self.target = cast("SQLTarget", self.target)
         connector = self.target.default_sink_class.connector_class(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         # Seed the 2 columns from tap schema and an unused third column to assert explicit inserts are working

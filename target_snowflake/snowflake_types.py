@@ -7,6 +7,9 @@ import snowflake.sqlalchemy.custom_types as sct
 from sqlalchemy.types import DateTime
 from typing_extensions import override
 
+if t.TYPE_CHECKING:
+    import sqlalchemy.sql.type_api
+
 
 class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
     """Snowflake TIMESTAMP_TZ type."""
@@ -16,7 +19,7 @@ class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
         return dt.datetime
 
     @override
-    def as_generic(self, **kwargs: t.Any):
+    def as_generic(self, allow_nulltype: bool = False) -> sqlalchemy.sql.type_api.TypeEngine[dt.datetime]:
         return DateTime(timezone=True)
 
 
@@ -28,7 +31,7 @@ class TIMESTAMP_LTZ(sct.TIMESTAMP_LTZ):  # noqa: N801
         return dt.datetime
 
     @override
-    def as_generic(self, **kwargs: t.Any):
+    def as_generic(self, allow_nulltype: bool = False) -> sqlalchemy.sql.type_api.TypeEngine[dt.datetime]:
         return DateTime(timezone=True)
 
 
@@ -43,7 +46,7 @@ class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
         return dt.datetime
 
     @override
-    def as_generic(self, **kwargs: t.Any):
+    def as_generic(self, allow_nulltype: bool = False) -> sqlalchemy.sql.type_api.TypeEngine[dt.datetime]:
         return DateTime()
 
 

@@ -70,7 +70,7 @@ StandardTargetTests = get_target_test_class(
 )
 
 
-class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # type: ignore[misc, valid-type]
+class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # type: ignore[misc, valid-type]  # ty:ignore[unsupported-base]
     """Standard Target Tests."""
 
 
@@ -87,7 +87,7 @@ BatchTargetTests = get_target_test_class(
 )
 
 
-class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]
+class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]  # ty:ignore[unsupported-base]
     """Batch Target Tests."""
 
 
@@ -97,7 +97,7 @@ def test_invalid_database():
     runner = TargetTestRunner(
         TargetSnowflake,
         config=INVALID_TEST_CONFIG,
-        input_filepath="tests/target_test_streams/existing_table.singer",
+        input_filepath="tests/target_test_streams/existing_table.singer",  # ty:ignore[invalid-argument-type]
     )
     with pytest.raises(Exception):  # noqa: B017, PT011
         runner.sync_all()

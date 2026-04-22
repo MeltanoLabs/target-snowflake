@@ -15,7 +15,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:  # n
     loggers: list[logging.Logger] = [
         logging.getLogger(),
         *list(logging.Logger.manager.loggerDict.values()),  # type: ignore[list-item]
-    ]
+    ]  # ty:ignore[invalid-assignment]
 
     for logger in loggers:
         handlers = getattr(logger, "handlers", [])
