@@ -297,9 +297,9 @@ class SnowflakeConnector(SQLConnector):
         )
 
         # Snowflake dialect doesn't natively recognise UUID columns returned by reflection
-        engine.dialect.ischema_names["UUID"] = sqlalchemy.types.UUID
+        engine.dialect.ischema_names["UUID"] = sqlalchemy.types.Uuid
         # Map Python's uuid.UUID to SQLAlchemy's UUID type when writing values
-        engine.dialect.colspecs[uuid.UUID] = sqlalchemy.types.UUID
+        engine.dialect.colspecs[uuid.UUID] = sqlalchemy.types.Uuid
 
         with engine.connect() as conn:
             db_names = [db[1] for db in conn.execute(text("SHOW DATABASES;")).fetchall()]
