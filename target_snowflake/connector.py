@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import urllib.parse
+import uuid
 from contextlib import contextmanager
 from enum import Enum
 from functools import cached_property
@@ -294,6 +295,12 @@ class SnowflakeConnector(SQLConnector):
             connect_args=self.get_connect_args(),
             echo=False,
         )
+
+        # Snowflake dialect doesn't natively recognise UUID columns returned by reflection
+        engine.dialect.ischema_names["UUID"] = sqlalchemy.types.Uuid
+        # Map Python's uuid.UUID to SQLAlchemy's UUID type when writing values
+        engine.dialect.colspecs[uuid.UUID] = sqlalchemy.types.Uuid
+
         with engine.connect() as conn:
             db_names = [db[1] for db in conn.execute(text("SHOW DATABASES;")).fetchall()]
             if self.config["database"] not in db_names:
