@@ -204,7 +204,6 @@ class SnowflakeConnector(SQLConnector):
                     backend=default_backend(),
                 )
             else:
-                # Decode the base64-encoded private key bytes.
                 try:
                     self.logger.debug("Private key is in base64 format")
                     key_content = base64.b64decode(private_key)
@@ -212,7 +211,6 @@ class SnowflakeConnector(SQLConnector):
                     error_message = f"Invalid private key format: {e}"
                     raise ValueError(error_message) from e
 
-                # Try DER first; fall back to PEM for backward compatibility.
                 self.logger.debug("Attempting serialization of private key as DER")
                 try:
                     p_key = serialization.load_der_private_key(
@@ -221,7 +219,7 @@ class SnowflakeConnector(SQLConnector):
                         backend=default_backend(),
                     )
                 except ValueError:
-                    self.logger.info("DER deserialization failed; retrying as PEM")
+                    self.logger.debug("DER deserialization failed; retrying as PEM")
                     p_key = serialization.load_pem_private_key(
                         key_content,
                         password=encoded_passphrase,
