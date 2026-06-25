@@ -182,6 +182,11 @@ class SnowflakeConnector(SQLConnector):
                 raise FileNotFoundError(error_message)
             with key_path.open("rb") as key_file:
                 key_content = key_file.read()
+            p_key = serialization.load_pem_private_key(
+                key_content,
+                password=encoded_passphrase,
+                backend=default_backend(),
+            )
         else:
             private_key = self.config["private_key"]
             self.logger.debug("Reading private key from config")
@@ -192,7 +197,11 @@ class SnowflakeConnector(SQLConnector):
                     stacklevel=2,
                 )
                 self.logger.info("Private key is in PEM format")
-                key_content = private_key.encode()
+                p_key = serialization.load_pem_private_key(
+                    private_key.encode(),
+                    password=encoded_passphrase,
+                    backend=default_backend(),
+                )
             else:
                 try:
                     self.logger.debug("Private key is in base64 format")
@@ -200,11 +209,11 @@ class SnowflakeConnector(SQLConnector):
                 except binascii.Error as e:
                     error_message = f"Invalid private key format: {e}"
                     raise ValueError(error_message) from e
-        p_key = serialization.load_pem_private_key(
-            key_content,
-            password=encoded_passphrase,
-            backend=default_backend(),
-        )
+                p_key = serialization.load_der_private_key(
+                    key_content,
+                    password=encoded_passphrase,
+                    backend=default_backend(),
+                )
 
         return p_key.private_bytes(
             encoding=serialization.Encoding.DER,
