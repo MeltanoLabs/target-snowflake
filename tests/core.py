@@ -25,10 +25,12 @@ from singer_sdk.testing.target_tests import (
 from singer_sdk.testing.templates import TargetFileTestTemplate
 from sqlalchemy import text, types
 
+from target_snowflake.connector import SnowflakeConnector
+
 
 class SnowflakeTargetArrayData(TargetArrayData):
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
@@ -38,6 +40,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
             )
             assert result.rowcount == 4
             row = result.first()
+            assert row is not None
             if self.target.config.get("add_record_metadata", True):
                 assert len(row) == 9, f"Row has unexpected length {len(row)}"
             else:
@@ -66,7 +69,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
 
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
         table_schema = connector.get_table(table)
         expected_types = {
@@ -103,7 +106,7 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
 
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
@@ -147,7 +150,7 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
         return "TestCamelcase"
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.stream_name}".upper()
         )
@@ -182,7 +185,7 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
         return ["test_strings", "test_strings_in_objects", "test_strings_in_arrays"]
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         for table_name in self.stream_names:
             table = (
                 f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
@@ -238,9 +241,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 
     def validate(self) -> None:
         for table_name in self.stream_names:
-            connector = self.target.default_sink_class.connector_class(
-                self.target.config,
-            )
+            connector = SnowflakeConnector(self.target.config)
             table = (
                 f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{table_name}".upper()
             )
@@ -249,7 +250,10 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
                     text(f"select * from {table} order by 1"),
                 )
                 assert result.rowcount == 2
+
                 row = result.first()
+                assert row is not None
+
                 if self.target.config.get("add_record_metadata", True):
                     assert len(row) == 8, f"Row has unexpected length {len(row)}"
                 else:
@@ -276,7 +280,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = (
             f"{self.target.config['database']}.{self.target.config['default_target_schema']}.test_{self.name}".upper()
         )
@@ -285,7 +289,9 @@ class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
                 text(f"select * from {table} order by 1"),
             )
             assert result.rowcount == 6
+
             row = result.first()
+            assert row is not None
 
             if self.target.config.get("add_record_metadata", True):
                 assert len(row) == 13, f"Row has unexpected length {len(row)}"
@@ -328,14 +334,16 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
             result = conn.execute(
                 text(f"select * from {table}"),
             )
             assert result.rowcount == 2
+
             row = result.first()
+            assert row is not None
             assert len(row) == 12, f"Row has unexpected length {len(row)}"
 
 
@@ -351,14 +359,16 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
             result = conn.execute(
                 text(f"select * from {table}"),
             )
             assert result.rowcount == 1
+
             row = result.first()
+            assert row is not None
             assert len(row) == 11, f"Row has unexpected length {len(row)}"
 
 
@@ -371,15 +381,18 @@ class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
             result = conn.execute(
                 text(f"select * from {table}"),
             )
             assert result.rowcount == 1
+
             row = result.first()
+            assert row is not None
             assert len(row) == 12, f"Row has unexpected length {len(row)}"
+
         table_schema = connector.get_table(table)
         assert {column.name for column in table_schema.columns} == {
             "FOO::BAR",
@@ -406,7 +419,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def setup(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
             conn.execute(
@@ -430,14 +443,16 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
             )
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
             result = conn.execute(
                 text(f"select * from {table}"),
             )
             assert result.rowcount == 1
+
             row = result.first()
+            assert row is not None
             assert len(row) == 13, f"Row has unexpected length {len(row)}"
 
 
@@ -446,7 +461,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
 
     def setup(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         with connector.connect() as conn:
             conn.execute(
@@ -480,7 +495,7 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
 
     def setup(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
         with connector.connect() as conn:
             conn.execute(
@@ -516,12 +531,14 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
         with connector.connect() as conn:
             result = conn.execute(text(f"select * from {table}"))
             assert result.rowcount == 1
+
             row = result.first()
+            assert row is not None
             assert len(row) == 13, f"Row has unexpected length {len(row)}"
 
 
@@ -534,7 +551,7 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
     def validate(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         table_schema = connector.get_table(table)
         expected_types = {
@@ -562,7 +579,7 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
     name = "column_order_mismatch"
 
     def setup(self) -> None:
-        connector = self.target.default_sink_class.connector_class(self.target.config)
+        connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
         # Seed the 2 columns from tap schema and an unused third column to assert explicit inserts are working
         with connector.connect() as conn:
@@ -612,5 +629,5 @@ target_tests = SingerTestSuite(
         SnowflakeTargetReservedWordsInTable,
         SnowflakeTargetTypeEdgeCasesTest,
         SnowflakeTargetColumnOrderMismatch,
-    ],
+    ],  # ty:ignore[invalid-argument-type]
 )
