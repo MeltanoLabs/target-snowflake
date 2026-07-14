@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "hatchling==1.30.1",
+    "hatchling==1.31.0",
     "hatch-vcs==0.5",
 ]
 build-backend = "hatchling.build"
@@ -28,11 +28,11 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "certifi==2026.4.22",
+    "certifi==2026.6.17",
     "cryptography>=40",
-    "singer-sdk[sql]~=0.53.3",
+    "singer-sdk[sql]~=0.54.5",
     "snowflake-connector-python[secure-local-storage]~=4.0",
-    "snowflake-sqlalchemy==1.9.0",
+    "snowflake-sqlalchemy==1.11.0",
     "sqlalchemy~=2.0.31",
 ]
 

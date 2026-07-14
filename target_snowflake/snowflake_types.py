@@ -16,7 +16,7 @@ class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
         return dt.datetime
 
     @override
-    def as_generic(self, **kwargs: t.Any):
+    def as_generic(self, allow_nulltype: bool = False) -> DateTime:
         return DateTime(timezone=True)
 
 
@@ -28,7 +28,7 @@ class TIMESTAMP_LTZ(sct.TIMESTAMP_LTZ):  # noqa: N801
         return dt.datetime
 
     @override
-    def as_generic(self, **kwargs: t.Any):
+    def as_generic(self, allow_nulltype: bool = False) -> DateTime:
         return DateTime(timezone=True)
 
 
@@ -43,7 +43,7 @@ class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
         return dt.datetime
 
     @override
-    def as_generic(self, **kwargs: t.Any):
+    def as_generic(self, allow_nulltype: bool = False) -> DateTime:
         return DateTime()
 
 

@@ -192,5 +192,5 @@ batch_target_tests = SingerTestSuite(
         SnowflakeTargetBatchSchemaNoProperties,
         # SnowflakeTargetBatchSchemaUpdates,
         SnowflakeTargetBatchSpecialCharsInAttributes,
-    ],
+    ],  # ty:ignore[invalid-argument-type]
 )

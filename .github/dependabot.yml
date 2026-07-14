@@ -16,6 +16,8 @@ updates:
     groups:
       development-dependencies:
         dependency-type: development
+    cooldown:
+      default-days: 7
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -26,3 +28,5 @@ updates:
       actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7

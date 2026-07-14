@@ -3,6 +3,8 @@ ci:
   autofix_commit_msg: "style: pre-commit fixes"
   autoupdate_schedule: quarterly
   autoupdate_commit_msg: 'chore: pre-commit autoupdate'
+  skip:
+  - uv-audit
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -22,26 +24,28 @@ repos:
   - id: check-github-workflows
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.20
+  rev: v0.15.21
   hooks:
   - id: ruff-check
     args: [--fix, --exit-non-zero-on-fix, --show-fixes]
   - id: ruff-format
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v2.1.0
+  rev: v2.3.0
   hooks:
   - id: mypy
     additional_dependencies:
     - types-requests
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.11.26
+  rev: 0.11.28
   hooks:
   - id: uv-lock
+  - id: uv-sync
+  - id: uv-audit
 
 - repo: https://github.com/crate-ci/typos
-  rev: v1
+  rev: v1.48.0
   hooks:
   - id: typos
 
