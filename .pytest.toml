@@ -1,0 +1,11 @@
+addopts = [
+    "--durations=10",
+    "-ra",
+]
+filterwarnings = [
+    "error",
+]
+log_level = "INFO"
+minversion = "9"
+strict = true
+testpaths = ["tests"]

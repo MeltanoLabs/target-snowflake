@@ -30,6 +30,10 @@ plugins:
       - database
       - use_browser_authentication
       - user
+    - - account
+      - database
+      - oauth_access_token
+      - user
     settings:
     - name: account
       kind: string
@@ -63,6 +67,11 @@ plugins:
       kind: integer
       label: Flattening Max Depth
       description: The max depth to flatten schemas.
+    - name: oauth_access_token
+      kind: string
+      label: OAuth Access Token
+      description: OAuth access token for authentication. Token should be valid and not expired.
+      sensitive: true
     - name: password
       kind: string
       label: Password

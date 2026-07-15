@@ -1,0 +1,20 @@
+line-length = 120
+
+[lint]
+ignore = [
+    "ANN201",
+    "COM812",
+    "TD",
+    "D",
+    "FIX",
+]
+select = ["ALL"]
+
+[lint.flake8-annotations]
+allow-star-arg-any = true
+
+[lint.per-file-ignores]
+"tests/*" = ["S101", "S608", "PLR2004", "ANN"]
+
+[lint.pydocstyle]
+convention = "google"

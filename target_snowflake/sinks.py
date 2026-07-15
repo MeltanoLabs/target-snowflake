@@ -7,21 +7,23 @@ import typing as t
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from singer_sdk.batch import JSONLinesBatcher
+from singer_sdk.contrib.batch_encoder_jsonl import JSONLinesBatcher
 from singer_sdk.helpers._batch import (
     BaseBatchFileEncoding,
     BatchConfig,
     BatchFileFormat,
 )
 from singer_sdk.helpers._typing import conform_record_data_types
-from singer_sdk.sinks import SQLSink
+from singer_sdk.helpers.conform import TypeConformanceLevel
+from singer_sdk.sql.sink import SQLSink
 from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 
 from target_snowflake.connector import SnowflakeConnector
 
 if t.TYPE_CHECKING:
-    from singer_sdk import PluginBase
+    from singer_sdk import Target
+    from singer_sdk.sql.connector import FullyQualifiedName
 
 DEFAULT_BATCH_CONFIG = {
     "encoding": {"format": "jsonl", "compression": "gzip"},
@@ -36,7 +38,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
     def __init__(
         self,
-        target: PluginBase,
+        target: Target,
         stream_name: str,
         schema: dict,
         key_properties: list[str] | None,
@@ -88,13 +90,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                 as_temp_table=False,
             )
         except Exception:
-            (
-                self.logger.exception(
-                    "Error creating %s %s",
-                    self.full_table_name,
-                    self.conform_schema(self.schema),
-                ),
-            )
+            self.logger.exception("Error creating %s %s", self.full_table_name, self.conform_schema(self.schema))
             raise
 
         self.connector.table_cache.pop(self.full_table_name, None)
@@ -113,7 +109,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
     def bulk_insert_records(
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         schema: dict,
         records: t.Iterable[dict[str, t.Any]],
     ) -> int | None:
@@ -138,7 +134,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                 stream_name=self.stream_name,
                 record=rcd,
                 schema=schema,
-                level="RECURSIVE",
+                level=TypeConformanceLevel.RECURSIVE,
                 logger=self.logger,
             )
             for rcd in records
@@ -163,7 +159,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
     # Custom methods to process batch files
 
     @property
-    def batch_config(self) -> BatchConfig | None:
+    def batch_config(self) -> BatchConfig:
         """Get batch configuration.
 
         Returns:
@@ -178,7 +174,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
     def insert_batch_files_via_internal_stage(
         self,
-        full_table_name: str,
+        full_table_name: str | FullyQualifiedName,
         files: t.Sequence[str],
     ) -> int:
         """Process a batch file with the given batch context.
@@ -192,9 +188,10 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             sync_id = f"{self.stream_name}-{uuid4()}"
             file_format = f'{self.database_name}.{self.schema_name}."{sync_id}"'
             self.connector.put_batches_to_stage(sync_id=sync_id, files=files)
-            self.connector.prepare_schema(
-                self.conform_name(self.schema_name, object_type="schema"),  # type: ignore[arg-type]
-            )
+            if self.schema_name:
+                self.connector.prepare_schema(
+                    self.conform_name(self.schema_name, object_type="schema"),  # type: ignore[arg-type]
+                )
             self.connector.create_file_format(file_format=file_format)
 
             if self.key_properties:

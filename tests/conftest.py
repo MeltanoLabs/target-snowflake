@@ -12,7 +12,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:  # n
     """Session Finish."""
     import logging  # noqa: PLC0415
 
-    loggers: list[logging.Logger] = [
+    loggers: list[logging.Logger] = [  # ty:ignore[invalid-assignment]
         logging.getLogger(),
         *list(logging.Logger.manager.loggerDict.values()),  # type: ignore[list-item]
     ]

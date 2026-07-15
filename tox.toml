@@ -1,0 +1,38 @@
+requires = [
+    "tox>=4.51",
+    "tox-uv",
+]
+env_list = [
+    "typing",
+    "test",
+]
+
+[env.test]
+runner = "uv-venv-lock-runner"
+description = "run tests on Python {py_dot_ver}"
+base_python_file = [ ".python-version" ]
+
+[env.typing]
+description = "type checks"
+deps = [
+    "mypy>=1.20",
+    "python-dotenv>=1.2",
+    "pytest>=9",
+    "ty>=0.0.30",
+]
+labels = [ "check" ]
+commands = [
+    [ "mypy", "target_snowflake", "tests" ],
+    [ "ty", "check", "target_snowflake", "tests" ],
+]
+
+[env_run_base]
+pass_env = [ "TARGET_SNOWFLAKE_*" ]
+deps = [
+    "coverage>=7.2.7",
+    "python-dotenv>=1.2",
+    "pytest>=9",
+    "pytest-xdist>=3.3.1",
+    "singer-sdk[testing]",
+]
+commands = [ [ "pytest", "-n=auto", { replace = "posargs", default = [ "tests" ], extend = true } ] ]

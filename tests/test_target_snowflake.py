@@ -8,22 +8,25 @@ import uuid
 from typing import Any
 
 import pytest
-import sqlalchemy as sa
+from dotenv import load_dotenv
 from singer_sdk.testing import TargetTestRunner, get_target_test_class
+from sqlalchemy import text
 
 from target_snowflake.target import TargetSnowflake
 
 from .batch import batch_target_tests
 from .core import target_tests
 
+load_dotenv()
+
 SAMPLE_CONFIG: dict[str, Any] = {
     "user": os.environ["TARGET_SNOWFLAKE_USER"],
-    "password": os.environ["TARGET_SNOWFLAKE_PASSWORD"],
+    "private_key": os.environ["TARGET_SNOWFLAKE_PRIVATE_KEY"],
     "account": os.environ["TARGET_SNOWFLAKE_ACCOUNT"],
     "database": os.environ["TARGET_SNOWFLAKE_DATABASE"],
     "warehouse": os.environ["TARGET_SNOWFLAKE_WAREHOUSE"],
     "role": os.environ["TARGET_SNOWFLAKE_ROLE"],
-    "schema": "PUBLIC",
+    "schema": os.environ["TARGET_SNOWFLAKE_SCHEMA"],
 }
 
 
@@ -32,9 +35,9 @@ class BaseSnowflakeTargetTests:
 
     @pytest.fixture
     def connection(self, runner):
-        return runner.singer_class.default_sink_class.connector_class(
-            runner.config,
-        ).connection
+        connector = runner.singer_class.default_sink_class.connector_class(runner.config)
+        with connector.connect() as conn:
+            yield conn
 
     @pytest.fixture
     def resource(self, runner, connection):
@@ -47,11 +50,11 @@ class BaseSnowflakeTargetTests:
         https://github.com/meltano/sdk/tree/main/tests/samples
         """
         connection.execute(
-            sa.text(f"create schema {runner.config['database']}.{runner.config['default_target_schema']}"),
+            text(f"create schema {runner.config['database']}.{runner.config['default_target_schema']}"),
         )
         yield
         connection.execute(
-            sa.text(f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}"),
+            text(f"drop schema if exists {runner.config['database']}.{runner.config['default_target_schema']}"),
         )
 
 
@@ -67,7 +70,7 @@ StandardTargetTests = get_target_test_class(
 )
 
 
-class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # type: ignore[misc, valid-type]
+class TestTargetSnowflake(BaseSnowflakeTargetTests, StandardTargetTests):  # type: ignore[misc, valid-type]  # ty:ignore[unsupported-base]
     """Standard Target Tests."""
 
 
@@ -84,7 +87,7 @@ BatchTargetTests = get_target_test_class(
 )
 
 
-class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]
+class TestTargetSnowflakeBatch(BaseSnowflakeTargetTests, BatchTargetTests):  # type: ignore[misc, valid-type]  # ty:ignore[unsupported-base]
     """Batch Target Tests."""
 
 
@@ -94,7 +97,7 @@ def test_invalid_database():
     runner = TargetTestRunner(
         TargetSnowflake,
         config=INVALID_TEST_CONFIG,
-        input_filepath="tests/target_test_streams/existing_table.singer",
+        input_filepath="tests/target_test_streams/existing_table.singer",  # ty:ignore[invalid-argument-type]
     )
     with pytest.raises(Exception):  # noqa: B017, PT011
         runner.sync_all()
