@@ -154,10 +154,8 @@ class SnowflakeConnector(SQLConnector):
 
         return sql_type
 
-    def _get_private_key(self) -> PrivateKeyTypes:
+    def _get_private_key_content(self) -> bytes:
         """Get private key from the right location."""
-        phrase = self.config.get("private_key_passphrase")
-        encoded_passphrase = phrase.encode() if phrase else None
         if "private_key_path" in self.config:
             self.logger.debug("Reading private key from file: %s", self.config["private_key_path"])
             key_path = Path(self.config["private_key_path"])
@@ -165,11 +163,7 @@ class SnowflakeConnector(SQLConnector):
                 error_message = f"Private key file not found: {key_path}"
                 raise FileNotFoundError(error_message)
 
-            return serialization.load_pem_private_key(
-                key_path.read_bytes(),
-                password=encoded_passphrase,
-                backend=default_backend(),
-            )
+            return key_path.read_bytes()
 
         private_key: str = self.config["private_key"]
         self.logger.debug("Reading private key from config")
@@ -180,12 +174,7 @@ class SnowflakeConnector(SQLConnector):
                 stacklevel=2,
             )
             self.logger.info("Private key is in PEM format")
-            key_content = private_key.encode()
-            return serialization.load_pem_private_key(
-                key_content,
-                password=encoded_passphrase,
-                backend=default_backend(),
-            )
+            return private_key.encode()
 
         try:
             self.logger.debug("Private key is in base64 format")
@@ -194,7 +183,13 @@ class SnowflakeConnector(SQLConnector):
             error_message = f"Invalid private key format: {e}"
             raise ValueError(error_message) from e
 
-        self.logger.debug("Attempting serialization of private key as DER")
+        return key_content
+
+    def _load_private_key(self) -> PrivateKeyTypes:
+        phrase = self.config.get("private_key_passphrase")
+        encoded_passphrase = phrase.encode() if phrase else None
+        key_content = self._get_private_key_content()
+
         try:
             return serialization.load_der_private_key(
                 key_content,
@@ -210,7 +205,7 @@ class SnowflakeConnector(SQLConnector):
             )
 
     def get_private_key(self):
-        return self._get_private_key().private_bytes(
+        return self._load_private_key().private_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
