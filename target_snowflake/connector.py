@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Sequence
 
     import sqlalchemy as sa
+    from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
     from sqlalchemy.engine import Engine
 
 
@@ -153,43 +154,58 @@ class SnowflakeConnector(SQLConnector):
 
         return sql_type
 
-    def get_private_key(self):
+    def _get_private_key_content(self) -> bytes:
         """Get private key from the right location."""
-        phrase = self.config.get("private_key_passphrase")
-        encoded_passphrase = phrase.encode() if phrase else None
         if "private_key_path" in self.config:
             self.logger.debug("Reading private key from file: %s", self.config["private_key_path"])
             key_path = Path(self.config["private_key_path"])
             if not key_path.is_file():
                 error_message = f"Private key file not found: {key_path}"
                 raise FileNotFoundError(error_message)
-            with key_path.open("rb") as key_file:
-                key_content = key_file.read()
-        else:
-            private_key = self.config["private_key"]
-            self.logger.debug("Reading private key from config")
-            if "-----BEGIN " in private_key:
-                warn(
-                    "Use base64 encoded private key instead of PEM format",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-                self.logger.info("Private key is in PEM format")
-                key_content = private_key.encode()
-            else:
-                try:
-                    self.logger.debug("Private key is in base64 format")
-                    key_content = base64.b64decode(private_key)
-                except binascii.Error as e:
-                    error_message = f"Invalid private key format: {e}"
-                    raise ValueError(error_message) from e
-        p_key = serialization.load_pem_private_key(
-            key_content,
-            password=encoded_passphrase,
-            backend=default_backend(),
-        )
 
-        return p_key.private_bytes(
+            return key_path.read_bytes()
+
+        private_key: str = self.config["private_key"]
+        self.logger.debug("Reading private key from config")
+        if "-----BEGIN " in private_key:
+            warn(
+                "Use base64 encoded private key instead of PEM format",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.logger.info("Private key is in PEM format")
+            return private_key.encode()
+
+        try:
+            self.logger.debug("Private key is in base64 format")
+            key_content = base64.b64decode(private_key)
+        except binascii.Error as e:
+            error_message = f"Invalid private key format: {e}"
+            raise ValueError(error_message) from e
+
+        return key_content
+
+    def _load_private_key(self) -> PrivateKeyTypes:
+        phrase = self.config.get("private_key_passphrase")
+        encoded_passphrase = phrase.encode() if phrase else None
+        key_content = self._get_private_key_content()
+
+        try:
+            return serialization.load_der_private_key(
+                key_content,
+                password=encoded_passphrase,
+                backend=default_backend(),
+            )
+        except ValueError:
+            self.logger.debug("DER deserialization failed; retrying as PEM")
+            return serialization.load_pem_private_key(
+                key_content,
+                password=encoded_passphrase,
+                backend=default_backend(),
+            )
+
+    def get_private_key(self):
+        return self._load_private_key().private_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
