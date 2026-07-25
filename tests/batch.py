@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Meltano.
+
 """BATCH Tests for Target Snowflake."""
 
 from __future__ import annotations

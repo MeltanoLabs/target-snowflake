@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Meltano.
+
 """Tests standard target features using the built-in SDK tests library."""
 
 from __future__ import annotations

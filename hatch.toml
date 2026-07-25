@@ -1,5 +1,5 @@
 [version]
-fallback-version = "0.0.0"
+fallback-version = "0.0.0.dev0"
 source = "vcs"
 
 [build.targets.sdist]

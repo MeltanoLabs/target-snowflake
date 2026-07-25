@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Meltano.
+
 """Unit tests for the Snowflake connector."""
 
 from __future__ import annotations
