@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Meltano.
+
 """Unit tests for OAuth authentication - no credentials required."""
 
 from __future__ import annotations

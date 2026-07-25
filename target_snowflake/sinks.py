@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Meltano.
+
 """Snowflake target sink class, which handles writing streams."""
 
 from __future__ import annotations

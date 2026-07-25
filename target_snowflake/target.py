@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Meltano.
+
 """Snowflake target class."""
 
 from __future__ import annotations

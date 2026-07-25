@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Meltano.
+
 from __future__ import annotations
 
 import datetime as dt
