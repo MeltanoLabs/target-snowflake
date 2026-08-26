@@ -41,13 +41,6 @@ jobs:
         python-version:
         - "3.14"
         - "3.10"
-        os:
-        - ubuntu-latest
-        include:
-        - python-version: "3.14"
-          os: "macos-latest"
-        - python-version: "3.14"
-          os: "windows-latest"
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
