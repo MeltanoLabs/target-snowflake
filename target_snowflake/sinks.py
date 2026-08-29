@@ -81,6 +81,9 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             self.connector.prepare_schema(
                 self.conform_name(self.schema_name, object_type="schema"),
             )
+
+        self.connector.table_cache.pop(self.full_table_name, None)
+
         try:
             self.connector.prepare_table(
                 full_table_name=self.full_table_name,
@@ -91,6 +94,8 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         except Exception:
             self.logger.exception("Error creating %s %s", self.full_table_name, self.conform_schema(self.schema))
             raise
+
+        self.connector.table_cache.pop(self.full_table_name, None)
 
     def conform_name(
         self,
