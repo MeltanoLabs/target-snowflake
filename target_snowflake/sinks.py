@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import typing as t
+from shutil import rmtree
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -19,6 +21,7 @@ from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.helpers.conform import TypeConformanceLevel
 from singer_sdk.sql.sink import SQLSink
 
+from target_snowflake.arrow_batch import ARROW_ENCODING_FORMAT, convert_arrow_manifest_to_parquet
 from target_snowflake.connector import SnowflakeConnector
 
 if t.TYPE_CHECKING:
@@ -262,6 +265,33 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
         return record_count
 
+    def _process_arrow_batch_files(self, files: t.Sequence[str]) -> int:
+        """Convert an Arrow BATCH manifest to Parquet, then load it via the internal stage.
+
+        Args:
+            files: The Arrow IPC manifest files (``file://`` URIs) to process.
+
+        Returns:
+            The number of rows loaded.
+        """
+        output_dir = tempfile.mkdtemp(prefix=f"target-snowflake-arrow-{self.stream_name}-")
+        try:
+            parquet_files = convert_arrow_manifest_to_parquet(
+                manifest=files,
+                output_dir=output_dir,
+                clean_up_source_files=bool(self.config.get("clean_up_batch_files")),
+            )
+            return self.insert_batch_files_via_internal_stage(
+                full_table_name=self.full_table_name,
+                files=parquet_files,
+                file_type="PARQUET",
+            )
+        finally:
+            # These Parquet files are purely internal artifacts (never part of
+            # any external manifest contract), so they're always cleaned up
+            # regardless of `clean_up_batch_files`.
+            rmtree(output_dir, ignore_errors=True)
+
     def process_batch_files(
         self,
         encoding: BaseBatchFileEncoding,
@@ -281,6 +311,8 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                 full_table_name=self.full_table_name,
                 files=files,
             )
+        elif encoding.format == ARROW_ENCODING_FORMAT:
+            record_count = self._process_arrow_batch_files(files)
         else:
             msg = f"Unsupported batch file encoding: {encoding.format}"
             raise NotImplementedError(
