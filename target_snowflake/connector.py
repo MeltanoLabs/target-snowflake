@@ -265,7 +265,7 @@ class SnowflakeConnector(SQLConnector):
         """Get the connect args for the connector."""
         connect_args = {
             "session_parameters": {
-                "QUOTED_IDENTIFIERS_IGNORE_CASE": str(self.config.get("quoted_identifiers_ignore_case", False)).upper(),
+                "QUOTED_IDENTIFIERS_IGNORE_CASE": str(self.config.get("quoted_identifiers_ignore_case", True)).upper(),
             },
             "client_session_keep_alive": True,  # See https://github.com/snowflakedb/snowflake-connector-python/issues/218
         }
@@ -748,7 +748,7 @@ class SnowflakeConnector(SQLConnector):
         Returns:
             The formatted identifier.
         """
-        if self.config.get("normalise_casing", True):
+        if self.config.get("normalise_casing", False):
             # substrings of 2 or more upper-case characters need to be converted to
             # title-case to play nicely with proceeding `humps.decamelise` call and avoid
             # bad formatting
@@ -770,7 +770,7 @@ class SnowflakeConnector(SQLConnector):
 
         safe_formatted = self.formatter.format_collation(formatted)
 
-        if '"' not in safe_formatted or self.config.get("quoted_identifiers_ignore_case", False):
+        if '"' not in safe_formatted or self.config.get("quoted_identifiers_ignore_case", True):
             # Lowercase column names that are created in a case-insensitive manner, either instrinsically or when
             # QUOTED_IDENTIFIERS_IGNORE_CASE is set to FALSE, to match their SQLAlchemy representation.
             #

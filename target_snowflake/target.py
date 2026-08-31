@@ -131,7 +131,7 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "quoted_identifiers_ignore_case",
             th.BooleanType,
-            default=False,
+            default=True,
             description=(
                 "Whether letters in double-quoted object identifiers are stored and resolved as uppercase letters."
             ),
@@ -139,7 +139,7 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "normalise_casing",
             th.BooleanType,
-            default=True,
+            default=False,
             description="Whether to normalise identifiers into snake_case.",
         ),
     ).to_dict()
