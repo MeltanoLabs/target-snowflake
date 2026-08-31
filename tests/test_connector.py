@@ -84,6 +84,18 @@ def test_datetime_to_sql(connector: SnowflakeConnector, config: dict, expected_t
     assert isinstance(sql_type, expected_type)
 
 
+def test_uuid_to_sql_defaults_to_native(connector: SnowflakeConnector):
+    sql_type = connector.to_sql_type({"type": "string", "format": "uuid"})
+    assert isinstance(sql_type, types.UUID)
+
+
+def test_uuid_to_sql_as_string(connector: SnowflakeConnector):
+    connector.config.update({"uuid_format": "string"})
+    sql_type = connector.to_sql_type({"type": "string", "format": "uuid"})
+    assert isinstance(sql_type, sct.STRING)
+    assert sql_type.length == 36
+
+
 def test_to_sql_type_with_max_varchar_length(connector: SnowflakeConnector):
     sql_type = connector.to_sql_type({"type": "string", "maxLength": 1_000_000})
     assert isinstance(sql_type, types.VARCHAR)
