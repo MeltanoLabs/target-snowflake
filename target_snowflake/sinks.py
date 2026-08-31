@@ -18,8 +18,6 @@ from singer_sdk.helpers._batch import (
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.helpers.conform import TypeConformanceLevel
 from singer_sdk.sql.sink import SQLSink
-from snowflake.sqlalchemy.base import SnowflakeIdentifierPreparer
-from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 
 from target_snowflake.connector import SnowflakeConnector
 
@@ -99,10 +97,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
     ) -> str:
         if object_type and object_type != "column":
             return super().conform_name(name=name, object_type=object_type)
-        formatter = SnowflakeIdentifierPreparer(SnowflakeDialect())
-        if '"' not in formatter.format_collation(name.lower()):
-            name = name.lower()
-        return name
+        return self.connector.format_identifier(name)
 
     def bulk_insert_records(
         self,

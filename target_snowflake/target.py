@@ -128,6 +128,20 @@ class TargetSnowflake(SQLTarget):
             default=DEFAULT_TIMESTAMP_TYPE.name,
             description="Snowflake timestamp type to use for date-time properties.",
         ),
+        th.Property(
+            "quoted_identifiers_ignore_case",
+            th.BooleanType,
+            default=True,
+            description=(
+                "Whether letters in double-quoted object identifiers are stored and resolved as uppercase letters."
+            ),
+        ),
+        th.Property(
+            "normalise_casing",
+            th.BooleanType,
+            default=False,
+            description="Whether to normalise identifiers into snake_case.",
+        ),
     ).to_dict()
 
     default_sink_class = SnowflakeSink
