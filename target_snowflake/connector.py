@@ -650,6 +650,15 @@ class SnowflakeConnector(SQLConnector):
             rows = result.fetchall()
             return sum(r[3] for r in rows) if rows else result.rowcount
 
+    def truncate_table(self, full_table_name: str | FullyQualifiedName) -> None:
+        """Truncate a table.
+
+        Args:
+            full_table_name: The fully-qualified name of the table to truncate.
+        """
+        with self._connect() as conn, conn.begin():
+            conn.execute(text(f"truncate table {full_table_name}"))
+
     def drop_file_format(self, file_format: str) -> None:
         """Drop a file format in the schema.
 

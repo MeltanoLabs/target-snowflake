@@ -99,6 +99,10 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
         self.connector.invalidate_table_cache(self.full_table_name)
 
+        if self.config.get("load_method", "upsert") == "overwrite":
+            self.logger.info("load_method=overwrite: truncating %s", self.full_table_name)
+            self.connector.truncate_table(self.full_table_name)
+
     def _get_file_format_name(self, file_type: str) -> str:
         """Get (creating on first use) the file format name for a given file type.
 
@@ -228,7 +232,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         sync_id = f"{self.stream_name}-{uuid4()}"
         try:
             self.connector.put_batches_to_stage(sync_id=sync_id, files=files)
-            if self.key_properties:
+            if self.key_properties and self.config.get("load_method", "upsert") == "upsert":
                 # merge into destination table
                 record_count = self.connector.merge_from_stage(
                     full_table_name=full_table_name,
