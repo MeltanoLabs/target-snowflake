@@ -30,6 +30,7 @@ classifiers = [
 dependencies = [
     "certifi==2026.7.22",
     "cryptography>=40",
+    "pyhumps~=3.8.0",
     "singer-sdk[sql]~=0.54.5",
     "snowflake-connector-python[secure-local-storage]~=4.0",
     "snowflake-sqlalchemy==1.11.0",
