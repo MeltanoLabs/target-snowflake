@@ -112,6 +112,21 @@ class SnowflakeConnector(SQLConnector):
             self._inspector = sqlalchemy.inspect(self._engine)
         return self._inspector
 
+    def invalidate_table_cache(self, full_table_name: str | FullyQualifiedName) -> None:
+        """Discard cached reflection state for a table after DDL.
+
+        Dropping the `table_cache` entry alone is not enough. The Inspector
+        memoises reflection for its lifetime, and snowflake-sqlalchemy caches
+        columns per *schema*, so a table created after the first reflection of
+        that schema stays invisible and reflecting it raises NoSuchTableError.
+        The Inspector is dropped so the next reflection queries Snowflake.
+
+        Args:
+            full_table_name: the table whose cached state is now stale.
+        """
+        self.table_cache.pop(full_table_name, None)
+        self._inspector = None
+
     def get_table_columns(
         self,
         full_table_name: str | FullyQualifiedName,

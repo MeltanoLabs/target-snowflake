@@ -8,6 +8,7 @@ from unittest import mock
 
 import pytest
 import snowflake.sqlalchemy.custom_types as sct
+import sqlalchemy
 from sqlalchemy import types
 
 from target_snowflake.connector import SnowflakeConnector, SnowflakeTimestampType
@@ -179,3 +180,23 @@ def test_format_identifier(
 ):
     connectable_connector.config.update(config)
     assert connectable_connector.format_identifier(identifier) == expected_formatted
+
+
+def test_invalidate_table_cache_drops_entry_and_resets_inspector(connector: SnowflakeConnector):
+    connector.table_cache["db.schema.table"] = {"col": object()}
+    connector._inspector = mock.Mock(spec=sqlalchemy.Inspector)  # noqa: SLF001
+
+    connector.invalidate_table_cache("db.schema.table")
+
+    assert "db.schema.table" not in connector.table_cache
+    assert connector._inspector is None  # noqa: SLF001
+
+
+def test_invalidate_table_cache_leaves_other_tables_cached(connector: SnowflakeConnector):
+    connector.table_cache["db.schema.users"] = {"id": object()}
+    connector.table_cache["db.schema.posts"] = {"id": object()}
+
+    connector.invalidate_table_cache("db.schema.users")
+
+    assert "db.schema.users" not in connector.table_cache
+    assert "db.schema.posts" in connector.table_cache
