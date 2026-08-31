@@ -46,6 +46,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
     ) -> None:
         """Initialize Snowflake Sink."""
         self.target = target
+        self._file_formats: dict[str, str] = {}
         super().__init__(
             target=target,
             stream_name=stream_name,
@@ -97,6 +98,41 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             raise
 
         self.connector.invalidate_table_cache(self.full_table_name)
+
+    def _get_file_format_name(self, file_type: str) -> str:
+        """Get (creating on first use) the file format name for a given file type.
+
+        Args:
+            file_type: The Snowflake file format type, e.g. ``"JSON"`` or ``"PARQUET"``.
+
+        Returns:
+            The name of the file format, unique to this sink instance and file type.
+        """
+        if file_type not in self._file_formats:
+            # Use a unique name per sink instance. A static, stream-derived name is
+            # shared across overlapping sinks (e.g. when a SCHEMA message archives
+            # the old sink and creates a new one) and across concurrent target
+            # processes loading the same stream into the same schema. In those
+            # cases one owner's CREATE OR REPLACE / DROP FILE FORMAT clobbers a
+            # file format another sink is actively using, causing "File format
+            # ... does not exist" during COPY/MERGE. The uuid keeps each sink's
+            # file format isolated while still creating/dropping it only once per
+            # sink (not per batch) -- and only for file types actually used
+            # during this sync, since a stream's batches are all of one encoding.
+            file_format = f'{self.database_name}.{self.schema_name}."tf-{self.stream_name}-{uuid4()}"'
+            self.connector.create_file_format(file_format=file_format, file_type=file_type)
+            self._file_formats[file_type] = file_format
+
+        return self._file_formats[file_type]
+
+    def clean_up(self) -> None:
+        # The base Sink.clean_up() calls this too, but overriding here (rather than
+        # super().clean_up()) drops it entirely -- force-flushing whatever record_count
+        # hasn't been logged yet (the Counter only auto-logs periodically, see
+        # singer_sdk.metrics.Counter) so it isn't silently lost when the sink shuts down.
+        self.record_counter_metric.exit()
+        for file_format in self._file_formats.values():
+            self.connector.drop_file_format(file_format=file_format)
 
     def conform_name(
         self,
@@ -176,24 +212,22 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         self,
         full_table_name: str | FullyQualifiedName,
         files: t.Sequence[str],
+        file_type: str = "JSON",
     ) -> int:
         """Process a batch file with the given batch context.
 
         Args:
-            encoding: The batch file encoding.
+            full_table_name: The target table name.
             files: The batch files to process.
+            file_type: The Snowflake file format type to stage/load with, e.g.
+                ``"JSON"`` or ``"PARQUET"``. The underlying file format is
+                created lazily and reused for the rest of this sink's sync.
         """
+        file_format = self._get_file_format_name(file_type)
         self.logger.info("Processing batch of files.")
+        sync_id = f"{self.stream_name}-{uuid4()}"
         try:
-            sync_id = f"{self.stream_name}-{uuid4()}"
-            file_format = f'{self.database_name}.{self.schema_name}."{sync_id}"'
             self.connector.put_batches_to_stage(sync_id=sync_id, files=files)
-            if self.schema_name:
-                self.connector.prepare_schema(
-                    self.conform_name(self.schema_name, object_type="schema"),  # type: ignore[arg-type]
-                )
-            self.connector.create_file_format(file_format=file_format)
-
             if self.key_properties:
                 # merge into destination table
                 record_count = self.connector.merge_from_stage(
@@ -214,7 +248,6 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
         finally:
             self.logger.debug("Cleaning up after batch processing")
-            self.connector.drop_file_format(file_format=file_format)
             self.connector.remove_staged_files(sync_id=sync_id)
             # clean up local files
             if self.config.get("clean_up_batch_files"):
