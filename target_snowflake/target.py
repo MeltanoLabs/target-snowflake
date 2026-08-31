@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import logging.config
+import typing as t
 
 import click
 from singer_sdk import typing as th
+from singer_sdk.helpers.capabilities import CapabilitiesEnum, PluginCapabilities
 from singer_sdk.sql.target import SQLTarget
 
 from target_snowflake.connector import DEFAULT_TIMESTAMP_TYPE, SnowflakeTimestampType
@@ -167,6 +169,12 @@ class TargetSnowflake(SQLTarget):
     ).to_dict()
 
     default_sink_class = SnowflakeSink
+
+    #: A list of capabilities supported by this target.
+    capabilities: t.ClassVar[list[CapabilitiesEnum]] = [
+        *SQLTarget.capabilities,
+        PluginCapabilities.BATCH,
+    ]
 
     @classmethod
     def cb_initialize(
