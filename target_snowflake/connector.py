@@ -526,10 +526,14 @@ class SnowflakeConnector(SQLConnector):
             {},
         )
 
-    def _get_file_format_statement(self, file_format: str) -> tuple[sqlalchemy.TextClause, dict]:
+    def _get_file_format_statement(
+        self,
+        file_format: str,
+        file_type: str = "JSON",
+    ) -> tuple[sqlalchemy.TextClause, dict]:
         """Get Snowflake CREATE FILE FORMAT statement."""
         return (
-            text(f"create or replace file format {file_format} type = 'JSON' compression = 'AUTO'"),
+            text(f"create or replace file format {file_format} type = '{file_type}' compression = 'AUTO'"),
             {},
         )
 
@@ -566,15 +570,17 @@ class SnowflakeConnector(SQLConnector):
                 # See https://github.com/MeltanoLabs/target-snowflake/issues/87 for more information about this error
                 conn.execute(put_statement, {"file_uri": file_uri, **kwargs})
 
-    def create_file_format(self, file_format: str) -> None:
+    def create_file_format(self, file_format: str, file_type: str = "JSON") -> None:
         """Create a file format in the schema.
 
         Args:
             file_format: The name of the file format.
+            file_type: The Snowflake file format type, e.g. ``"JSON"`` or ``"PARQUET"``.
         """
         with self._connect() as conn, conn.begin():
             file_format_statement, kwargs = self._get_file_format_statement(
                 file_format=file_format,
+                file_type=file_type,
             )
             self.logger.debug(
                 "Creating file format with SQL: %s",
