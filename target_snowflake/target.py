@@ -145,7 +145,7 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "use_raw_stream_names",
             th.BooleanType,
-            default=True,
+            default=False,
             description=(
                 "Whether to use raw stream names as table names instead of informal Singer convention as last "
                 "hyphen-separated part of stream name."
