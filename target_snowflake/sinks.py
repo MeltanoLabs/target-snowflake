@@ -66,6 +66,9 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
     @property
     def table_name(self) -> str:
+        if self.config.get("use_raw_stream_names", False):
+            return self.conform_name(self.stream_name, "table").upper()
+
         return super().table_name.upper()
 
     def setup(self) -> None:

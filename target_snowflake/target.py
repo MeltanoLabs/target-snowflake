@@ -142,6 +142,15 @@ class TargetSnowflake(SQLTarget):
             default=False,
             description="Whether to normalise identifiers into snake_case.",
         ),
+        th.Property(
+            "use_raw_stream_names",
+            th.BooleanType,
+            default=False,
+            description=(
+                "Whether to use raw stream names as table names instead of informal Singer convention as last "
+                "hyphen-separated part of stream name."
+            ),
+        ),
     ).to_dict()
 
     default_sink_class = SnowflakeSink
