@@ -194,6 +194,86 @@ def test_format_identifier(
     assert connectable_connector.format_identifier(identifier) == expected_formatted
 
 
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        pytest.param("Order Total [USD]", id="spaces_brackets_mixed_case"),
+        pytest.param("customer:id", id="colon"),
+        pytest.param("field with spaces", id="spaces"),
+        pytest.param("Nested[0]", id="brackets"),
+        pytest.param("ns:Attribute [meta]", id="colon_spaces_brackets"),
+        pytest.param("hyphenated-column", id="hypthenated"),
+        pytest.param("user", id="reserved_word"),
+    ],
+)
+@pytest.mark.usefixtures("mock_engine_connect")
+def test_prepare_column_matches_existing_quoted_column(
+    connectable_connector: SnowflakeConnector,
+    column_name: str,
+):
+    # Columns needing quoting must not be re-added when they already exist.
+    connectable_connector.config.update(
+        {"quoted_identifiers_ignore_case": True, "normalise_casing": False},
+    )
+
+    # The name Snowflake reports for a column originally created as a quoted identifier.
+    stored_name = column_name.upper()
+    existing_columns = {stored_name: sqlalchemy.Column(stored_name, types.VARCHAR())}
+
+    with (
+        mock.patch.object(connectable_connector, "get_table_columns", return_value=existing_columns),
+        mock.patch.object(connectable_connector, "_create_empty_column") as create_column,
+        mock.patch.object(connectable_connector, "_adapt_column_type") as adapt_column,
+    ):
+        connectable_connector.prepare_column(
+            "TEST_DATABASE.TEST_SCHEMA.TEST_TABLE",
+            column_name,
+            types.VARCHAR(),
+        )
+
+    create_column.assert_not_called()
+    adapt_column.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("column_name", "reported_name"),
+    [
+        pytest.param("plain_column", "plain_column", id="plain"),
+        pytest.param("MixedCase", "mixedcase", id="mixed_case"),
+        pytest.param("emailAddress", "emailaddress", id="camel_case"),
+        pytest.param("EMAIL_ADDRESS", "email_address", id="upper_case"),
+    ],
+)
+@pytest.mark.usefixtures("mock_engine_connect")
+def test_prepare_column_matches_existing_unquoted_column(
+    connectable_connector: SnowflakeConnector,
+    column_name: str,
+    reported_name: str,
+):
+    # Guards the quoted-identifier fix against over-correcting. Snowflake stores these
+    # upper case too, but because the lower-case form needs no quoting `normalize_name`
+    # hands them back lowercased, so they must still be compared in lower case.
+    connectable_connector.config.update(
+        {"quoted_identifiers_ignore_case": True, "normalise_casing": False},
+    )
+
+    existing_columns = {reported_name: sqlalchemy.Column(reported_name, types.VARCHAR())}
+
+    with (
+        mock.patch.object(connectable_connector, "get_table_columns", return_value=existing_columns),
+        mock.patch.object(connectable_connector, "_create_empty_column") as create_column,
+        mock.patch.object(connectable_connector, "_adapt_column_type") as adapt_column,
+    ):
+        connectable_connector.prepare_column(
+            "TEST_DATABASE.TEST_SCHEMA.TEST_TABLE",
+            column_name,
+            types.VARCHAR(),
+        )
+
+    create_column.assert_not_called()
+    adapt_column.assert_called_once()
+
+
 def test_invalidate_table_cache_drops_entry_and_resets_inspector(connector: SnowflakeConnector):
     connector.table_cache["db.schema.table"] = {"col": object()}
     connector._inspector = mock.Mock(spec=sqlalchemy.Inspector)  # noqa: SLF001

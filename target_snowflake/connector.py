@@ -825,8 +825,15 @@ class SnowflakeConnector(SQLConnector):
 
             formatted = formatted.lower()
 
-            # Reserved words are returned as they exist/would be created as in Snowflake
-            if formatted in self.formatter.reserved_words:
+            # ...but only when SQLAlchemy actually hands the name back lowercased.
+            #
+            # `SnowflakeDialect.normalize_name` lowercases a stored (upper-case) identifier
+            # only if the lower-case form needs no quoting. Anything that *does* require
+            # quoting - reserved words such as `user`, and names containing spaces, colons,
+            # brackets, etc. - is returned exactly as Snowflake stored it, which under
+            # QUOTED_IDENTIFIERS_IGNORE_CASE is upper case. Those must be compared in upper
+            # case or an existing column looks missing and gets re-added via ALTER TABLE.
+            if '"' in self.formatter.format_collation(formatted):
                 formatted = formatted.upper()
                 safe_formatted = safe_formatted.upper()
 
