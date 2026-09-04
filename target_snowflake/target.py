@@ -168,10 +168,12 @@ class TargetSnowflake(SQLTarget):
         th.Property(
             "load_method",
             th.StringType,
-            allowed_values=["upsert", "overwrite"],
+            allowed_values=["append-only", "upsert", "overwrite"],
             default="upsert",
             description=(
                 "Controls how records are written to the destination table. "
+                "'append-only' always uses COPY INTO, writing every input record as a new row "
+                "regardless of key properties, without merging or truncating. "
                 "'upsert' (default) uses MERGE INTO, matching on key properties to update "
                 "existing rows and insert new ones. "
                 "'overwrite' truncates the table then uses COPY INTO, replacing all existing "

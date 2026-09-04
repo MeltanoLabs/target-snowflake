@@ -30,7 +30,7 @@ Built with the [Meltano Singer SDK](https://sdk.meltano.com).
 | clean_up_batch_files | False | 1 | Whether to remove batch files after processing. |
 | default_target_schema | False | None | The default target database schema name to use for all streams. |
 | hard_delete | False | 0 | Hard delete records. |
-| load_method | False | TargetLoadMethods.APPEND_ONLY | The method to use when loading data into the destination. `append-only` will always write all input records whether that records already exists or not. `upsert` will update existing records and insert new records. `overwrite` will delete all existing records and insert all input records. |
+| load_method | False | upsert | Controls how records are written to the destination table. 'append-only' always uses COPY INTO, writing every input record as a new row regardless of key properties, without merging or truncating. 'upsert' (default) uses MERGE INTO, matching on key properties to update existing rows and insert new ones. 'overwrite' truncates the table then uses COPY INTO, replacing all existing rows — faster for initial loads but destructive if run on a populated table. |
 | batch_size_rows | False | None | Maximum number of rows in each batch. |
 | validate_records | False | 1 | Whether to validate the schema of the incoming streams. |
 | stream_maps | False | None | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
