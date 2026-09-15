@@ -1,0 +1,6 @@
+{ "type": "SCHEMA", "stream": "snowpipe_streaming_basic", "schema": { "properties": { "id": { "type": "integer" }, "col_str": { "type": [ "string", "null" ] } }, "type": "object" }, "key_properties": [] }
+{ "type": "RECORD", "stream": "snowpipe_streaming_basic", "record": { "id": 1, "col_str": "foo" } }
+{ "type": "RECORD", "stream": "snowpipe_streaming_basic", "record": { "id": 2, "col_str": "bar" } }
+{ "type": "SCHEMA", "stream": "snowpipe_streaming_basic", "schema": { "properties": { "id": { "type": "integer" }, "col_str": { "type": [ "string", "null" ] }, "col_new": { "type": [ "string", "null" ] } }, "type": "object" }, "key_properties": [] }
+{ "type": "RECORD", "stream": "snowpipe_streaming_basic", "record": { "id": 3, "col_str": "baz", "col_new": "added" } }
+{ "type": "STATE", "value": { "snowpipe_streaming_basic": 3 } }

@@ -12,6 +12,15 @@ runner = "uv-venv-lock-runner"
 description = "run tests on Python {py_dot_ver}"
 base_python_file = [ ".python-version" ]
 
+[env.snowpipe]
+description = "run Snowpipe Streaming integration tests (requires the 'snowpipe' extra)"
+# snowpipe-streaming doesn't yet support the project's default Python version; pin to
+# one it does (3.9-3.13) rather than .python-version.
+base_python = [ "3.12" ]
+extras = [ "snowpipe" ]
+pass_env = [ "TARGET_SNOWFLAKE_*" ]
+commands = [ [ "pytest", "tests/test_snowpipe_streaming.py" ] ]
+
 [env.typing]
 description = "type checks"
 deps = [
@@ -19,6 +28,9 @@ deps = [
     "python-dotenv>=1.2",
     "pytest>=9",
     "ty>=0.0.30",
+]
+extras = [
+    "snowpipe",
 ]
 labels = [ "check" ]
 commands = [

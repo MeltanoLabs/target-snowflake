@@ -5,16 +5,32 @@
 from __future__ import annotations
 
 import logging.config
+import sys
 import typing as t
 
 import click
 from singer_sdk import typing as th
+from singer_sdk.exceptions import ConfigValidationError
 from singer_sdk.helpers.capabilities import CapabilitiesEnum, PluginCapabilities
 from singer_sdk.sql.target import SQLTarget
 
-from target_snowflake.connector import DEFAULT_TIMESTAMP_TYPE, SnowflakeTimestampType
+from target_snowflake.connector import (
+    DEFAULT_TIMESTAMP_TYPE,
+    SnowflakeAuthMethod,
+    SnowflakeConnector,
+    SnowflakeTimestampType,
+)
 from target_snowflake.initializer import initializer
 from target_snowflake.sinks import SnowflakeSink
+from target_snowflake.streaming_sink import SnowpipeStreamingSink
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+if t.TYPE_CHECKING:
+    from singer_sdk.sql.sink import SQLSink
 
 logging.config.dictConfig(
     {
@@ -180,6 +196,21 @@ class TargetSnowflake(SQLTarget):
                 "rows — faster for initial loads but destructive if run on a populated table."
             ),
         ),
+        th.Property(
+            "ingestion_method",
+            th.StringType,
+            allowed_values=["file_staging", "snowpipe_streaming"],
+            default="file_staging",
+            description=(
+                "How records are loaded into Snowflake. "
+                "'file_staging' (default) stages local batch files and loads them with "
+                "COPY INTO/MERGE INTO, per `load_method`; this requires a running warehouse. "
+                "'snowpipe_streaming' ingests rows directly via the Snowpipe Streaming API, "
+                "with no warehouse required and billing based on data ingested. Only "
+                "`load_method: append-only` and key-pair authentication are supported in "
+                "this mode, and `hard_delete` is not supported."
+            ),
+        ),
     ).to_dict()
 
     default_sink_class = SnowflakeSink
@@ -189,6 +220,65 @@ class TargetSnowflake(SQLTarget):
         *SQLTarget.capabilities,
         PluginCapabilities.BATCH,
     ]
+
+    @override
+    def _validate_config(self, *, raise_errors: bool = True) -> list[str]:
+        """Validate config, including cross-setting constraints for `ingestion_method`.
+
+        Args:
+            raise_errors: Flag to throw an exception if any validation errors are found.
+
+        Returns:
+            A list of validation errors.
+
+        Raises:
+            ConfigValidationError: If raise_errors is True and validation fails.
+        """
+        errors = super()._validate_config(raise_errors=False)
+
+        if self.config.get("ingestion_method") == "snowpipe_streaming":
+            if self.config.get("load_method", "upsert") != "append-only":
+                errors.append(
+                    "ingestion_method: snowpipe_streaming only supports load_method: append-only.",
+                )
+            if self.config.get("hard_delete"):
+                errors.append(
+                    "ingestion_method: snowpipe_streaming does not support hard_delete.",
+                )
+            if self._streaming_auth_method() != SnowflakeAuthMethod.KEY_PAIR:
+                errors.append(
+                    "ingestion_method: snowpipe_streaming requires key-pair authentication "
+                    "(private_key or private_key_path).",
+                )
+
+        if errors and raise_errors:
+            summary = "Config validation failed"
+            raise ConfigValidationError(summary, errors=errors)
+
+        return errors
+
+    def _streaming_auth_method(self) -> SnowflakeAuthMethod | None:
+        """Best-effort auth method lookup for config validation, without a live connection."""
+        try:
+            return SnowflakeConnector(config=self.config).auth_method
+        except ConfigValidationError:
+            return None
+
+    @override
+    def get_sink_class(self, stream_name: str) -> type[SQLSink]:
+        """Return the sink class to use for a given stream.
+
+        Args:
+            stream_name: Name of the stream.
+
+        Returns:
+            `SnowpipeStreamingSink` when `ingestion_method: snowpipe_streaming` is
+            configured, otherwise the default file-staging `SnowflakeSink`.
+        """
+        if self.config.get("ingestion_method") == "snowpipe_streaming":
+            return SnowpipeStreamingSink
+
+        return super().get_sink_class(stream_name)
 
     @classmethod
     def cb_initialize(
@@ -201,6 +291,7 @@ class TargetSnowflake(SQLTarget):
             initializer()
             ctx.exit()
 
+    @override
     @classmethod
     def get_singer_command(cls: type[TargetSnowflake]) -> click.Command:
         """Execute standard CLI handler for targets.

@@ -36,7 +36,14 @@ dependencies = [
     "snowflake-connector-python[secure-local-storage]~=4.0",
     "snowflake-sqlalchemy==1.11.1",
     "sqlalchemy~=2.0.31",
+    "typing-extensions>=4.16.0 ; python_full_version < '3.12'",
 ]
+
+[project.optional-dependencies]
+# Snowpipe Streaming (`ingestion_method: snowpipe_streaming`) is opt-in: it pulls in a
+# separate, Rust-backed package that most users don't need. Note snowpipe-streaming
+# currently supports Python 3.9-3.13 only, so it isn't installable on Python 3.14.
+snowpipe = ["snowpipe-streaming>=1.8.0"]
 
 [project.scripts]
 target-snowflake = "target_snowflake.target:TargetSnowflake.cli"

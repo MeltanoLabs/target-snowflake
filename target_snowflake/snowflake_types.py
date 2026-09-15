@@ -3,16 +3,22 @@
 from __future__ import annotations
 
 import datetime as dt
+import sys
 import typing as t
 
 import snowflake.sqlalchemy.custom_types as sct
 from sqlalchemy.types import DateTime
-from typing_extensions import override
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 
 class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
     """Snowflake TIMESTAMP_TZ type."""
 
+    @override
     @property
     def python_type(self):
         return dt.datetime
@@ -25,6 +31,7 @@ class TIMESTAMP_TZ(sct.TIMESTAMP_TZ):  # noqa: N801
 class TIMESTAMP_LTZ(sct.TIMESTAMP_LTZ):  # noqa: N801
     """Snowflake TIMESTAMP_LTZ type."""
 
+    @override
     @property
     def python_type(self):
         return dt.datetime
@@ -40,6 +47,7 @@ class TIMESTAMP_NTZ(sct.TIMESTAMP_NTZ):  # noqa: N801
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
+    @override
     @property
     def python_type(self):
         return dt.datetime
@@ -55,6 +63,7 @@ class NUMBER(sct.NUMBER):
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
+    @override
     @property
     def python_type(self):
         return float
@@ -66,6 +75,7 @@ class VARIANT(sct.VARIANT):
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
+    @override
     @property
     def python_type(self):
         return dict
