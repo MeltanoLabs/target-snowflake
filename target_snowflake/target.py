@@ -207,8 +207,11 @@ class TargetSnowflake(SQLTarget):
                 "COPY INTO/MERGE INTO, per `load_method`; this requires a running warehouse. "
                 "'snowpipe_streaming' ingests rows directly via the Snowpipe Streaming API, "
                 "with no warehouse required and billing based on data ingested. Only "
-                "`load_method: append-only` and key-pair authentication are supported in "
-                "this mode, and `hard_delete` is not supported."
+                "key-pair authentication is supported in this mode, and `hard_delete` is "
+                "not supported. `load_method: overwrite` truncates via a regular SQL "
+                "connection before streaming begins, same as with `file_staging`. "
+                "`load_method: upsert` is only supported for streams with no key "
+                "properties (checked per-stream, since streaming has no MERGE capability)."
             ),
         ),
     ).to_dict()
@@ -237,10 +240,6 @@ class TargetSnowflake(SQLTarget):
         errors = super()._validate_config(raise_errors=False)
 
         if self.config.get("ingestion_method") == "snowpipe_streaming":
-            if self.config.get("load_method", "upsert") != "append-only":
-                errors.append(
-                    "ingestion_method: snowpipe_streaming only supports load_method: append-only.",
-                )
             if self.config.get("hard_delete"):
                 errors.append(
                     "ingestion_method: snowpipe_streaming does not support hard_delete.",

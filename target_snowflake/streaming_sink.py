@@ -8,6 +8,7 @@ import sys
 import typing as t
 from uuid import uuid4
 
+from singer_sdk.exceptions import ConfigValidationError
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.helpers.conform import TypeConformanceLevel
 from singer_sdk.sql.sink import SQLSink
@@ -38,9 +39,12 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
     Unlike `SnowflakeSink` (which buffers records to local batch files and loads
     them with COPY INTO/MERGE INTO), this sink writes each record directly to an
     open Snowpipe Streaming channel as it arrives -- there is no local buffering,
-    file staging, or warehouse involved. Only append-only semantics are supported;
-    `TargetSnowflake._validate_config` rejects incompatible `load_method`/
-    `hard_delete` combinations before any sink is created.
+    file staging, or warehouse involved. `load_method: append-only` and
+    `load_method: overwrite` (truncate via SQL, then stream) are both supported.
+    `load_method: upsert` is only supported for streams with no key properties
+    (checked per-stream in `setup()`, since Snowpipe Streaming has no MERGE
+    capability); `TargetSnowflake._validate_config` rejects `hard_delete` and
+    non-key-pair auth up front, before any sink is created.
     """
 
     connector_class = SnowflakeConnector
@@ -92,7 +96,26 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         Snowpipe Streaming has no DDL capability of its own, so schema/table
         structure is still prepared through the regular SQLAlchemy connection,
         exactly as `SnowflakeSink.setup()` does.
+
+        Raises:
+            ConfigValidationError: If `load_method: upsert` is configured and this
+                stream has key properties. Snowpipe Streaming has no MERGE/UPSERT
+                capability, so `upsert` is only safe for streams with no key
+                properties (where it behaves the same as `append-only` anyway).
+                This can't be checked in `TargetSnowflake._validate_config()`
+                since key properties are per-stream, known only once a SCHEMA
+                message arrives.
         """
+        if self.config.get("load_method", "upsert") == "upsert" and self.key_properties:
+            msg = (
+                f"Stream '{self.stream_name}' has key properties {self.key_properties}, "
+                "but ingestion_method: snowpipe_streaming does not support "
+                "load_method: upsert for streams with key properties (no MERGE "
+                "capability). Set load_method: append-only, or remove this stream's "
+                "key properties."
+            )
+            raise ConfigValidationError(msg)
+
         if self.schema_name:
             self.connector.prepare_schema(
                 self.conform_name(self.schema_name, object_type="schema"),
@@ -112,6 +135,14 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             raise
 
         self.connector.invalidate_table_cache(self.full_table_name)
+
+        if self.config.get("load_method", "upsert") == "overwrite":
+            # TRUNCATE is plain DDL through the same SQLAlchemy connection used
+            # for schema/table prep above -- Snowpipe Streaming's insert-only
+            # limitation only rules out MERGE (load_method: upsert with key
+            # properties), not this.
+            self.logger.info("load_method=overwrite: truncating %s", self.full_table_name)
+            self.connector.truncate_table(self.full_table_name)
 
         try:
             from snowflake.ingest.streaming import (  # noqa: PLC0415
