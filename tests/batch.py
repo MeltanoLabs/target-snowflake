@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import sys
 import typing as t
 from pathlib import Path
 
@@ -27,8 +28,14 @@ from .core import (
     SnowflakeTargetSchemaUpdates,
 )
 
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
 
 class SnowflakeTargetCustomTestTemplate(TargetFileTestTemplate):
+    @override
     @property
     def singer_filepath(self) -> Path:
         """Get path to singer JSONL formatted messages file.
@@ -194,5 +201,5 @@ batch_target_tests = SingerTestSuite(
         SnowflakeTargetBatchSchemaNoProperties,
         # SnowflakeTargetBatchSchemaUpdates,
         SnowflakeTargetBatchSpecialCharsInAttributes,
-    ],  # ty:ignore[invalid-argument-type]
+    ],
 )

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import typing as t
 from shutil import rmtree
@@ -23,6 +24,11 @@ from singer_sdk.sql.sink import SQLSink
 
 from target_snowflake.arrow_batch import ARROW_ENCODING_FORMAT, convert_arrow_manifest_to_parquet
 from target_snowflake.connector import SnowflakeConnector
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 if t.TYPE_CHECKING:
     from singer_sdk import Target
@@ -58,16 +64,19 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             connector=connector,
         )
 
+    @override
     @property
     def schema_name(self) -> str | None:
         schema = super().schema_name or self.config.get("schema")
         return schema.upper() if schema else None
 
+    @override
     @property
     def database_name(self) -> str | None:
         db = super().database_name or self.config.get("database")
         return db.upper() if db else None
 
+    @override
     @property
     def table_name(self) -> str:
         if self.config.get("use_raw_stream_names", False):
@@ -75,6 +84,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
         return super().table_name.upper()
 
+    @override
     def setup(self) -> None:
         """Set up Sink.
 
@@ -132,6 +142,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
         return self._file_formats[file_type]
 
+    @override
     def clean_up(self) -> None:
         # The base Sink.clean_up() calls this too, but overriding here (rather than
         # super().clean_up()) drops it entirely -- force-flushing whatever record_count
@@ -141,6 +152,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         for file_format in self._file_formats.values():
             self.connector.drop_file_format(file_format=file_format)
 
+    @override
     def conform_name(
         self,
         name: str,
@@ -150,6 +162,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             return super().conform_name(name=name, object_type=object_type)
         return self.connector.format_identifier(name)
 
+    @override
     def bulk_insert_records(
         self,
         full_table_name: str | FullyQualifiedName,
@@ -201,6 +214,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
 
     # Custom methods to process batch files
 
+    @override
     @property
     def batch_config(self) -> BatchConfig:
         """Get batch configuration.
@@ -292,6 +306,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             # regardless of `clean_up_batch_files`.
             rmtree(output_dir, ignore_errors=True)
 
+    @override
     def process_batch_files(
         self,
         encoding: BaseBatchFileEncoding,
@@ -323,6 +338,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             counter.increment(record_count)
 
     # TODO: remove after https://github.com/meltano/sdk/issues/1819 is fixed
+    @override
     def _singer_validate_message(self, record: dict) -> None:
         """Ensure record conforms to Singer Spec.
 

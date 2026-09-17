@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import binascii
 import re
+import sys
 import urllib.parse
 from contextlib import contextmanager
 from enum import Enum
@@ -35,8 +36,13 @@ from target_snowflake.snowflake_types import (
     VARIANT,
 )
 
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable, Sequence
+    from collections.abc import Generator, Iterable, Mapping, Sequence
 
     import sqlalchemy as sa
     from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
@@ -45,6 +51,7 @@ if TYPE_CHECKING:
 
 
 class JSONSchemaToSnowflake(JSONSchemaToSQL):
+    @override
     def handle_multiple_types(self, types: Sequence[str]) -> sqlalchemy.types.TypeEngine:
         if "object" in types or "array" in types:
             return VARIANT()
@@ -126,6 +133,7 @@ class SnowflakeConnector(SQLConnector):
         self.table_cache.pop(full_table_name, None)
         self._inspector = None
 
+    @override
     def get_table_columns(
         self,
         full_table_name: str | FullyQualifiedName,
@@ -231,6 +239,31 @@ class SnowflakeConnector(SQLConnector):
             encryption_algorithm=serialization.NoEncryption(),
         )
 
+    def get_streaming_client_properties(self) -> dict[str, str]:
+        """Build the ``properties`` dict for the Snowpipe Streaming SDK's client.
+
+        Unlike :meth:`get_private_key` (which returns DER bytes for the
+        `cryptography`/SQLAlchemy connect-args path), the streaming SDK expects the
+        private key as PEM text. It stringifies every property value it's given, so
+        raw bytes would be mangled.
+
+        Returns:
+            The ``properties`` dict for ``StreamingIngestClient``/``from_table``.
+        """
+        account = self.config["account"]
+        private_key_pem = self._load_private_key().private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        return {
+            "account": account,
+            "user": self.config["user"],
+            "private_key": private_key_pem.decode(),
+            "host": f"{account}.snowflakecomputing.com",
+            "url": f"https://{account}.snowflakecomputing.com",
+        }
+
     @cached_property
     def auth_method(self) -> SnowflakeAuthMethod:
         """Validate & return the authentication method based on config."""
@@ -252,7 +285,8 @@ class SnowflakeConnector(SQLConnector):
             return SnowflakeAuthMethod.OAUTH
         return SnowflakeAuthMethod.PASSWORD
 
-    def get_sqlalchemy_url(self, config: dict) -> str:
+    @override
+    def get_sqlalchemy_url(self, config: Mapping) -> str:
         """Generates a SQLAlchemy URL for Snowflake.
 
         Args:
@@ -295,6 +329,7 @@ class SnowflakeConnector(SQLConnector):
 
         return connect_args
 
+    @override
     def create_engine(self) -> Engine:
         """Creates and returns a new engine. Do not call outside of _engine.
 
@@ -328,6 +363,7 @@ class SnowflakeConnector(SQLConnector):
     def formatter(self) -> IdentifierPreparer:
         return self._engine.dialect.identifier_preparer
 
+    @override
     def prepare_column(
         self,
         full_table_name: str | FullyQualifiedName,
@@ -350,6 +386,7 @@ class SnowflakeConnector(SQLConnector):
             )
             raise
 
+    @override
     @staticmethod
     def get_column_rename_ddl(
         table_name: str | FullyQualifiedName,
@@ -366,6 +403,7 @@ class SnowflakeConnector(SQLConnector):
             formatter.format_collation(new_column_name),
         )
 
+    @override
     @staticmethod
     def get_column_alter_ddl(
         table_name: str | FullyQualifiedName,
@@ -397,6 +435,7 @@ class SnowflakeConnector(SQLConnector):
             },
         )
 
+    @override
     @cached_property
     def jsonschema_to_sql(self) -> JSONSchemaToSQL:
         # https://docs.snowflake.com/en/sql-reference/intro-summary-data-types.html
@@ -414,6 +453,7 @@ class SnowflakeConnector(SQLConnector):
             to_sql.register_format_handler("uuid", lambda _: sct.STRING(36))
         return to_sql
 
+    @override
     def schema_exists(self, schema_name: str) -> bool:
         if schema_name in self.schema_cache:
             return True
@@ -731,6 +771,7 @@ class SnowflakeConnector(SQLConnector):
 
         """
 
+    @override
     def _adapt_column_type(
         self,
         full_table_name: str | FullyQualifiedName,

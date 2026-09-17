@@ -67,3 +67,26 @@ jobs:
       with:
         name: snowflake-logs-py${{ matrix.python-version }}-${{ matrix.os }}
         path: snowflake.log
+
+  snowpipe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        version: ">=0.11"
+    - name: Test Snowpipe Streaming with pytest
+      env:
+        SINGER_SDK_LOG_CONFIG: ./target_snowflake_logging.yaml
+        TARGET_SNOWFLAKE_USER: ${{secrets.TARGET_SNOWFLAKE_USER}}
+        TARGET_SNOWFLAKE_PRIVATE_KEY: ${{secrets.TARGET_SNOWFLAKE_PRIVATE_KEY}}
+        TARGET_SNOWFLAKE_ACCOUNT: ${{secrets.TARGET_SNOWFLAKE_ACCOUNT}}
+        TARGET_SNOWFLAKE_DATABASE: ${{secrets.TARGET_SNOWFLAKE_DATABASE}}
+        TARGET_SNOWFLAKE_WAREHOUSE: ${{secrets.TARGET_SNOWFLAKE_WAREHOUSE}}
+        TARGET_SNOWFLAKE_ROLE: ${{secrets.TARGET_SNOWFLAKE_ROLE}}
+        TARGET_SNOWFLAKE_SCHEMA: ${{secrets.TARGET_SNOWFLAKE_SCHEMA}}
+      run: |
+        uvx --with tox-uv tox -e snowpipe

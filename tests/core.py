@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -29,8 +30,14 @@ from sqlalchemy import text, types
 
 from target_snowflake.connector import SnowflakeConnector
 
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
 
 class SnowflakeTargetArrayData(TargetArrayData):
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = (
@@ -70,6 +77,7 @@ class SnowflakeTargetArrayData(TargetArrayData):
 
 
 class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.ForecastingTypeToCategory".upper()  # noqa: E501
@@ -107,6 +115,7 @@ class SnowflakeTargetCamelcaseComplexSchema(TargetCamelcaseComplexSchema):
 
 
 class SnowflakeTargetDuplicateRecords(TargetDuplicateRecords):
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = (
@@ -151,6 +160,7 @@ class SnowflakeTargetCamelcaseTest(TargetCamelcaseTest):
     def stream_name(self) -> str:
         return "TestCamelcase"
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = (
@@ -186,6 +196,7 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
     def stream_names(self) -> list[str]:
         return ["test_strings", "test_strings_in_objects", "test_strings_in_arrays"]
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         for table_name in self.stream_names:
@@ -200,18 +211,21 @@ class SnowflakeTargetEncodedStringData(TargetEncodedStringData):
 
 
 class SnowflakeTargetInvalidSchemaTest(TargetInvalidSchemaTest):
+    @override
     def test(self) -> None:
         with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
 class SnowflakeTargetRecordBeforeSchemaTest(TargetRecordBeforeSchemaTest):
+    @override
     def test(self) -> None:
         with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
 class SnowflakeTargetRecordMissingKeyProperty(TargetRecordMissingKeyProperty):
+    @override
     def test(self) -> None:
         # TODO: catch exact exception, currently snowflake throws an integrity error
         with pytest.raises(Exception):  # noqa: B017, PT011
@@ -222,12 +236,14 @@ class SnowflakeTargetRecordMissingKeyProperty(TargetRecordMissingKeyProperty):
 # data from staged files. We should make a CSV batcher and use
 #  `ERROR_ON_COLUMN_COUNT_MISMATCH=FALSE`
 class SnowflakeTargetOptionalAttributes(TargetOptionalAttributes):
+    @override
     def test(self) -> None:
         with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
 
 
 class SnowflakeTargetRecordMissingRequiredProperty(TargetRecordMissingRequiredProperty):
+    @override
     def test(self) -> None:
         with pytest.raises(Exception):  # noqa: B017, PT011
             self.runner.sync_all()
@@ -241,6 +257,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
             "test_object_schema_no_properties",
         ]
 
+    @override
     def validate(self) -> None:
         for table_name in self.stream_names:
             connector = SnowflakeConnector(self.target.config)
@@ -281,6 +298,7 @@ class SnowflakeTargetSchemaNoProperties(TargetSchemaNoProperties):
 
 
 class SnowflakeTargetSchemaUpdates(TargetSchemaUpdates):
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = (
@@ -330,11 +348,13 @@ class SnowflakeTargetReservedWords(TargetFileTestTemplate):
     # Syncs records then alters schema by adding a non-reserved word column.
     name = "reserved_words"
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -355,11 +375,13 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
     # TODO: Syncs records then alters schema by adding a non-reserved word column.
     name = "reserved_words_no_key_props"
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -377,11 +399,13 @@ class SnowflakeTargetReservedWordsNoKeyProps(TargetFileTestTemplate):
 class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
     name = "colons_in_col_name"
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -415,11 +439,13 @@ class SnowflakeTargetColonsInColName(TargetFileTestTemplate):
 class SnowflakeTargetExistingTable(TargetFileTestTemplate):
     name = "existing_table"
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
+    @override
     def setup(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -444,6 +470,7 @@ class SnowflakeTargetExistingTable(TargetFileTestTemplate):
             """),
             )
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -462,6 +489,7 @@ class SnowflakeTargetExistingTableAlter(SnowflakeTargetExistingTable):
     name = "existing_table_alter"
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
 
+    @override
     def setup(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -491,11 +519,13 @@ class SnowflakeTargetExistingReservedNameTableAlter(TargetFileTestTemplate):
     name = "existing_reserved_name_table_alter"
     # This sends a schema that will request altering from TIMESTAMP_NTZ to VARCHAR
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
         return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
 
+    @override
     def setup(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
@@ -527,11 +557,13 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
     # Syncs records then alters schema by adding a non-reserved word column.
     name = "reserved_words_in_table"
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
         return current_dir / "target_test_streams" / "reserved_words_in_table.singer"
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f'{self.target.config["database"]}.{self.target.config["default_target_schema"]}."order"'.upper()
@@ -547,11 +579,13 @@ class SnowflakeTargetReservedWordsInTable(TargetFileTestTemplate):
 class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
     name = "type_edge_cases"
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
         return current_dir / "target_test_streams" / f"{self.name}.singer"
 
+    @override
     def validate(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -580,6 +614,7 @@ class SnowflakeTargetTypeEdgeCasesTest(TargetFileTestTemplate):
 class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
     name = "column_order_mismatch"
 
+    @override
     def setup(self) -> None:
         connector = SnowflakeConnector(self.target.config)
         table = f"{self.target.config['database']}.{self.target.config['default_target_schema']}.{self.name}".upper()
@@ -595,6 +630,7 @@ class SnowflakeTargetColumnOrderMismatch(TargetFileTestTemplate):
             """),
             )
 
+    @override
     @property
     def singer_filepath(self) -> Path:
         current_dir = Path(__file__).resolve().parent
@@ -631,5 +667,5 @@ target_tests = SingerTestSuite(
         SnowflakeTargetReservedWordsInTable,
         SnowflakeTargetTypeEdgeCasesTest,
         SnowflakeTargetColumnOrderMismatch,
-    ],  # ty:ignore[invalid-argument-type]
+    ],
 )
