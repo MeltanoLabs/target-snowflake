@@ -78,7 +78,7 @@ def test_jsonschema_to_sql(connector: SnowflakeConnector, schema: dict, expected
     ],
 )
 def test_datetime_to_sql(connector: SnowflakeConnector, config: dict, expected_type: type[types.TypeEngine]):
-    connector.config.update(config)  # type: ignore[attr-defined]
+    connector.config.update(config)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
     schema = {"type": ["string", "null"], "format": "date-time"}
     sql_type = connector.to_sql_type(schema)
     assert isinstance(sql_type, expected_type)
@@ -90,7 +90,7 @@ def test_uuid_to_sql_defaults_to_native(connector: SnowflakeConnector):
 
 
 def test_uuid_to_sql_as_string(connector: SnowflakeConnector):
-    connector.config.update({"uuid_format": "string"})  # type: ignore[attr-defined]
+    connector.config.update({"uuid_format": "string"})  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
     sql_type = connector.to_sql_type({"type": "string", "format": "uuid"})
     assert isinstance(sql_type, sct.STRING)
     assert sql_type.length == 36
@@ -190,7 +190,7 @@ def test_format_identifier(
     identifier: str,
     expected_formatted: str,
 ):
-    connectable_connector.config.update(config)  # type: ignore[attr-defined]
+    connectable_connector.config.update(config)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
     assert connectable_connector.format_identifier(identifier) == expected_formatted
 
 
@@ -212,7 +212,7 @@ def test_prepare_column_matches_existing_quoted_column(
     column_name: str,
 ):
     # Columns needing quoting must not be re-added when they already exist.
-    connectable_connector.config.update(  # type: ignore[attr-defined]
+    connectable_connector.config.update(  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
         {"quoted_identifiers_ignore_case": True, "normalise_casing": False},
     )
 
@@ -253,7 +253,7 @@ def test_prepare_column_matches_existing_unquoted_column(
     # Guards the quoted-identifier fix against over-correcting. Snowflake stores these
     # upper case too, but because the lower-case form needs no quoting `normalize_name`
     # hands them back lowercased, so they must still be compared in lower case.
-    connectable_connector.config.update(  # type: ignore[attr-defined]
+    connectable_connector.config.update(  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
         {"quoted_identifiers_ignore_case": True, "normalise_casing": False},
     )
 

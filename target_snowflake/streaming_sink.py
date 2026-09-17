@@ -216,7 +216,6 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
     @override
     def clean_up(self) -> None:
         """Close the channel and client opened in `setup()`."""
-        self.record_counter_metric.exit()
         if self._channel is not None:
             self._channel.close()
             self._channel = None
