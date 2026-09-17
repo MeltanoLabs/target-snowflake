@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import typing as t
 from uuid import uuid4
@@ -143,6 +144,14 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             # properties), not this.
             self.logger.info("load_method=overwrite: truncating %s", self.full_table_name)
             self.connector.truncate_table(self.full_table_name)
+
+        # The Rust core underlying this SDK initializes its own logger -- independent
+        # of Python's `logging` -- the moment this module is imported, and defaults to
+        # writing it to stdout. For a Singer target, stdout is reserved exclusively for
+        # STATE messages read by the orchestrator, so anything else on it corrupts that
+        # protocol channel. Must be set before the import below; setdefault() so an
+        # operator can still override it (e.g. to a file) via their own env var.
+        os.environ.setdefault("SS_LOG_TARGET", "stderr")
 
         try:
             from snowflake.ingest.streaming import (  # noqa: PLC0415
