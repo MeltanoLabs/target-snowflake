@@ -213,10 +213,7 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             self.logger.info("load_method=overwrite: truncating %s", self.full_table_name)
             self.connector.truncate_table(self.full_table_name)
 
-        channel, _status = self.streaming_client.open_channel(
-            channel_name=f"{self.stream_name}-{uuid4()}",
-        )
-        self._channel = channel
+        self._channel, _status = self.streaming_client.open_channel(channel_name=f"{self.stream_name}-{uuid4()}")
 
     @override
     def process_record(self, record: dict, context: dict) -> None:
