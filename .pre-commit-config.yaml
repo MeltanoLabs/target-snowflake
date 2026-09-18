@@ -38,7 +38,7 @@ repos:
     - types-requests
 
 - repo: https://github.com/astral-sh/uv-pre-commit
-  rev: 0.12.15
+  rev: 0.12.16
   hooks:
   - id: uv-lock
   - id: uv-sync

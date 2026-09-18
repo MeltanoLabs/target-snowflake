@@ -43,7 +43,7 @@ dependencies = [
 # Snowpipe Streaming (`ingestion_method: snowpipe_streaming`) is opt-in: it pulls in a
 # separate, Rust-backed package that most users don't need. Note snowpipe-streaming
 # currently supports Python 3.9-3.13 only, so it isn't installable on Python 3.14.
-snowpipe = ["snowpipe-streaming>=1.8.0"]
+snowpipe = ["snowpipe-streaming>=1.8.0,<2"]
 
 [project.scripts]
 target-snowflake = "target_snowflake.target:TargetSnowflake.cli"
