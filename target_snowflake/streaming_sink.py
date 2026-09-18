@@ -10,7 +10,6 @@ import sys
 import typing as t
 from uuid import uuid4
 
-from singer_sdk.exceptions import ConfigValidationError
 from singer_sdk.helpers._typing import conform_record_data_types
 from singer_sdk.helpers.conform import TypeConformanceLevel
 from singer_sdk.sql.sink import SQLSink
@@ -166,25 +165,11 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         structure is still prepared through the regular SQLAlchemy connection,
         exactly as `SnowflakeSink.setup()` does.
 
-        Raises:
-            ConfigValidationError: If `load_method: upsert` is configured and this
-                stream has key properties. Snowpipe Streaming has no MERGE/UPSERT
-                capability, so `upsert` is only safe for streams with no key
-                properties (where it behaves the same as `append-only` anyway).
-                This can't be checked in `TargetSnowflake._validate_config()`
-                since key properties are per-stream, known only once a SCHEMA
-                message arrives.
+        `TargetSnowflake.create_sink()` never instantiates this sink for a stream
+        with `load_method: upsert` and key properties (it falls back to
+        `SnowflakeSink` for just that stream instead, since Snowpipe Streaming has
+        no MERGE capability) -- so that combination can't reach here.
         """
-        if self.config.get("load_method", "upsert") == "upsert" and self.key_properties:
-            msg = (
-                f"Stream '{self.stream_name}' has key properties {self.key_properties}, "
-                "but ingestion_method: snowpipe_streaming does not support "
-                "load_method: upsert for streams with key properties (no MERGE "
-                "capability). Set load_method: append-only, or remove this stream's "
-                "key properties."
-            )
-            raise ConfigValidationError(msg)
-
         if self.schema_name:
             self.connector.prepare_schema(
                 self.conform_name(self.schema_name, object_type="schema"),
