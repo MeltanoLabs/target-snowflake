@@ -115,17 +115,14 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
     @property
     def streaming_client(self) -> StreamingIngestClient:
         if self._streaming_client is None:
-            assert self.database_name is not None  # noqa: S101
-            assert self.schema_name is not None  # noqa: S101
-
             # This needs to be called before we get a hold of the client
             setup_streaming_sdk_logger(logger=self.logger, environ=os.environ)
 
             self._streaming_client = get_streaming_client(
                 stream_name=self.stream_name,
                 table_name=self.table_name,
-                schema_name=self.schema_name,
-                database_name=self.database_name,
+                schema_name=self.schema_name,  # type: ignore[arg-type] # ty: ignore[invalid-argument-type]
+                database_name=self.database_name,  # type: ignore[arg-type] # ty: ignore[invalid-argument-type]
                 properties=self.connector.get_streaming_client_properties(),
             )
 
