@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 import typing as t
@@ -152,6 +153,16 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         # protocol channel. Must be set before the import below; setdefault() so an
         # operator can still override it (e.g. to a file) via their own env var.
         os.environ.setdefault("SS_LOG_TARGET", "stderr")
+
+        match self.logger.getEffectiveLevel():
+            case level if logging.NOTSET < level <= logging.DEBUG:
+                sp_level = "debug"
+            case level if level < logging.INFO:  # 'info' is the Sink's default, but it's a bit chatty for Snowpipe
+                sp_level = "info"
+            case _:
+                sp_level = "warn"
+
+        os.environ.setdefault("SS_LOG_LEVEL", sp_level)
 
         try:
             from snowflake.ingest.streaming import (  # noqa: PLC0415
