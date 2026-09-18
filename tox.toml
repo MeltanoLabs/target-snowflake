@@ -19,7 +19,7 @@ description = "run Snowpipe Streaming integration tests (requires the 'snowpipe'
 base_python = [ "3.12" ]
 extras = [ "snowpipe" ]
 pass_env = [ "TARGET_SNOWFLAKE_*" ]
-commands = [ [ "pytest", "tests/test_snowpipe_streaming.py" ] ]
+commands = [ [ "pytest", "tests/test_snowpipe_streaming.py", { replace = "posargs", default = [ ], extend = true } ] ]
 
 [env.typing]
 description = "type checks"

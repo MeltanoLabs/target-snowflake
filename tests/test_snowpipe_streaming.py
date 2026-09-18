@@ -15,10 +15,8 @@ Requires the `snowpipe` extra (`pip install '.[snowpipe]'`) and the same
 
 from __future__ import annotations
 
-import json
+import logging
 import os
-import subprocess
-import sys
 import time
 import uuid
 from pathlib import Path
@@ -30,6 +28,7 @@ from singer_sdk.testing import TargetTestRunner
 from sqlalchemy import text
 
 from target_snowflake.connector import SnowflakeConnector
+from target_snowflake.streaming_sink import setup_streaming_sdk_logger
 from target_snowflake.target import TargetSnowflake
 
 pytest.importorskip(
@@ -103,45 +102,33 @@ def test_snowpipe_streaming_append_and_schema_evolution(streaming_schema):
     assert rows == expected
 
 
-def test_snowpipe_streaming_stdout_is_pure_singer_protocol(streaming_schema, tmp_path):
-    """stdout must contain only Singer protocol messages (STATE, here), never the
-    snowpipe-streaming SDK's own logging.
+def test_setup_streaming_logging(caplog: pytest.LogCaptureFixture, subtests: pytest.Subtests):
+    logger_name = "test.streaming"
+    logger = logging.getLogger(logger_name)
 
-    That SDK's Rust core has its own logger -- independent of Python's `logging` --
-    that defaults to writing to stdout, which would corrupt the channel Meltano
-    reads STATE messages from. `SnowpipeStreamingSink.setup()` sets
-    `SS_LOG_TARGET=stderr` before importing the SDK to prevent this.
+    environ: dict[str, str] = {}
+    with subtests.test("debug"), caplog.at_level(logging.DEBUG, logger=logger_name):
+        setup_streaming_sdk_logger(environ=environ, logger=logger)
 
-    `TargetTestRunner` (used by the test above) captures Python-level `sys.stdout`,
-    which would NOT catch a native extension writing directly to the OS file
-    descriptor -- confirmed by the fact this bug was invisible to that runner and
-    only showed up when manually shell-redirecting a real CLI invocation. So this
-    test runs the target as an actual subprocess and inspects its real stdout/stderr.
-    """
-    config = {**SAMPLE_CONFIG, "default_target_schema": streaming_schema}
-    config_path = tmp_path / "config.json"
-    config_path.write_text(json.dumps(config))
+        assert environ == {
+            "SS_LOG_TARGET": "stderr",
+            "SS_LOG_LEVEL": "debug",
+        }
 
-    input_path = Path("tests/target_test_streams/snowpipe_streaming_basic.singer")
-    result = subprocess.run(  # noqa: S603
-        [sys.executable, "-m", "target_snowflake.target", "--config", str(config_path)],
-        input=input_path.read_text(),
-        capture_output=True,
-        text=True,
-        timeout=90,
-        check=False,
-    )
+    environ = {}
+    with subtests.test("not-quite-info"), caplog.at_level(logging.INFO - 1, logger=logger_name):
+        setup_streaming_sdk_logger(environ=environ, logger=logger)
 
-    assert result.returncode == 0, result.stderr
+        assert environ == {
+            "SS_LOG_TARGET": "stderr",
+            "SS_LOG_LEVEL": "info",
+        }
 
-    stdout_lines = [line for line in result.stdout.splitlines() if line.strip()]
-    assert stdout_lines, "expected at least one STATE message on stdout"
-    for line in stdout_lines:
-        # `Target._write_state_message()` writes the bare state-value dict (no
-        # type/value envelope) -- just confirm every line is valid JSON, which a
-        # leaked Rust log line (free text with spaces/pipes/colons) never would be.
-        message = json.loads(line)
-        assert isinstance(message, dict)
+    environ = {}
+    with subtests.test("info-and-above"), caplog.at_level(logging.INFO, logger=logger_name):
+        setup_streaming_sdk_logger(environ=environ, logger=logger)
 
-    # Not just silently swallowed -- confirm the logging actually landed on stderr.
-    assert "core::" in result.stderr
+        assert environ == {
+            "SS_LOG_TARGET": "stderr",
+            "SS_LOG_LEVEL": "warn",
+        }
