@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 import typing as t
@@ -23,6 +24,8 @@ else:
 
 
 if t.TYPE_CHECKING:
+    from collections.abc import MutableMapping
+
     from snowflake.ingest.streaming import (  # type: ignore[import-not-found]
         StreamingIngestChannel,
         StreamingIngestClient,
@@ -32,6 +35,55 @@ MISSING_DEPENDENCY_MESSAGE = (
     "ingestion_method: snowpipe_streaming requires the 'snowpipe-streaming' package. "
     "Install it with: pip install 'meltanolabs-target-snowflake[snowpipe]'"
 )
+
+
+def setup_streaming_sdk_logger(*, environ: MutableMapping[str, str], logger: logging.Logger):
+    # The Rust core underlying this SDK initializes its own logger -- independent
+    # of Python's `logging` -- the moment this module is imported, and defaults to
+    # writing it to stdout. For a Singer target, stdout is reserved exclusively for
+    # STATE messages read by the orchestrator, so anything else on it corrupts that
+    # protocol channel. Must be set before the import below; setdefault() so an
+    # operator can still override it (e.g. to a file) via their own env var.
+    environ.setdefault("SS_LOG_TARGET", "stderr")
+
+    match logger.getEffectiveLevel():
+        case level if logging.NOTSET < level <= logging.DEBUG:
+            sp_level = "debug"
+        case level if level < logging.INFO:  # 'info' is the Sink's default, but it's a bit chatty for Snowpipe
+            sp_level = "info"
+        case _:
+            sp_level = "warn"
+
+    environ.setdefault("SS_LOG_LEVEL", sp_level)
+
+
+def get_streaming_client(
+    *,
+    stream_name: str,
+    table_name: str,
+    schema_name: str,
+    database_name: str,
+    properties: dict[str, str],
+) -> StreamingIngestClient:
+
+    try:
+        from snowflake.ingest.streaming import (  # noqa: PLC0415
+            StreamingIngestClient,  # type: ignore[import-not-found]
+        )
+    except ImportError as e:
+        raise ImportError(MISSING_DEPENDENCY_MESSAGE) from e
+
+    # A unique client/channel name per sink instance avoids collisions with a
+    # prior (possibly still-open, see target_base.py archived-sink lifecycle)
+    # sink instance for the same stream, mirroring the uuid-per-instance pattern
+    # already used for file formats in SnowflakeSink._get_file_format_name.
+    return StreamingIngestClient.from_table(
+        client_name=f"target-snowflake-{stream_name}-{uuid4()}",
+        db_name=database_name,
+        schema_name=schema_name,
+        table_name=table_name,
+        properties=properties,
+    )
 
 
 class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
@@ -59,6 +111,22 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
     # The following four members mirror SnowflakeSink's identifier-formatting
     # overrides. They're duplicated rather than shared via a common base class,
     # since they're the only overlap between the two sink types.
+
+    @property
+    def streaming_client(self) -> StreamingIngestClient:
+        if self._streaming_client is None:
+            # This needs to be called before we get a hold of the client
+            setup_streaming_sdk_logger(logger=self.logger, environ=os.environ)
+
+            self._streaming_client = get_streaming_client(
+                stream_name=self.stream_name,
+                table_name=self.table_name,
+                schema_name=self.schema_name,  # type: ignore[arg-type] # ty: ignore[invalid-argument-type]
+                database_name=self.database_name,  # type: ignore[arg-type] # ty: ignore[invalid-argument-type]
+                properties=self.connector.get_streaming_client_properties(),
+            )
+
+        return self._streaming_client
 
     @override
     @property
@@ -145,37 +213,7 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             self.logger.info("load_method=overwrite: truncating %s", self.full_table_name)
             self.connector.truncate_table(self.full_table_name)
 
-        # The Rust core underlying this SDK initializes its own logger -- independent
-        # of Python's `logging` -- the moment this module is imported, and defaults to
-        # writing it to stdout. For a Singer target, stdout is reserved exclusively for
-        # STATE messages read by the orchestrator, so anything else on it corrupts that
-        # protocol channel. Must be set before the import below; setdefault() so an
-        # operator can still override it (e.g. to a file) via their own env var.
-        os.environ.setdefault("SS_LOG_TARGET", "stderr")
-
-        try:
-            from snowflake.ingest.streaming import (  # noqa: PLC0415
-                StreamingIngestClient,  # type: ignore[import-not-found]
-            )
-        except ImportError as e:
-            raise ImportError(MISSING_DEPENDENCY_MESSAGE) from e
-
-        # A unique client/channel name per sink instance avoids collisions with a
-        # prior (possibly still-open, see target_base.py archived-sink lifecycle)
-        # sink instance for the same stream, mirroring the uuid-per-instance pattern
-        # already used for file formats in SnowflakeSink._get_file_format_name.
-        self._streaming_client = StreamingIngestClient.from_table(
-            client_name=f"target-snowflake-{self.stream_name}-{uuid4()}",
-            db_name=self.database_name,  # ty: ignore[invalid-argument-type]
-            schema_name=self.schema_name,  # ty: ignore[invalid-argument-type]
-            table_name=self.table_name,
-            properties=self.connector.get_streaming_client_properties(),
-        )
-        assert self._streaming_client is not None  # noqa: S101 -- just assigned above
-        channel, _status = self._streaming_client.open_channel(
-            channel_name=f"{self.stream_name}-{uuid4()}",
-        )
-        self._channel = channel
+        self._channel, _status = self.streaming_client.open_channel(channel_name=f"{self.stream_name}-{uuid4()}")
 
     @override
     def process_record(self, record: dict, context: dict) -> None:
