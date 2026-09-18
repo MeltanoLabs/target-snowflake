@@ -30,6 +30,8 @@ else:
     from typing_extensions import override
 
 if t.TYPE_CHECKING:
+    from singer_sdk.singerlib.types import KeyProperties
+    from singer_sdk.sinks import Sink
     from singer_sdk.sql.sink import SQLSink
 
 logging.config.dictConfig(
@@ -210,8 +212,10 @@ class TargetSnowflake(SQLTarget):
                 "key-pair authentication is supported in this mode, and `hard_delete` is "
                 "not supported. `load_method: overwrite` truncates via a regular SQL "
                 "connection before streaming begins, same as with `file_staging`. "
-                "`load_method: upsert` is only supported for streams with no key "
-                "properties (checked per-stream, since streaming has no MERGE capability)."
+                "`load_method: upsert` needs MERGE, which streaming doesn't support, so "
+                "any individual stream with key properties falls back to `file_staging` "
+                "for that stream only (with a logged warning) rather than failing the "
+                "whole sync -- other streams keep streaming."
             ),
         ),
     ).to_dict()
@@ -223,6 +227,22 @@ class TargetSnowflake(SQLTarget):
         *SQLTarget.capabilities,
         PluginCapabilities.BATCH,
     ]
+
+    @property
+    @override
+    def target_connector(self) -> SnowflakeConnector:
+        """The connector object, narrowed from `SQLConnector` to `SnowflakeConnector`.
+
+        `default_sink_class.connector_class` is always `SnowflakeConnector` for this
+        target, but the base `SQLTarget.target_connector` types it generically --
+        narrowing it here lets `create_sink()` pass it directly to `SnowflakeSink`.
+
+        Returns:
+            The connector object.
+        """
+        connector = super().target_connector
+        assert isinstance(connector, SnowflakeConnector)  # noqa: S101
+        return connector
 
     @override
     def _validate_config(self, *, raise_errors: bool = True) -> list[str]:
@@ -278,6 +298,54 @@ class TargetSnowflake(SQLTarget):
             return SnowpipeStreamingSink
 
         return super().get_sink_class(stream_name)
+
+    @override
+    def create_sink(
+        self,
+        *,
+        stream_name: str,
+        schema: dict,
+        key_properties: KeyProperties | None = None,
+    ) -> Sink:
+        """Create a sink, falling back to file-staging for one stream if it needs MERGE.
+
+        `get_sink_class()` alone can't make this call: it only receives
+        `stream_name`, but whether Snowpipe Streaming can handle a stream depends on
+        its key properties too, which aren't known until here. This lets a fleet of
+        streams use `ingestion_method: snowpipe_streaming` even if one or two of them
+        have key properties and `load_method: upsert` (which needs MERGE, which
+        Snowpipe Streaming doesn't support) -- instead of failing the whole sync.
+
+        Args:
+            stream_name: Name of the stream.
+            schema: Schema of the stream.
+            key_properties: The primary key columns.
+
+        Returns:
+            A new sink instance for the stream.
+        """
+        if (
+            self.config.get("ingestion_method") == "snowpipe_streaming"
+            and self.config.get("load_method", "upsert") == "upsert"
+            and key_properties
+        ):
+            self.logger.warning(
+                "Stream '%s' has key properties %s. ingestion_method: snowpipe_streaming "
+                "has no MERGE capability, so load_method: upsert isn't supported for it. "
+                "Falling back to ingestion_method: file_staging for this stream (it "
+                "will use a warehouse).",
+                stream_name,
+                key_properties,
+            )
+            return SnowflakeSink(
+                target=self,
+                stream_name=stream_name,
+                schema=schema,
+                key_properties=list(key_properties),
+                connector=self.target_connector,
+            )
+
+        return super().create_sink(stream_name=stream_name, schema=schema, key_properties=key_properties)
 
     @classmethod
     def cb_initialize(

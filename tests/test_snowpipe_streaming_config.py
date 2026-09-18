@@ -2,12 +2,13 @@
 
 """Unit tests for `ingestion_method: snowpipe_streaming` config validation.
 
-These tests exercise `TargetSnowflake._validate_config()` and `get_sink_class()`
-directly, with no live Snowflake account required.
+These tests exercise `TargetSnowflake._validate_config()`, `get_sink_class()`, and
+`create_sink()` directly, with no live Snowflake account required.
 """
 
 from __future__ import annotations
 
+import logging
 import re
 import sys
 from unittest.mock import MagicMock
@@ -146,23 +147,10 @@ def _make_streaming_sink(*, load_method, key_properties):
     ), connector
 
 
-def test_streaming_sink_rejects_upsert_with_key_properties():
-    """Snowpipe Streaming has no MERGE, so `upsert` is only safe for streams with
-    no key properties -- this can only be checked once a stream's key properties
-    are known, i.e. in the sink, not in `TargetSnowflake._validate_config()`."""
-    sink, connector = _make_streaming_sink(load_method="upsert", key_properties=["id"])
-
-    with pytest.raises(ConfigValidationError, match="key properties"):
-        sink.setup()
-
-    connector.prepare_schema.assert_not_called()
-    connector.prepare_table.assert_not_called()
-
-
 def test_streaming_sink_allows_upsert_without_key_properties(monkeypatch):
     """`upsert` with no key properties behaves the same as `append-only`, so it's
-    allowed -- proven here by confirming setup() proceeds past the PK check (past
-    DDL prep, up to the point of importing the optional streaming dependency)."""
+    allowed -- proven here by confirming setup() runs the DDL prep and reaches the
+    point of importing the optional streaming dependency."""
     monkeypatch.setitem(sys.modules, "snowflake.ingest.streaming", None)
     sink, connector = _make_streaming_sink(load_method="upsert", key_properties=[])
 
@@ -184,3 +172,65 @@ def test_streaming_sink_truncates_for_overwrite(monkeypatch):
         sink.setup()
 
     connector.truncate_table.assert_called_once_with(sink.full_table_name)
+
+
+def test_create_sink_falls_back_to_file_staging_for_upsert_with_key_properties(caplog):
+    """A fleet of streams can use snowpipe_streaming even if one has key properties
+    and load_method: upsert (which needs MERGE) -- only that stream falls back to
+    file_staging, rather than failing the whole config/sync."""
+    config = {**BASE_CONFIG, "ingestion_method": "snowpipe_streaming", "load_method": "upsert"}
+    target = TargetSnowflake(config=config)
+
+    with caplog.at_level(logging.WARNING):
+        sink = target.create_sink(
+            stream_name="some_stream",
+            schema={"properties": {"id": {"type": "integer"}}},
+            key_properties=["id"],
+        )
+
+    assert type(sink) is SnowflakeSink
+    assert "falling back" in caplog.text.lower()
+    assert "some_stream" in caplog.text
+    # Regression check: the fallback sink must share the target's one connector
+    # (SQLTarget.create_sink() does this for every other sink) -- constructing it
+    # without `connector=` would silently give it its own separate engine/pool.
+    assert sink.connector is target.target_connector
+
+
+def test_create_sink_keeps_streaming_for_upsert_without_key_properties():
+    config = {**BASE_CONFIG, "ingestion_method": "snowpipe_streaming", "load_method": "upsert"}
+    target = TargetSnowflake(config=config)
+
+    sink = target.create_sink(
+        stream_name="some_stream",
+        schema={"properties": {"id": {"type": "integer"}}},
+        key_properties=[],
+    )
+
+    assert type(sink) is SnowpipeStreamingSink
+
+
+def test_create_sink_keeps_streaming_for_append_only_with_key_properties():
+    """append-only never uses MERGE, so key properties don't trigger the fallback."""
+    config = {**BASE_CONFIG, "ingestion_method": "snowpipe_streaming", "load_method": "append-only"}
+    target = TargetSnowflake(config=config)
+
+    sink = target.create_sink(
+        stream_name="some_stream",
+        schema={"properties": {"id": {"type": "integer"}}},
+        key_properties=["id"],
+    )
+
+    assert type(sink) is SnowpipeStreamingSink
+
+
+def test_create_sink_defaults_to_file_staging_when_not_streaming():
+    target = TargetSnowflake(config={**BASE_CONFIG, "load_method": "upsert"})
+
+    sink = target.create_sink(
+        stream_name="some_stream",
+        schema={"properties": {"id": {"type": "integer"}}},
+        key_properties=["id"],
+    )
+
+    assert type(sink) is SnowflakeSink

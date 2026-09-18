@@ -32,6 +32,7 @@ else:
 
 if t.TYPE_CHECKING:
     from singer_sdk import Target
+    from singer_sdk.singerlib.types import KeyProperties
     from singer_sdk.sql.connector import FullyQualifiedName
 
 DEFAULT_BATCH_CONFIG = {
@@ -50,7 +51,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         target: Target,
         stream_name: str,
         schema: dict,
-        key_properties: list[str] | None,
+        key_properties: KeyProperties | None,
         connector: SnowflakeConnector | None = None,
     ) -> None:
         """Initialize Snowflake Sink."""
