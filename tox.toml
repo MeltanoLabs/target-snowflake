@@ -1,50 +1,47 @@
 requires = [
-    "tox>=4.51",
-    "tox-uv",
+  "tox>=4.51",
+  "tox-uv",
 ]
 env_list = [
-    "typing",
-    "test",
+  "test",
+  "typing",
 ]
 
-[env.test]
-runner = "uv-venv-lock-runner"
-description = "run tests on Python {py_dot_ver}"
+[env_run_base]
+runner = "uv-venv-runner"
 base_python_file = [ ".python-version" ]
 
-[env.snowpipe]
-description = "run Snowpipe Streaming integration tests (requires the 'snowpipe' extra)"
-# snowpipe-streaming doesn't yet support the project's default Python version; pin to
-# one it does (3.9-3.13) rather than .python-version.
-base_python = [ "3.12" ]
-extras = [ "snowpipe" ]
+[env.test]
+description = "run tests on Python {py_dot_ver}"
+deps = [
+  "coverage>=7.2.7",
+  "pytest>=9",
+  "pytest-xdist>=3.3.1",
+  "python-dotenv>=1.2",
+  "singer-sdk[testing]",
+]
 pass_env = [ "TARGET_SNOWFLAKE_*" ]
-commands = [ [ "pytest", "tests/test_snowpipe_streaming.py", { replace = "posargs", default = [ ], extend = true } ] ]
+commands = [ [ "pytest", "-n=auto", { replace = "posargs", default = [ "tests" ], extend = true } ] ]
 
 [env.typing]
 description = "type checks"
 deps = [
-    "mypy>=1.20",
-    "python-dotenv>=1.2",
-    "pytest>=9",
-    "ty>=0.0.30",
+  "mypy>=1.20",
+  "pytest>=9",
+  "python-dotenv>=1.2",
+  "ty>=0.0.30",
 ]
 extras = [
-    "snowpipe",
+  "snowpipe",
+]
+commands = [
+  [ "mypy", "target_snowflake", "tests" ],
+  [ "ty", "check", "target_snowflake", "tests" ],
 ]
 labels = [ "check" ]
-commands = [
-    [ "mypy", "target_snowflake", "tests" ],
-    [ "ty", "check", "target_snowflake", "tests" ],
-]
 
-[env_run_base]
-pass_env = [ "TARGET_SNOWFLAKE_*" ]
-deps = [
-    "coverage>=7.2.7",
-    "python-dotenv>=1.2",
-    "pytest>=9",
-    "pytest-xdist>=3.3.1",
-    "singer-sdk[testing]",
-]
-commands = [ [ "pytest", "-n=auto", { replace = "posargs", default = [ "tests" ], extend = true } ] ]
+[env.snowpipe]
+description = "run Snowpipe Streaming integration tests (requires the 'snowpipe' extra)"
+extras = [ "snowpipe" ]
+commands = [ [ "pytest", "tests/test_snowpipe_streaming.py", { replace = "posargs", default = [], extend = true } ] ]
+base = [ "test" ]

@@ -63,7 +63,7 @@ def streaming_schema():
         conn.execute(text(f"drop schema if exists {SAMPLE_CONFIG['database']}.{schema_name}"))
 
 
-def test_snowpipe_streaming_append_and_schema_evolution(streaming_schema):
+def test_snowpipe_streaming_append_and_schema_evolution(streaming_schema) -> None:
     """Append-only ingestion via Snowpipe Streaming, including a mid-sync column add.
 
     `tests/target_test_streams/snowpipe_streaming_basic.singer` sends two records,
@@ -102,7 +102,7 @@ def test_snowpipe_streaming_append_and_schema_evolution(streaming_schema):
     assert rows == expected
 
 
-def test_setup_streaming_logging(caplog: pytest.LogCaptureFixture, subtests: pytest.Subtests):
+def test_setup_streaming_logging(caplog: pytest.LogCaptureFixture, subtests: pytest.Subtests) -> None:
     logger_name = "test.streaming"
     logger = logging.getLogger(logger_name)
 
