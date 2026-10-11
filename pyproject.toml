@@ -35,7 +35,8 @@ dependencies = [
     "singer-sdk[sql]==0.55.0b3",
     "snowflake-connector-python[secure-local-storage]~=4.0",
     "snowflake-sqlalchemy==1.11.1",
-    "sqlalchemy~=2.0.31",
+    "sqlalchemy~=2.0.53 ; python_full_version < '3.11'",
+    "sqlalchemy~=2.1.0 ; python_full_version >= '3.11'",
     "typing-extensions>=4.16.0 ; python_full_version < '3.12'",
 ]
 
