@@ -105,6 +105,7 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         """Initialize Snowpipe Streaming Sink."""
         self._streaming_client: StreamingIngestClient | None = None
         self._channel: StreamingIngestChannel | None = None
+        self._rows_appended = 0
         super().__init__(*args, **kwargs)
 
     # The following four members mirror SnowflakeSink's identifier-formatting
@@ -220,7 +221,8 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             logger=self.logger,
         )
         assert self._channel is not None  # noqa: S101 -- set in setup(), which always runs first
-        self._channel.append_row(conformed_record)
+        self._rows_appended += 1
+        self._channel.append_row(conformed_record, offset_token=str(self._rows_appended))
 
     @override
     def process_batch(self, context: dict) -> None:
@@ -249,6 +251,9 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
     def clean_up(self) -> None:
         """Close the channel and client opened in `setup()`."""
         if self._channel is not None:
+            # Closing only flushes the rows. Snowflake makes them visible to queries
+            # some seconds later, when it commits them.
+            self._channel.wait_for_commit(lambda token: int(token or 0) >= self._rows_appended)
             self._channel.close()
             self._channel = None
         if self._streaming_client is not None:
