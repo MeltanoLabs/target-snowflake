@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import logging
 import os
-import time
 import uuid
 from pathlib import Path
 from typing import Any
@@ -80,24 +79,14 @@ def test_snowpipe_streaming_append_and_schema_evolution(streaming_schema) -> Non
     )
     runner.sync_all()
 
-    # Snowpipe Streaming's channel `close(wait_for_flush=True)` (used in
-    # SnowpipeStreamingSink.clean_up()) confirms the client-side buffer was sent to
-    # Snowflake, but rows can take a few seconds longer to become visible to SELECT
-    # -- so poll rather than asserting immediately.
     connector = SnowflakeConnector(config=config)
     query = text(
         f"select id, col_str, col_new from {SAMPLE_CONFIG['database']}.{streaming_schema}"
         ".snowpipe_streaming_basic order by id",
     )
     expected = [(1, "foo", None), (2, "bar", None), (3, "baz", "added")]
-    deadline = time.monotonic() + 60
-    rows: list[tuple] = []
-    while time.monotonic() < deadline:
-        with connector.connect() as conn:
-            rows = [tuple(row) for row in conn.execute(query).fetchall()]
-        if rows == expected:
-            break
-        time.sleep(2)
+    with connector.connect() as conn:
+        rows = [tuple(row) for row in conn.execute(query).fetchall()]
 
     assert rows == expected
 
