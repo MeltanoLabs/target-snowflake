@@ -28,7 +28,6 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "certifi==2026.7.22",
     "cryptography>=40",
     "pyarrow>=17",
     "pyhumps~=3.8.0",
