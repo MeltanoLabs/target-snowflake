@@ -31,7 +31,7 @@ dependencies = [
     "cryptography>=40",
     "pyarrow>=17",
     "pyhumps~=3.8.0",
-    "singer-sdk[sql]==0.55.0b3",
+    "singer-sdk[sql]==0.55.0b4",
     "snowflake-connector-python[secure-local-storage]~=4.0",
     "snowflake-sqlalchemy==1.11.1",
     "sqlalchemy~=2.0.31",
