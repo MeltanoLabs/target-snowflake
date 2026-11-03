@@ -1712,16 +1712,16 @@ wheels = [
 
 [[package]]
 name = "snowpipe-streaming"
-version = "1.9.0"
+version = "1.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "msgspec" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/9b/08613c5f863e5fef5d76c3a77ec44a21e23b259307689c1f7b0d20e17c36/snowpipe_streaming-1.9.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:58ef7c46ed0d013aa19da03f528a922e1af6a99110c762c0312fc3e453a62958", size = 9863607, upload-time = "2026-10-09T17:20:03.44Z" },
-    { url = "https://files.pythonhosted.org/packages/78/0b/2db9586903eb02f0408ceedbcae7054953003af9f8485637fb0405705034/snowpipe_streaming-1.9.0-cp39-abi3-manylinux_2_24_x86_64.whl", hash = "sha256:a3034969daf0baab3b79d9a4d65a859a33b2caff70e7cbdd95f826a1e8ff6096", size = 11463501, upload-time = "2026-10-09T17:20:05.981Z" },
-    { url = "https://files.pythonhosted.org/packages/9a/fe/522f4fa0150c30d8e46175d244f359613d009d73ed812aba9f0ee2901cb6/snowpipe_streaming-1.9.0-cp39-abi3-manylinux_2_26_aarch64.whl", hash = "sha256:30dc3c0fdced6832edb7f90844df6464a0a7742253c13fa8d6c213e71bfdeab9", size = 11191140, upload-time = "2026-10-09T17:20:07.885Z" },
-    { url = "https://files.pythonhosted.org/packages/82/94/99ac8fcc65f14456199934646cb73b1c09a054ecb3a2072bd3982dd78982/snowpipe_streaming-1.9.0-cp39-abi3-win_amd64.whl", hash = "sha256:3a3ce3d5e7e932b60ba9d593514bec6f4e455f51f7bba8e709d03cb262f9e7e5", size = 9039422, upload-time = "2026-10-09T17:20:10.125Z" },
+    { url = "https://files.pythonhosted.org/packages/62/2e/7169062b6ac8fdd23132be8b5b04e44e83d744b56c893f2bc63a497d8f31/snowpipe_streaming-1.9.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:42bc055e3ca2cddc690cfdd6faed0c7cac6bf296d43247f4eb1f88da037993bc", size = 10106163, upload-time = "2026-10-23T18:13:00.196Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/0e/14655ee1e7c7264e13328d446d9224abbfa49a36e20ec3b0b592ec7f9ea1/snowpipe_streaming-1.9.1-cp39-abi3-manylinux_2_24_x86_64.whl", hash = "sha256:dd7ccf72f024ea5847aa1666c9398ac4e5013571f240e6dfbbf4067bf8bd5f6f", size = 11728168, upload-time = "2026-10-23T18:13:02.714Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/25/cce0232bbf4d75ca2df57e6564c48da9874c2549bdd7a78b078a51ebfc65/snowpipe_streaming-1.9.1-cp39-abi3-manylinux_2_26_aarch64.whl", hash = "sha256:1343d965d7c3a5b4a39d5ab6cff84d4e9ea0b2815effd105ef5a71f8bd5a54ce", size = 11445014, upload-time = "2026-10-23T18:13:05.679Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/00/b9f7261246e5e35ca9b107099646c5facfcb30712a4c90194a2cad43c199/snowpipe_streaming-1.9.1-cp39-abi3-win_amd64.whl", hash = "sha256:b58053e61eb76734f72889ba1a499027aae652cd7c8557e5279b1dfe9aed373b", size = 9181546, upload-time = "2026-10-23T18:13:08.048Z" },
 ]
 
 [[package]]
