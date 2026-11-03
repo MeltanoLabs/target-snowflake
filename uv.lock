@@ -746,7 +746,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=40" },
     { name = "pyarrow", specifier = ">=17" },
     { name = "pyhumps", specifier = "~=3.8.0" },
-    { name = "singer-sdk", extras = ["sql"], specifier = "==0.55.0b4" },
+    { name = "singer-sdk", extras = ["sql"], specifier = "==0.55.0b7" },
     { name = "snowflake-connector-python", extras = ["secure-local-storage"], specifier = "~=4.0" },
     { name = "snowflake-sqlalchemy", specifier = "==1.11.1" },
     { name = "snowpipe-streaming", marker = "extra == 'snowpipe'", specifier = ">=1.8.0,<2" },
@@ -1590,7 +1590,7 @@ wheels = [
 
 [[package]]
 name = "singer-sdk"
-version = "0.55.0b4"
+version = "0.55.0b7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backports-datetime-fromisoformat", marker = "python_full_version < '3.11'" },
@@ -1615,9 +1615,9 @@ dependencies = [
     { name = "universal-pathlib" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/10/3a/bbf170d06cbe8eecf0a8d28cf9fc3f9f866bb01110b0f146bcd8a9ab7fc2/singer_sdk-0.55.0b4.tar.gz", hash = "sha256:b9f541a2caee3d6845659b6f88f49379ea215ee129295bb7187adacdf329ce27", size = 1403914, upload-time = "2026-10-19T18:26:11.649Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/38/1a6489e23b7eb08f497f14dd0b2f13787606eaced819525ca0f2595be530/singer_sdk-0.55.0b7.tar.gz", hash = "sha256:938e10e0377ca2422782d805a801cd15da1ec6661cfaa8dec4b007bef08728bf", size = 1432766, upload-time = "2026-10-22T22:48:56.764Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/3a/8f87be5ed4d18d9a455af3539728a12947d062637ad9d9b836d343106d35/singer_sdk-0.55.0b4-py3-none-any.whl", hash = "sha256:53cfc5fb664767275253fc19496ebb4542294c3f63944fd7d9d36268de4732bd", size = 225914, upload-time = "2026-10-19T18:26:09.689Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/49/a0aaf0612c13e730af246ad318e4da3e5a6cf8aae37f910a8c31544e074e/singer_sdk-0.55.0b7-py3-none-any.whl", hash = "sha256:171652f1ba544cbab4e82b24a4ed2f8c29e9cd4e986ca2f786138b42803f1de2", size = 236411, upload-time = "2026-10-22T22:48:55.013Z" },
 ]
 
 [package.optional-dependencies]
