@@ -72,12 +72,10 @@ def test_snowpipe_streaming_append_and_schema_evolution(streaming_schema) -> Non
     table for the new column.
     """
     config = {**SAMPLE_CONFIG, "default_target_schema": streaming_schema}
-    runner = TargetTestRunner(
-        TargetSnowflake,
-        config=config,
-        input_filepath=Path("tests/target_test_streams/snowpipe_streaming_basic.singer"),
-    )
-    runner.sync_all()
+    runner = TargetTestRunner(TargetSnowflake, config=config)
+    with Path("tests/target_test_streams/snowpipe_streaming_basic.singer").open(encoding="utf-8") as input_file:
+        runner.target_input = input_file
+        runner.sync_all()
 
     connector = SnowflakeConnector(config=config)
     query = text(
