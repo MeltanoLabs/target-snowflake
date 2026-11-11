@@ -471,12 +471,13 @@ class SnowflakeConnector(SQLConnector):
     @staticmethod
     def _format_column_selections(column_selections: list, format: str) -> str:  # noqa: A002
         if format == "json_casting":
-            return ", ".join(
-                [
-                    f"$1:{col['clean_property_name']}::{col['sql_type']} as {col['clean_alias']}"
-                    for col in column_selections
-                ],
-            )
+            selections = []
+            for col in column_selections:
+                selection = f"$1:{col['clean_property_name']}::{col['sql_type']}"
+                if col["default"] is not None:
+                    selection = f"coalesce({selection}, '{col['default']}'::{col['sql_type']})"
+                selections.append(f"{selection} as {col['clean_alias']}")
+            return ", ".join(selections)
         if format == "col_alias":
             return f"({', '.join([col['clean_alias'] for col in column_selections])})"
 
@@ -486,6 +487,7 @@ class SnowflakeConnector(SQLConnector):
     def _get_column_selections(
         self,
         schema: dict,
+        column_defaults: dict[str, Any] | None = None,
     ) -> list:
         column_selections = []
         for property_name, property_def in schema["properties"].items():
@@ -496,20 +498,23 @@ class SnowflakeConnector(SQLConnector):
                     "clean_property_name": clean_property_name,
                     "sql_type": self.to_sql_type(property_def),
                     "clean_alias": clean_alias,
+                    "default": (column_defaults or {}).get(property_name),
                 },
             )
         return column_selections
 
-    def _get_merge_from_stage_statement(  # noqa: ANN202
+    def _get_merge_from_stage_statement(  # noqa: ANN202, PLR0913
         self,
         full_table_name: str | FullyQualifiedName,
         schema: dict,
         sync_id: str,
         file_format: str,
         key_properties: Iterable[str],
+        *,
+        column_defaults: dict[str, Any] | None = None,
     ):
         """Get Snowflake MERGE statement."""
-        column_selections = self._get_column_selections(schema)
+        column_selections = self._get_column_selections(schema, column_defaults)
         json_casting_selects = self._format_column_selections(
             column_selections,
             "json_casting",
@@ -542,9 +547,9 @@ class SnowflakeConnector(SQLConnector):
             {},
         )
 
-    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):  # noqa: ANN202, ANN001
+    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format, *, column_defaults=None):  # noqa: ANN202, ANN001
         """Get Snowflake COPY statement."""
-        column_selections = self._get_column_selections(schema)
+        column_selections = self._get_column_selections(schema, column_defaults)
         json_casting_selects = self._format_column_selections(
             column_selections,
             "json_casting",
@@ -625,13 +630,15 @@ class SnowflakeConnector(SQLConnector):
             )
             conn.execute(file_format_statement, **kwargs)
 
-    def merge_from_stage(
+    def merge_from_stage(  # noqa: PLR0913
         self,
         full_table_name: str | FullyQualifiedName,
         schema: dict,
         sync_id: str,
         file_format: str,
         key_properties: Sequence[str],
+        *,
+        column_defaults: dict[str, Any] | None = None,
     ):
         """Merge data from a stage into a table.
 
@@ -639,6 +646,7 @@ class SnowflakeConnector(SQLConnector):
             sync_id: The sync ID for the batch.
             schema: The schema of the data.
             key_properties: The primary key properties of the data.
+            column_defaults: Values for columns that a staged row has no value for.
         """
         with self._connect() as conn, conn.begin():
             merge_statement, kwargs = self._get_merge_from_stage_statement(
@@ -647,6 +655,7 @@ class SnowflakeConnector(SQLConnector):
                 sync_id=sync_id,
                 file_format=file_format,
                 key_properties=key_properties,
+                column_defaults=column_defaults,
             )
             self.logger.debug("Merging with SQL: %s", merge_statement)
             result = conn.execute(merge_statement, **kwargs)
@@ -664,6 +673,8 @@ class SnowflakeConnector(SQLConnector):
         schema: dict,
         sync_id: str,
         file_format: str,
+        *,
+        column_defaults: dict[str, Any] | None = None,
     ):
         """Copy data from a stage into a table.
 
@@ -672,6 +683,7 @@ class SnowflakeConnector(SQLConnector):
             schema: The schema of the data.
             sync_id: The sync ID for the batch.
             file_format: The name of the file format.
+            column_defaults: Values for columns that a staged row has no value for.
         """
         with self._connect() as conn, conn.begin():
             copy_statement, kwargs = self._get_copy_statement(
@@ -679,6 +691,7 @@ class SnowflakeConnector(SQLConnector):
                 schema=schema,
                 sync_id=sync_id,
                 file_format=file_format,
+                column_defaults=column_defaults,
             )
             self.logger.debug("Copying with SQL: %s", copy_statement)
             result = conn.execute(copy_statement, **kwargs)
