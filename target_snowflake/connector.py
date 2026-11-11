@@ -42,7 +42,7 @@ else:
     from typing_extensions import override
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable, Mapping, Sequence
+    from collections.abc import Collection, Generator, Iterable, Mapping, Sequence
 
     import sqlalchemy as sa
     from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
@@ -472,10 +472,7 @@ class SnowflakeConnector(SQLConnector):
     def _format_column_selections(column_selections: list, format: str) -> str:  # noqa: A002
         if format == "json_casting":
             return ", ".join(
-                [
-                    f"$1:{col['clean_property_name']}::{col['sql_type']} as {col['clean_alias']}"
-                    for col in column_selections
-                ],
+                [f"{col['source']}::{col['sql_type']} as {col['clean_alias']}" for col in column_selections],
             )
         if format == "col_alias":
             return f"({', '.join([col['clean_alias'] for col in column_selections])})"
@@ -486,30 +483,35 @@ class SnowflakeConnector(SQLConnector):
     def _get_column_selections(
         self,
         schema: dict,
+        json_columns: Collection[str] = (),
     ) -> list:
         column_selections = []
         for property_name, property_def in schema["properties"].items():
-            clean_property_name = self.formatter.format_collation(property_name)
+            source = f"$1:{self.formatter.format_collation(property_name)}"
+            if property_name in json_columns:
+                source = f"parse_json({source}::varchar)"
             clean_alias = self.format_identifier(property_name, safe=True)
             column_selections.append(
                 {
-                    "clean_property_name": clean_property_name,
+                    "source": source,
                     "sql_type": self.to_sql_type(property_def),
                     "clean_alias": clean_alias,
                 },
             )
         return column_selections
 
-    def _get_merge_from_stage_statement(  # noqa: ANN202
+    def _get_merge_from_stage_statement(  # noqa: ANN202, PLR0913
         self,
         full_table_name: str | FullyQualifiedName,
         schema: dict,
         sync_id: str,
         file_format: str,
         key_properties: Iterable[str],
+        *,
+        json_columns: Collection[str] = (),
     ):
         """Get Snowflake MERGE statement."""
-        column_selections = self._get_column_selections(schema)
+        column_selections = self._get_column_selections(schema, json_columns)
         json_casting_selects = self._format_column_selections(
             column_selections,
             "json_casting",
@@ -542,9 +544,9 @@ class SnowflakeConnector(SQLConnector):
             {},
         )
 
-    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format):  # noqa: ANN202, ANN001
+    def _get_copy_statement(self, full_table_name, schema, sync_id, file_format, *, json_columns=()):  # noqa: ANN202, ANN001
         """Get Snowflake COPY statement."""
-        column_selections = self._get_column_selections(schema)
+        column_selections = self._get_column_selections(schema, json_columns)
         json_casting_selects = self._format_column_selections(
             column_selections,
             "json_casting",
@@ -625,13 +627,15 @@ class SnowflakeConnector(SQLConnector):
             )
             conn.execute(file_format_statement, **kwargs)
 
-    def merge_from_stage(
+    def merge_from_stage(  # noqa: PLR0913
         self,
         full_table_name: str | FullyQualifiedName,
         schema: dict,
         sync_id: str,
         file_format: str,
         key_properties: Sequence[str],
+        *,
+        json_columns: Collection[str] = (),
     ):
         """Merge data from a stage into a table.
 
@@ -647,6 +651,7 @@ class SnowflakeConnector(SQLConnector):
                 sync_id=sync_id,
                 file_format=file_format,
                 key_properties=key_properties,
+                json_columns=json_columns,
             )
             self.logger.debug("Merging with SQL: %s", merge_statement)
             result = conn.execute(merge_statement, **kwargs)
@@ -664,6 +669,8 @@ class SnowflakeConnector(SQLConnector):
         schema: dict,
         sync_id: str,
         file_format: str,
+        *,
+        json_columns: Collection[str] = (),
     ):
         """Copy data from a stage into a table.
 
@@ -672,6 +679,7 @@ class SnowflakeConnector(SQLConnector):
             schema: The schema of the data.
             sync_id: The sync ID for the batch.
             file_format: The name of the file format.
+            json_columns: Columns that hold JSON text, to load as parsed JSON.
         """
         with self._connect() as conn, conn.begin():
             copy_statement, kwargs = self._get_copy_statement(
@@ -679,6 +687,7 @@ class SnowflakeConnector(SQLConnector):
                 schema=schema,
                 sync_id=sync_id,
                 file_format=file_format,
+                json_columns=json_columns,
             )
             self.logger.debug("Copying with SQL: %s", copy_statement)
             result = conn.execute(copy_statement, **kwargs)

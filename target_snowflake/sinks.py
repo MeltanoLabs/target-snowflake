@@ -235,6 +235,8 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         full_table_name: str | FullyQualifiedName,
         files: t.Sequence[str],
         file_type: str = "JSON",
+        *,
+        json_columns: t.Collection[str] = (),
     ) -> int:
         """Process a batch file with the given batch context.
 
@@ -244,6 +246,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
             file_type: The Snowflake file format type to stage/load with, e.g.
                 ``"JSON"`` or ``"PARQUET"``. The underlying file format is
                 created lazily and reused for the rest of this sink's sync.
+            json_columns: Columns that hold JSON text, to load as parsed JSON.
         """
         file_format = self._get_file_format_name(file_type)
         self.logger.info("Processing batch of files.")
@@ -258,6 +261,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                     sync_id=sync_id,
                     file_format=file_format,
                     key_properties=self.key_properties,
+                    json_columns=json_columns,
                 )
 
             else:
@@ -266,6 +270,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                     schema=self.schema,
                     sync_id=sync_id,
                     file_format=file_format,
+                    json_columns=json_columns,
                 )
 
         finally:
@@ -291,7 +296,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         """
         output_dir = tempfile.mkdtemp(prefix=f"target-snowflake-arrow-{self.stream_name}-")
         try:
-            parquet_files = convert_arrow_manifest_to_parquet(
+            parquet_files, json_columns = convert_arrow_manifest_to_parquet(
                 manifest=files,
                 output_dir=output_dir,
                 clean_up_source_files=bool(self.config.get("clean_up_batch_files")),
@@ -300,6 +305,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                 full_table_name=self.full_table_name,
                 files=parquet_files,
                 file_type="PARQUET",
+                json_columns=json_columns,
             )
         finally:
             # These Parquet files are purely internal artifacts (never part of

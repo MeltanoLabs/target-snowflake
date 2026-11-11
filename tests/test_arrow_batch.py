@@ -67,6 +67,24 @@ def test_coerce_arrow_table_unwraps_json_extension_type():
     assert coerced.column("payload").to_pylist() == ['{"a": 1}', '{"b": 2}']
 
 
+def test_coerce_arrow_table_writes_json_text_for_json_fields():
+    document = pa.StructArray.from_arrays(
+        [pa.array(["x", "y", "z"]), pa.array(['{"a": [1]}', None, None], type=pa.json_(pa.string()))],
+        names=["name", "data"],
+        mask=pa.array([False, False, True]),
+    )
+    table = pa.table({"document": document})
+
+    coerced = coerce_arrow_table(table)
+
+    assert coerced.schema.field("document").type == pa.string()
+    assert coerced.column("document").to_pylist() == [
+        '{"name":"x","data":{"a":[1]}}',
+        '{"name":"y","data":null}',
+        None,
+    ]
+
+
 def test_coerce_arrow_table_passthrough_when_no_problematic_types():
     table = pa.table({"i": pa.array([1, 2]), "s": pa.array(["a", "b"])})
 
@@ -110,8 +128,9 @@ def test_convert_arrow_manifest_to_parquet(tmp_path: Path):
         write_ipc_file(table, path)
         manifest.append(path.as_uri())
 
-    output_uris = convert_arrow_manifest_to_parquet(manifest, output_dir=str(output_dir))
+    output_uris, json_columns = convert_arrow_manifest_to_parquet(manifest, output_dir=str(output_dir))
 
+    assert json_columns == set()
     assert len(output_uris) == 2
     for uri, table in zip(output_uris, tables, strict=True):
         output_path = resolve_manifest_path(uri)
@@ -119,6 +138,24 @@ def test_convert_arrow_manifest_to_parquet(tmp_path: Path):
         assert pq.read_table(output_path).equals(table)
         # source files are untouched by default
     assert all((source_dir / f"file_{i}.arrow").exists() for i in range(2))
+
+
+def test_convert_arrow_manifest_to_parquet_names_json_columns(tmp_path: Path):
+    json_values = pa.array(['{"a": 1}'], type=pa.json_(pa.string()))
+    table = pa.table(
+        {
+            "i": pa.array([1]),
+            "payload": json_values,
+            "document": pa.StructArray.from_arrays([json_values], names=["data"]),
+            "plain": pa.StructArray.from_arrays([pa.array(["x"])], names=["name"]),
+        },
+    )
+    source_path = tmp_path / "file_0.arrow"
+    write_ipc_file(table, source_path)
+
+    _, json_columns = convert_arrow_manifest_to_parquet([source_path.as_uri()], output_dir=str(tmp_path / "output"))
+
+    assert json_columns == {"payload", "document"}
 
 
 def test_convert_arrow_manifest_to_parquet_cleans_up_source_files(tmp_path: Path):
