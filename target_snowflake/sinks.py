@@ -250,13 +250,13 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         self.logger.info("Processing batch of files.")
         sync_id = f"{self.stream_name}-{uuid4()}"
         # Batch files from a tap do not contain the metadata that the SDK adds to
-        # each RECORD message, so fill the columns here when a row has no value.
+        # each RECORD message, so fill the target columns here when a row has no
+        # value. The tap built the batch, so _sdc_batched_at comes only from the file.
         column_defaults = {}
         if self.include_sdc_metadata_properties:
             now = datetime.now(timezone.utc)
             column_defaults = {
                 "_sdc_received_at": now.isoformat(),
-                "_sdc_batched_at": now.isoformat(),
                 "_sdc_sequence": round(now.timestamp() * 1000),
                 "_sdc_sync_started_at": self.sync_started_at,
             }
