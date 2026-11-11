@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import typing as t
+from datetime import datetime, timezone
 from shutil import rmtree
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -248,6 +249,17 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         file_format = self._get_file_format_name(file_type)
         self.logger.info("Processing batch of files.")
         sync_id = f"{self.stream_name}-{uuid4()}"
+        # Batch files from a tap do not contain the metadata that the SDK adds to
+        # each RECORD message, so fill the columns here when a row has no value.
+        column_defaults = {}
+        if self.include_sdc_metadata_properties:
+            now = datetime.now(timezone.utc)
+            column_defaults = {
+                "_sdc_received_at": now.isoformat(),
+                "_sdc_batched_at": now.isoformat(),
+                "_sdc_sequence": round(now.timestamp() * 1000),
+                "_sdc_sync_started_at": self.sync_started_at,
+            }
         try:
             self.connector.put_batches_to_stage(sync_id=sync_id, files=files)
             if self.key_properties and self.config.get("load_method", "upsert") == "upsert":
@@ -258,6 +270,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                     sync_id=sync_id,
                     file_format=file_format,
                     key_properties=self.key_properties,
+                    column_defaults=column_defaults,
                 )
 
             else:
@@ -266,6 +279,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                     schema=self.schema,
                     sync_id=sync_id,
                     file_format=file_format,
+                    column_defaults=column_defaults,
                 )
 
         finally:
