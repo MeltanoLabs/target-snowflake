@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import typing as t
 from unittest import mock
 
 import pytest
@@ -307,7 +308,7 @@ def test_stage_load_fills_column_defaults(connectable_connector: SnowflakeConnec
             "_sdc_deleted_at": {"type": ["null", "string"], "format": "date-time"},
         },
     }
-    kwargs = {
+    kwargs: dict[str, t.Any] = {
         "full_table_name": "DB.SCHEMA.TABLE",
         "schema": schema,
         "sync_id": "sync",
