@@ -292,3 +292,34 @@ def test_invalidate_table_cache_leaves_other_tables_cached(connector: SnowflakeC
 
     assert "db.schema.users" not in connector.table_cache
     assert "db.schema.posts" in connector.table_cache
+
+
+@pytest.mark.parametrize("statement", ["copy", "merge"])
+@pytest.mark.usefixtures("mock_engine_connect")
+def test_stage_load_fills_column_defaults(connectable_connector: SnowflakeConnector, statement: str):
+    connectable_connector.config.update(  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
+        {"normalise_casing": False, "quoted_identifiers_ignore_case": False},
+    )
+    schema = {
+        "properties": {
+            "id": {"type": ["integer"]},
+            "_sdc_sequence": {"type": ["null", "integer"]},
+            "_sdc_deleted_at": {"type": ["null", "string"], "format": "date-time"},
+        },
+    }
+    kwargs = {
+        "full_table_name": "DB.SCHEMA.TABLE",
+        "schema": schema,
+        "sync_id": "sync",
+        "file_format": "test_format",
+        "column_defaults": {"_sdc_sequence": 1700000000000},
+    }
+    if statement == "copy":
+        sql, _ = connectable_connector._get_copy_statement(**kwargs)  # noqa: SLF001
+    else:
+        sql, _ = connectable_connector._get_merge_from_stage_statement(**kwargs, key_properties=["id"])  # noqa: SLF001
+
+    sql = str(sql)
+    assert "coalesce($1:_sdc_sequence::DECIMAL, '1700000000000'::DECIMAL) as _sdc_sequence" in sql
+    assert "$1:id::DECIMAL as id" in sql
+    assert "$1:_sdc_deleted_at::TIMESTAMP_NTZ as _sdc_deleted_at" in sql
