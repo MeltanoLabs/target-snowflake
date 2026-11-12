@@ -20,7 +20,6 @@ from uuid import uuid4
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pyarrow import ipc
-from singer_sdk.singerlib.json import deserialize_json, serialize_json
 
 if t.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -61,8 +60,8 @@ def coerce_arrow_table(table: pa.Table) -> pa.Table:
     - decimal32/decimal64 columns are widened to decimal128.
     - Extension-typed columns (e.g. the canonical ``arrow.json`` extension) are
       cast down to their underlying storage type.
-    - Struct columns with ``arrow.json`` fields become JSON text, because
-      Snowflake would load each of those fields as a string.
+    - ``arrow.json`` fields of a struct column are cast to their storage type
+      too. The load statement parses them.
 
     Args:
         table: The table to coerce.
@@ -78,18 +77,10 @@ def coerce_arrow_table(table: pa.Table) -> pa.Table:
             new_type = pa.decimal128(field.type.precision, field.type.scale)
         elif isinstance(field.type, pa.BaseExtensionType):
             new_type = field.type.storage_type
-        elif json_fields := _json_fields(field.type):
-            # One row at a time, so only one decoded value is held in memory
-            texts = []
-            for scalar in table.column(index):
-                value = scalar.as_py()
-                if value is not None:
-                    for name in json_fields:
-                        if value[name] is not None:
-                            value[name] = deserialize_json(value[name])
-                    value = serialize_json(value)
-                texts.append(value)
-            table = table.set_column(index, field.name, pa.array(texts, type=pa.string()))
+        elif _json_fields(field.type):
+            new_type = pa.struct(
+                [child.with_type(child.type.storage_type) if _is_json(child.type) else child for child in field.type],
+            )
 
         if new_type is not None:
             table = table.set_column(index, field.name, table.column(index).cast(new_type))
@@ -125,7 +116,7 @@ def convert_arrow_manifest_to_parquet(
     output_dir: str,
     *,
     clean_up_source_files: bool = False,
-) -> tuple[list[str], set[str]]:
+) -> tuple[list[str], dict[str, list[str]]]:
     """Convert each Arrow IPC manifest file into a local Parquet file.
 
     Args:
@@ -137,16 +128,22 @@ def convert_arrow_manifest_to_parquet(
 
     Returns:
         ``file://`` URIs pointing to the newly-written Parquet files, and the
-        names of the columns that hold JSON text, to parse when they are loaded.
+        columns that hold JSON text, to parse when they are loaded. Each column
+        maps to the names of its JSON fields, or to an empty list when the
+        whole column is JSON.
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     output_uris = []
-    json_columns: set[str] = set()
+    json_columns: dict[str, list[str]] = {}
     for file_uri in manifest:
         source_path = resolve_manifest_path(file_uri)
         table = read_arrow_batch_file(source_path)
-        json_columns.update(field.name for field in table.schema if _is_json(field.type) or _json_fields(field.type))
+        json_columns.update(
+            (field.name, _json_fields(field.type))
+            for field in table.schema
+            if _is_json(field.type) or _json_fields(field.type)
+        )
         table = coerce_arrow_table(table)
 
         output_path = os.path.join(output_dir, f"{uuid4()}.parquet")  # noqa: PTH118

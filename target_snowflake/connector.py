@@ -42,7 +42,7 @@ else:
     from typing_extensions import override
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Generator, Iterable, Mapping, Sequence
+    from collections.abc import Generator, Iterable, Mapping, Sequence
 
     import sqlalchemy as sa
     from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes
@@ -487,14 +487,20 @@ class SnowflakeConnector(SQLConnector):
     def _get_column_selections(
         self,
         schema: dict,
-        json_columns: Collection[str] = (),
+        json_columns: Mapping[str, Sequence[str]] | None = None,
         column_defaults: dict[str, Any] | None = None,
     ) -> list:
         column_selections = []
         for property_name, property_def in schema["properties"].items():
             source = f"$1:{self.formatter.format_collation(property_name)}"
-            if property_name in json_columns:
-                source = f"parse_json({source}::varchar)"
+            if json_columns and property_name in json_columns:
+                if json_fields := json_columns[property_name]:
+                    struct = source
+                    for name in json_fields:
+                        field = f"{struct}:{self.formatter.format_collation(name)}"
+                        source = f"object_insert({source}, '{name}', parse_json({field}::varchar), true)"
+                else:
+                    source = f"parse_json({source}::varchar)"
             clean_alias = self.format_identifier(property_name, safe=True)
             column_selections.append(
                 {
@@ -514,7 +520,7 @@ class SnowflakeConnector(SQLConnector):
         file_format: str,
         key_properties: Iterable[str],
         *,
-        json_columns: Collection[str] = (),
+        json_columns: Mapping[str, Sequence[str]] | None = None,
         column_defaults: dict[str, Any] | None = None,
     ):
         """Get Snowflake MERGE statement."""
@@ -558,7 +564,7 @@ class SnowflakeConnector(SQLConnector):
         sync_id: str,
         file_format: str,
         *,
-        json_columns: Collection[str] = (),
+        json_columns: Mapping[str, Sequence[str]] | None = None,
         column_defaults: dict[str, Any] | None = None,
     ):
         """Get Snowflake COPY statement."""
@@ -651,7 +657,7 @@ class SnowflakeConnector(SQLConnector):
         file_format: str,
         key_properties: Sequence[str],
         *,
-        json_columns: Collection[str] = (),
+        json_columns: Mapping[str, Sequence[str]] | None = None,
         column_defaults: dict[str, Any] | None = None,
     ):
         """Merge data from a stage into a table.
@@ -689,7 +695,7 @@ class SnowflakeConnector(SQLConnector):
         sync_id: str,
         file_format: str,
         *,
-        json_columns: Collection[str] = (),
+        json_columns: Mapping[str, Sequence[str]] | None = None,
         column_defaults: dict[str, Any] | None = None,
     ):
         """Copy data from a stage into a table.
@@ -700,6 +706,8 @@ class SnowflakeConnector(SQLConnector):
             sync_id: The sync ID for the batch.
             file_format: The name of the file format.
             json_columns: Columns that hold JSON text, to load as parsed JSON.
+                Each column maps to its JSON fields, or to no fields when the
+                whole column is JSON.
             column_defaults: Values for columns that a staged row has no value for.
         """
         with self._connect() as conn, conn.begin():

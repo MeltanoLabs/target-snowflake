@@ -67,7 +67,7 @@ def test_coerce_arrow_table_unwraps_json_extension_type():
     assert coerced.column("payload").to_pylist() == ['{"a": 1}', '{"b": 2}']
 
 
-def test_coerce_arrow_table_writes_json_text_for_json_fields():
+def test_coerce_arrow_table_unwraps_json_fields_of_a_struct():
     document = pa.StructArray.from_arrays(
         [pa.array(["x", "y", "z"]), pa.array(['{"a": [1]}', None, None], type=pa.json_(pa.string()))],
         names=["name", "data"],
@@ -77,10 +77,10 @@ def test_coerce_arrow_table_writes_json_text_for_json_fields():
 
     coerced = coerce_arrow_table(table)
 
-    assert coerced.schema.field("document").type == pa.string()
+    assert coerced.schema.field("document").type == pa.struct({"name": pa.string(), "data": pa.string()})
     assert coerced.column("document").to_pylist() == [
-        '{"name":"x","data":{"a":[1]}}',
-        '{"name":"y","data":null}',
+        {"name": "x", "data": '{"a": [1]}'},
+        {"name": "y", "data": None},
         None,
     ]
 
@@ -130,7 +130,7 @@ def test_convert_arrow_manifest_to_parquet(tmp_path: Path):
 
     output_uris, json_columns = convert_arrow_manifest_to_parquet(manifest, output_dir=str(output_dir))
 
-    assert json_columns == set()
+    assert json_columns == {}
     assert len(output_uris) == 2
     for uri, table in zip(output_uris, tables, strict=True):
         output_path = resolve_manifest_path(uri)
@@ -155,7 +155,7 @@ def test_convert_arrow_manifest_to_parquet_names_json_columns(tmp_path: Path):
 
     _, json_columns = convert_arrow_manifest_to_parquet([source_path.as_uri()], output_dir=str(tmp_path / "output"))
 
-    assert json_columns == {"payload", "document"}
+    assert json_columns == {"payload": [], "document": ["data"]}
 
 
 def test_convert_arrow_manifest_to_parquet_cleans_up_source_files(tmp_path: Path):

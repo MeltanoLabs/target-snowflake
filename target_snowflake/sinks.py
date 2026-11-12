@@ -237,7 +237,7 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
         files: t.Sequence[str],
         file_type: str = "JSON",
         *,
-        json_columns: t.Collection[str] = (),
+        json_columns: t.Mapping[str, t.Sequence[str]] | None = None,
     ) -> int:
         """Process a batch file with the given batch context.
 
@@ -248,6 +248,8 @@ class SnowflakeSink(SQLSink[SnowflakeConnector]):
                 ``"JSON"`` or ``"PARQUET"``. The underlying file format is
                 created lazily and reused for the rest of this sink's sync.
             json_columns: Columns that hold JSON text, to load as parsed JSON.
+                Each column maps to its JSON fields, or to no fields when the
+                whole column is JSON.
         """
         file_format = self._get_file_format_name(file_type)
         self.logger.info("Processing batch of files.")

@@ -118,7 +118,10 @@ def test_arrow_batch_loads_json_as_objects(tmp_path):
         "add_record_metadata": False,
     }
     json_values = pa.array(['{"route": "Guardian"}', None], type=pa.json_(pa.string()))
-    document = pa.StructArray.from_arrays([pa.array(["a", "b"]), json_values], names=["name", "data"])
+    document = pa.StructArray.from_arrays(
+        [pa.array(["a", "b"]), json_values, json_values],
+        names=["name", "data", "Other"],
+    )
     table = pa.table({"id": pa.array([1, 2]), "document": document, "payload": json_values})
     batch_path = tmp_path / "batch.arrow"
     with ipc.new_file(batch_path, table.schema) as writer:
@@ -156,6 +159,6 @@ def test_arrow_batch_loads_json_as_objects(tmp_path):
             conn.execute(text(f"drop schema if exists {schema_name}"))
 
     assert [(json.loads(document), payload and json.loads(payload)) for document, payload in rows] == [
-        ({"name": "a", "data": {"route": "Guardian"}}, {"route": "Guardian"}),
-        ({"name": "b", "data": None}, None),
+        ({"name": "a", "data": {"route": "Guardian"}, "Other": {"route": "Guardian"}}, {"route": "Guardian"}),
+        ({"name": "b"}, None),
     ]
