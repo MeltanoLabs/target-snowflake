@@ -162,3 +162,37 @@ def test_arrow_batch_loads_json_as_objects(tmp_path):
         ({"name": "a", "data": {"route": "Guardian"}, "Other": {"route": "Guardian"}}, {"route": "Guardian"}),
         ({"name": "b"}, None),
     ]
+
+
+def test_batch_upsert_keeps_the_last_row_of_each_key(tmp_path):
+    """The last row of a key in manifest order wins, whatever order Snowflake reads the files in."""
+    config = {
+        **SAMPLE_CONFIG,
+        "default_target_schema": f"TARGET_SNOWFLAKE_{uuid.uuid4().hex[0:6]!s}",
+        "add_record_metadata": False,
+    }
+    manifest = []
+    for index in range(20):
+        rows = [{"id": key, "metric": index} for key in range(10)]
+        if index == 19:
+            rows.append({"id": 0, "metric": 100})
+        path = tmp_path / f"batch-{index + 1}.jsonl"
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+        manifest.append(f"file://{path}")
+    schema = {"type": "object", "properties": {"id": {"type": "integer"}, "metric": {"type": "integer"}}}
+    messages = [
+        {"type": "SCHEMA", "stream": "test_last_row", "key_properties": ["id"], "schema": schema},
+        {"type": "BATCH", "stream": "test_last_row", "encoding": {"format": "jsonl"}, "manifest": manifest},
+    ]
+    schema_name = f"{config['database']}.{config['default_target_schema']}"
+    target = TargetSnowflake(config=config)
+    try:
+        target.process_lines(io.StringIO("".join(json.dumps(message) + "\n" for message in messages)))
+        target.process_endofpipe()
+        with SnowflakeConnector(config).connect() as conn:
+            rows = conn.execute(text(f"select id, metric from {schema_name}.test_last_row order by id")).fetchall()
+    finally:
+        with SnowflakeConnector(config).connect() as conn:
+            conn.execute(text(f"drop schema if exists {schema_name}"))
+
+    assert rows == [(0, 100), *((key, 19) for key in range(1, 10))]
