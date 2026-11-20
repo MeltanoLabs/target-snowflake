@@ -243,18 +243,29 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             else:
                 return
 
+    # The sink holds no rows, and a drain waits for the commit. Only a drain of all sinks
+    # emits `STATE`, so drain then, and not at `batch_size_rows`.
+    @override
+    @property
+    def is_full(self) -> bool:
+        return False
+
     @override
     def process_batch(self, context: dict) -> None:
-        """Append the rows of a `BATCH` file to the channel.
+        """Append the rows of a `BATCH` file, then wait until Snowflake commits every row.
 
         `process_record` already wrote each `RECORD` row directly to the channel, so
-        only a context from `process_batch_files` holds rows.
+        only a context from `process_batch_files` holds rows. The channel uploads the
+        rows in the background, and Snowflake commits them some seconds later. The
+        target emits `STATE` after a drain, so the rows must be in the table first.
 
         Args:
             context: Stream partition or context dictionary.
         """
         for record in context.get("records", []):
             self.process_record(record, context)
+        assert self._channel is not None  # noqa: S101 -- set in setup(), which always runs first
+        self._channel.wait_for_commit(lambda token: int(token or 0) >= self._rows_appended)
 
     @override
     def activate_version(self, new_version: int) -> None:
@@ -274,9 +285,6 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
     def clean_up(self) -> None:
         """Close the channel and client opened in `setup()`."""
         if self._channel is not None:
-            # Closing only flushes the rows. Snowflake makes them visible to queries
-            # some seconds later, when it commits them.
-            self._channel.wait_for_commit(lambda token: int(token or 0) >= self._rows_appended)
             self._channel.close()
             self._channel = None
         if self._streaming_client is not None:

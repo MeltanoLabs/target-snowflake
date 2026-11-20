@@ -15,8 +15,11 @@ Requires the `snowpipe` extra (`pip install '.[snowpipe]'`) and the same
 
 from __future__ import annotations
 
+import io
+import json
 import logging
 import os
+import sys
 import uuid
 from pathlib import Path
 from typing import Any
@@ -24,6 +27,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from dotenv import load_dotenv
+from singer_sdk.exceptions import RecordsWithoutSchemaException
 from singer_sdk.helpers._batch import BaseBatchFileEncoding
 from singer_sdk.testing import TargetTestRunner
 from sqlalchemy import text
@@ -31,6 +35,11 @@ from sqlalchemy import text
 from target_snowflake.connector import SnowflakeConnector
 from target_snowflake.streaming_sink import SnowpipeStreamingSink, setup_streaming_sdk_logger
 from target_snowflake.target import TargetSnowflake
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 streaming = pytest.importorskip(
     "snowflake.ingest.streaming",
@@ -123,16 +132,23 @@ def test_setup_streaming_logging(caplog: pytest.LogCaptureFixture, subtests: pyt
         }
 
 
-class RecordingChannel:
+class CommitOnWaitChannel:
+    """A channel that commits the appended rows only while the target waits for the commit."""
+
     def __init__(self) -> None:
-        self.rows: list[dict] = []
+        self.committed: list[dict] = []
+        self._inflight: list[dict] = []
 
     def append_row(self, row: dict, **_: object) -> None:
-        self.rows.append(row)
+        self._inflight.append(row)
+
+    def wait_for_commit(self, *_: object, **__: object) -> None:
+        self.committed += self._inflight
+        self._inflight = []
 
 
 def test_batch_file_rows_reach_the_channel(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    channel = RecordingChannel()
+    channel = CommitOnWaitChannel()
     client = MagicMock()
     client.open_channel.return_value = (channel, None)
     monkeypatch.setattr(streaming.StreamingIngestClient, "from_table", MagicMock(return_value=client))
@@ -151,7 +167,67 @@ def test_batch_file_rows_reach_the_channel(monkeypatch: pytest.MonkeyPatch, tmp_
     batch_file.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf-8")
     sink.process_batch_files(BaseBatchFileEncoding(format="jsonl"), [batch_file.as_uri()])
 
-    assert channel.rows == [{"id": 1}, {"id": 2}]
+    assert channel.committed == [{"id": 1}, {"id": 2}]
+
+
+def run_until_failure(
+    messages: list[dict],
+    *,
+    max_record_age_in_minutes: float = 5,
+    **config: Any,
+) -> CommitOnWaitChannel:
+    """Run the target on the messages, then fail it before clean-up can wait for the commit."""
+    channel = CommitOnWaitChannel()
+    client = MagicMock()
+    client.open_channel.return_value = (channel, None)
+    connector = MagicMock()
+    connector.format_identifier.side_effect = lambda name, **_: name
+
+    class StubClientSink(SnowpipeStreamingSink):
+        streaming_client = client
+
+    class StubConnectorTarget(TargetSnowflake):
+        target_connector = connector
+        _MAX_RECORD_AGE_IN_MINUTES = max_record_age_in_minutes
+
+        @override
+        def get_sink_class(self, stream_name: str) -> type[SnowpipeStreamingSink]:
+            return StubClientSink
+
+    unknown_stream_record = {"type": "RECORD", "stream": "unknown_stream", "record": {}}
+    target = StubConnectorTarget(config={**SAMPLE_CONFIG, **config})
+    with pytest.raises(RecordsWithoutSchemaException):
+        target.listen(io.StringIO("\n".join(json.dumps(message) for message in [*messages, unknown_stream_record])))
+    return channel
+
+
+SCHEMA_MESSAGE = {"type": "SCHEMA", "stream": "some_stream", "schema": {"properties": {"id": {"type": "integer"}}}}
+
+
+def test_state_waits_for_the_commit_of_streamed_rows(capsys: pytest.CaptureFixture[str]) -> None:
+    messages = [
+        SCHEMA_MESSAGE,
+        {"type": "RECORD", "stream": "some_stream", "record": {"id": 1}},
+        {"type": "STATE", "value": {"bookmark": 1}},
+        {"type": "RECORD", "stream": "some_stream", "record": {"id": 2}},
+    ]
+    # Drain all sinks and emit `STATE` after each record, as the target does after 5 minutes.
+    channel = run_until_failure(messages, max_record_age_in_minutes=-1)
+
+    states = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    assert states == [{"bookmark": 1}]
+    assert [row["id"] for row in channel.committed] == [1, 2]
+
+
+def test_intake_does_not_pause_for_the_commit_at_batch_size_rows() -> None:
+    messages = [
+        SCHEMA_MESSAGE,
+        {"type": "RECORD", "stream": "some_stream", "record": {"id": 1}},
+        {"type": "RECORD", "stream": "some_stream", "record": {"id": 2}},
+    ]
+    channel = run_until_failure(messages, batch_size_rows=1)
+
+    assert channel.committed == []
 
 
 class SaturatedOnceChannel:
