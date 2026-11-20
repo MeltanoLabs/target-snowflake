@@ -152,3 +152,44 @@ def test_batch_file_rows_reach_the_channel(monkeypatch: pytest.MonkeyPatch, tmp_
     sink.process_batch_files(BaseBatchFileEncoding(format="jsonl"), [batch_file.as_uri()])
 
     assert channel.rows == [{"id": 1}, {"id": 2}]
+
+
+class SaturatedOnceChannel:
+    """A channel whose inflight buffer is full for the first append."""
+
+    def __init__(self) -> None:
+        self.rows: list[dict] = []
+        self._saturated = True
+
+    def append_row(self, row: dict, **_: object) -> None:
+        if self._saturated:
+            self._saturated = False
+            raise streaming.StreamingIngestError(
+                streaming.StreamingIngestErrorCode.RECEIVER_SATURATED,
+                "Inflight data limit reached for channel",
+                429,
+                "Too Many Requests",
+            )
+        self.rows.append(row)
+
+
+def test_append_waits_while_the_channel_is_saturated(monkeypatch: pytest.MonkeyPatch) -> None:
+    channel = SaturatedOnceChannel()
+    client = MagicMock()
+    client.open_channel.return_value = (channel, None)
+    monkeypatch.setattr(streaming.StreamingIngestClient, "from_table", MagicMock(return_value=client))
+    monkeypatch.setattr("time.sleep", lambda _: None)
+
+    connector = MagicMock()
+    connector.format_identifier.side_effect = lambda name, **_: name
+    sink = SnowpipeStreamingSink(
+        target=TargetSnowflake(config=SAMPLE_CONFIG),
+        stream_name="some_stream",
+        schema={"properties": {"id": {"type": "integer"}}},
+        key_properties=[],
+        connector=connector,
+    )
+    sink.setup()
+    sink.process_record({"id": 1}, {})
+
+    assert channel.rows == [{"id": 1}]

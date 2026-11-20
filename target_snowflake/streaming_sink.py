@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import time
 import typing as t
 from uuid import uuid4
 
@@ -220,9 +221,27 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             level=TypeConformanceLevel.RECURSIVE,
             logger=self.logger,
         )
+        # `setup()` has already imported the package, after it set up the SDK logger.
+        from snowflake.ingest.streaming import (  # noqa: PLC0415
+            StreamingIngestError,  # type: ignore[import-not-found]
+            StreamingIngestErrorCode,
+        )
+
         assert self._channel is not None  # noqa: S101 -- set in setup(), which always runs first
         self._rows_appended += 1
-        self._channel.append_row(conformed_record, offset_token=str(self._rows_appended))
+        while True:
+            try:
+                self._channel.append_row(conformed_record, offset_token=str(self._rows_appended))
+            except StreamingIngestError as e:  # noqa: PERF203 -- the loop only repeats after an error
+                # The SDK rejects an append while the inflight buffer of the channel is full, for
+                # example while Snowflake throttles the channel. It keeps uploading the buffered
+                # rows in the background, so wait for space and append the same row again.
+                if e.error_code is not StreamingIngestErrorCode.RECEIVER_SATURATED:
+                    raise
+                self.logger.info("%s Retrying the append in 1 second.", e)
+                time.sleep(1)
+            else:
+                return
 
     @override
     def process_batch(self, context: dict) -> None:
