@@ -226,12 +226,16 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
 
     @override
     def process_batch(self, context: dict) -> None:
-        """No-op: `process_record` already wrote each row directly to the channel.
+        """Append the rows of a `BATCH` file to the channel.
+
+        `process_record` already wrote each `RECORD` row directly to the channel, so
+        only a context from `process_batch_files` holds rows.
 
         Args:
-            context: Stream partition or context dictionary (unused).
+            context: Stream partition or context dictionary.
         """
-        return
+        for record in context.get("records", []):
+            self.process_record(record, context)
 
     @override
     def activate_version(self, new_version: int) -> None:
