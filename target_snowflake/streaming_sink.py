@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import threading
 import time
 import typing as t
 from uuid import uuid4
@@ -27,8 +28,10 @@ if t.TYPE_CHECKING:
     from collections.abc import MutableMapping
 
     from snowflake.ingest.streaming import (  # type: ignore[import-not-found]
-        StreamingIngestChannel,
+        ErrorDetail,
         StreamingIngestClient,
+        StreamingIngestElasticChannel,
+        SuccessDetail,
     )
 
 MISSING_DEPENDENCY_MESSAGE = (
@@ -73,7 +76,7 @@ def get_streaming_client(
     except ImportError as e:
         raise ImportError(MISSING_DEPENDENCY_MESSAGE) from e
 
-    # A unique client/channel name per sink instance avoids collisions with a
+    # A unique client name per sink instance avoids collisions with a
     # prior (possibly still-open, see target_base.py archived-sink lifecycle)
     # sink instance for the same stream, mirroring the uuid-per-instance pattern
     # already used for file formats in SnowflakeSink._get_file_format_name.
@@ -105,8 +108,11 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         """Initialize Snowpipe Streaming Sink."""
         self._streaming_client: StreamingIngestClient | None = None
-        self._channel: StreamingIngestChannel | None = None
+        self._channel: StreamingIngestElasticChannel | None = None
         self._rows_appended = 0
+        self._rows_acknowledged = 0
+        self._append_error: Exception | None = None
+        self._acknowledgements = threading.Condition()
         super().__init__(*args, **kwargs)
 
     # The following four members mirror SnowflakeSink's identifier-formatting
@@ -200,7 +206,20 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             self.logger.info("load_method=overwrite: truncating %s", self.full_table_name)
             self.connector.truncate_table(self.full_table_name)
 
-        self._channel, _status = self.streaming_client.open_channel(channel_name=f"{self.stream_name}-{uuid4()}")
+        self._channel = self.streaming_client.get_elastic_channel()
+        self._channel.set_success_handler(self._count_acknowledged_rows)
+        self._channel.set_error_handler(self._keep_append_error)
+
+    # The SDK calls both handlers on its own thread, and they must return at once.
+    def _count_acknowledged_rows(self, detail: SuccessDetail) -> None:
+        with self._acknowledgements:
+            self._rows_acknowledged += len(detail.append_tokens)
+            self._acknowledgements.notify()
+
+    def _keep_append_error(self, detail: ErrorDetail) -> None:
+        with self._acknowledgements:
+            self._append_error = self._append_error or detail.error
+            self._acknowledgements.notify()
 
     @override
     def process_record(self, record: dict, context: dict) -> None:
@@ -231,7 +250,7 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         self._rows_appended += 1
         while True:
             try:
-                self._channel.append_row(conformed_record, offset_token=str(self._rows_appended))
+                self._channel.append_row(conformed_record, append_token=self._rows_appended)
             except StreamingIngestError as e:  # noqa: PERF203 -- the loop only repeats after an error
                 # The SDK rejects an append while the inflight buffer of the channel is full, for
                 # example while Snowflake throttles the channel. It keeps uploading the buffered
@@ -243,7 +262,7 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
             else:
                 return
 
-    # The sink holds no rows, and a drain waits for the commit. Only a drain of all sinks
+    # The sink holds no rows, and a drain waits for the acknowledgement. Only a drain of all sinks
     # emits `STATE`, so drain then, and not at `batch_size_rows`.
     @override
     @property
@@ -252,12 +271,13 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
 
     @override
     def process_batch(self, context: dict) -> None:
-        """Append the rows of a `BATCH` file, then wait until Snowflake commits every row.
+        """Append the rows of a `BATCH` file, then wait until Snowflake acknowledges every row.
 
         `process_record` already wrote each `RECORD` row directly to the channel, so
         only a context from `process_batch_files` holds rows. The channel uploads the
-        rows in the background, and Snowflake commits them some seconds later. The
-        target emits `STATE` after a drain, so the rows must be in the table first.
+        rows in the background. Snowflake acknowledges a row once it stores the row
+        durably, and makes it queryable some seconds later. The target emits `STATE`
+        after a drain, so the rows must be stored durably first.
 
         Args:
             context: Stream partition or context dictionary.
@@ -265,7 +285,13 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         for record in context.get("records", []):
             self.process_record(record, context)
         assert self._channel is not None  # noqa: S101 -- set in setup(), which always runs first
-        self._channel.wait_for_commit(lambda token: int(token or 0) >= self._rows_appended)
+        self._channel.initiate_flush()
+        with self._acknowledgements:
+            self._acknowledgements.wait_for(
+                lambda: self._append_error is not None or self._rows_acknowledged >= self._rows_appended,
+            )
+            if self._append_error is not None:
+                raise self._append_error
 
     @override
     def activate_version(self, new_version: int) -> None:
@@ -283,10 +309,8 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
 
     @override
     def clean_up(self) -> None:
-        """Close the channel and client opened in `setup()`."""
-        if self._channel is not None:
-            self._channel.close()
-            self._channel = None
+        """Close the client opened in `setup()`, which also closes its elastic channel."""
+        self._channel = None
         if self._streaming_client is not None:
             self._streaming_client.close()
             self._streaming_client = None
