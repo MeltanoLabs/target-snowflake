@@ -20,17 +20,19 @@ import os
 import uuid
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from dotenv import load_dotenv
+from singer_sdk.helpers._batch import BaseBatchFileEncoding
 from singer_sdk.testing import TargetTestRunner
 from sqlalchemy import text
 
 from target_snowflake.connector import SnowflakeConnector
-from target_snowflake.streaming_sink import setup_streaming_sdk_logger
+from target_snowflake.streaming_sink import SnowpipeStreamingSink, setup_streaming_sdk_logger
 from target_snowflake.target import TargetSnowflake
 
-pytest.importorskip(
+streaming = pytest.importorskip(
     "snowflake.ingest.streaming",
     reason="requires the 'snowpipe' extra: pip install '.[snowpipe]'",
 )
@@ -119,3 +121,34 @@ def test_setup_streaming_logging(caplog: pytest.LogCaptureFixture, subtests: pyt
             "SS_LOG_TARGET": "stderr",
             "SS_LOG_LEVEL": "warn",
         }
+
+
+class RecordingChannel:
+    def __init__(self) -> None:
+        self.rows: list[dict] = []
+
+    def append_row(self, row: dict, **_: object) -> None:
+        self.rows.append(row)
+
+
+def test_batch_file_rows_reach_the_channel(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    channel = RecordingChannel()
+    client = MagicMock()
+    client.open_channel.return_value = (channel, None)
+    monkeypatch.setattr(streaming.StreamingIngestClient, "from_table", MagicMock(return_value=client))
+
+    connector = MagicMock()
+    connector.format_identifier.side_effect = lambda name, **_: name
+    sink = SnowpipeStreamingSink(
+        target=TargetSnowflake(config=SAMPLE_CONFIG),
+        stream_name="some_stream",
+        schema={"properties": {"id": {"type": "integer"}}},
+        key_properties=[],
+        connector=connector,
+    )
+    sink.setup()
+    batch_file = tmp_path / "batch.jsonl"
+    batch_file.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf-8")
+    sink.process_batch_files(BaseBatchFileEncoding(format="jsonl"), [batch_file.as_uri()])
+
+    assert channel.rows == [{"id": 1}, {"id": 2}]
