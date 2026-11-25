@@ -20,9 +20,10 @@ import json
 import logging
 import os
 import sys
+import time
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -35,6 +36,9 @@ from sqlalchemy import text
 from target_snowflake.connector import SnowflakeConnector
 from target_snowflake.streaming_sink import SnowpipeStreamingSink, setup_streaming_sdk_logger
 from target_snowflake.target import TargetSnowflake
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -94,8 +98,14 @@ def test_snowpipe_streaming_append_and_schema_evolution(streaming_schema) -> Non
         ".snowpipe_streaming_basic order by id",
     )
     expected = [(1, "foo", None), (2, "bar", None), (3, "baz", "added")]
-    with connector.connect() as conn:
-        rows = [tuple(row) for row in conn.execute(query).fetchall()]
+    # Snowflake makes acknowledged rows queryable some seconds after the target exits.
+    deadline = time.monotonic() + 60
+    while True:
+        with connector.connect() as conn:
+            rows = [tuple(row) for row in conn.execute(query).fetchall()]
+        if rows == expected or time.monotonic() > deadline:
+            break
+        time.sleep(1)
 
     assert rows == expected
 
@@ -132,25 +142,32 @@ def test_setup_streaming_logging(caplog: pytest.LogCaptureFixture, subtests: pyt
         }
 
 
-class CommitOnWaitChannel:
-    """A channel that commits the appended rows only while the target waits for the commit."""
+class AckOnFlushChannel:
+    """An elastic channel that acknowledges the appended rows only when the target flushes it."""
 
     def __init__(self) -> None:
-        self.committed: list[dict] = []
-        self._inflight: list[dict] = []
+        self.appended: list[dict] = []
+        self.acknowledged: list[dict] = []
+
+    def set_success_handler(self, handler: Callable[[Any], None]) -> None:
+        self._on_success = handler
+
+    def set_error_handler(self, handler: Callable[[Any], None]) -> None:
+        self._on_error = handler
 
     def append_row(self, row: dict, **_: object) -> None:
-        self._inflight.append(row)
+        self.appended.append(row)
 
-    def wait_for_commit(self, *_: object, **__: object) -> None:
-        self.committed += self._inflight
-        self._inflight = []
+    def initiate_flush(self) -> None:
+        rows = self.appended[len(self.acknowledged) :]
+        self.acknowledged += rows
+        if rows:
+            self._on_success(streaming.SuccessDetail(append_tokens=tuple(rows), request_id="", retry_count=0))
 
 
-def test_batch_file_rows_reach_the_channel(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    channel = CommitOnWaitChannel()
+def open_sink(monkeypatch: pytest.MonkeyPatch, channel: AckOnFlushChannel) -> SnowpipeStreamingSink:
     client = MagicMock()
-    client.open_channel.return_value = (channel, None)
+    client.get_elastic_channel.return_value = channel
     monkeypatch.setattr(streaming.StreamingIngestClient, "from_table", MagicMock(return_value=client))
 
     connector = MagicMock()
@@ -163,11 +180,39 @@ def test_batch_file_rows_reach_the_channel(monkeypatch: pytest.MonkeyPatch, tmp_
         connector=connector,
     )
     sink.setup()
+    return sink
+
+
+def test_batch_file_rows_reach_the_channel(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    channel = AckOnFlushChannel()
+    sink = open_sink(monkeypatch, channel)
     batch_file = tmp_path / "batch.jsonl"
     batch_file.write_text('{"id": 1}\n{"id": 2}\n', encoding="utf-8")
     sink.process_batch_files(BaseBatchFileEncoding(format="jsonl"), [batch_file.as_uri()])
 
-    assert channel.committed == [{"id": 1}, {"id": 2}]
+    assert channel.acknowledged == [{"id": 1}, {"id": 2}]
+
+
+class FailOnFlushChannel(AckOnFlushChannel):
+    """An elastic channel whose upload of the appended rows fails."""
+
+    @override
+    def initiate_flush(self) -> None:
+        error = streaming.StreamingIngestError(
+            streaming.StreamingIngestErrorCode.SF_API_USER_ERROR,
+            "Rows rejected",
+            400,
+            "Bad Request",
+        )
+        self._on_error(streaming.ErrorDetail(append_tokens=(1,), error=error, request_id="", retry_count=0))
+
+
+def test_drain_fails_when_an_append_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    sink = open_sink(monkeypatch, FailOnFlushChannel())
+    sink.process_record({"id": 1}, {})
+
+    with pytest.raises(streaming.StreamingIngestError, match="Rows rejected"):
+        sink.process_batch({})
 
 
 def run_until_failure(
@@ -175,11 +220,11 @@ def run_until_failure(
     *,
     max_record_age_in_minutes: float = 5,
     **config: Any,
-) -> CommitOnWaitChannel:
-    """Run the target on the messages, then fail it before clean-up can wait for the commit."""
-    channel = CommitOnWaitChannel()
+) -> AckOnFlushChannel:
+    """Run the target on the messages, then fail it before clean-up can close the client."""
+    channel = AckOnFlushChannel()
     client = MagicMock()
-    client.open_channel.return_value = (channel, None)
+    client.get_elastic_channel.return_value = channel
     connector = MagicMock()
     connector.format_identifier.side_effect = lambda name, **_: name
 
@@ -204,7 +249,7 @@ def run_until_failure(
 SCHEMA_MESSAGE = {"type": "SCHEMA", "stream": "some_stream", "schema": {"properties": {"id": {"type": "integer"}}}}
 
 
-def test_state_waits_for_the_commit_of_streamed_rows(capsys: pytest.CaptureFixture[str]) -> None:
+def test_state_waits_for_the_acknowledgement_of_streamed_rows(capsys: pytest.CaptureFixture[str]) -> None:
     messages = [
         SCHEMA_MESSAGE,
         {"type": "RECORD", "stream": "some_stream", "record": {"id": 1}},
@@ -216,10 +261,10 @@ def test_state_waits_for_the_commit_of_streamed_rows(capsys: pytest.CaptureFixtu
 
     states = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert states == [{"bookmark": 1}]
-    assert [row["id"] for row in channel.committed] == [1, 2]
+    assert [row["id"] for row in channel.acknowledged] == [1, 2]
 
 
-def test_intake_does_not_pause_for_the_commit_at_batch_size_rows() -> None:
+def test_intake_does_not_pause_for_the_acknowledgement_at_batch_size_rows() -> None:
     messages = [
         SCHEMA_MESSAGE,
         {"type": "RECORD", "stream": "some_stream", "record": {"id": 1}},
@@ -227,4 +272,33 @@ def test_intake_does_not_pause_for_the_commit_at_batch_size_rows() -> None:
     ]
     channel = run_until_failure(messages, batch_size_rows=1)
 
-    assert channel.committed == []
+    assert channel.acknowledged == []
+
+
+class SaturatedOnceChannel(AckOnFlushChannel):
+    """An elastic channel whose inflight buffer is full for the first append."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._saturated = True
+
+    @override
+    def append_row(self, row: dict, **_: object) -> None:
+        if self._saturated:
+            self._saturated = False
+            raise streaming.StreamingIngestError(
+                streaming.StreamingIngestErrorCode.RECEIVER_SATURATED,
+                "Inflight data limit reached for channel",
+                429,
+                "Too Many Requests",
+            )
+        super().append_row(row)
+
+
+def test_append_waits_while_the_channel_is_saturated(monkeypatch: pytest.MonkeyPatch) -> None:
+    channel = SaturatedOnceChannel()
+    sink = open_sink(monkeypatch, channel)
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    sink.process_record({"id": 1}, {})
+
+    assert channel.appended == [{"id": 1}]

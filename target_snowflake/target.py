@@ -216,8 +216,10 @@ class TargetSnowflake(SQLTarget):
                 "any individual stream with key properties falls back to `file_staging` "
                 "for that stream only (with a logged warning) rather than failing the "
                 "whole sync -- other streams keep streaming. `batch_size_rows` has no "
-                "effect on a streamed stream: the target waits for Snowflake to commit "
-                "the rows only before it emits a `STATE` message."
+                "effect on a streamed stream: the target waits for Snowflake to "
+                "acknowledge the rows only before it emits a `STATE` message. Snowflake "
+                "makes acknowledged rows queryable some seconds later, and a row can be "
+                "loaded twice when the upload of it is retried."
             ),
         ),
     ).to_dict()
