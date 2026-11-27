@@ -19,7 +19,7 @@ updates:
     cooldown:
       default-days: 7
       exclude:
-      - singer-sdk[sql]
+      - singer-sdk*
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
