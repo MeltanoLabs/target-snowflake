@@ -543,7 +543,11 @@ class SnowflakeConnector(SQLConnector):
             [f"s.{col}" for col in formatted_properties],
         )
         dedup_cols = ", ".join(list(formatted_key_properties))
-        dedup = f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} ORDER BY SEQ8() DESC) = 1"
+        # Snowflake reads staged files in no fixed order, so the folder of each file gives its place in the batch
+        dedup = (
+            f"QUALIFY ROW_NUMBER() OVER (PARTITION BY {dedup_cols} "
+            "ORDER BY METADATA$FILENAME DESC, METADATA$FILE_ROW_NUMBER DESC) = 1"
+        )
         return (
             text(
                 f"merge into {full_table_name} d using "  # noqa: ISC003, S608
@@ -621,10 +625,12 @@ class SnowflakeConnector(SQLConnector):
             sync_id: The sync ID for the batch.
             files: The files containing records to upload.
         """
+        width = len(str(len(files)))
         with self._connect() as conn, conn.begin():
-            for file_uri in files:
+            for index, file_uri in enumerate(files):
                 put_statement, kwargs = self._get_put_statement(
-                    sync_id=sync_id,
+                    # One folder per file, named so that the file names sort in the order of `files`
+                    sync_id=f"{sync_id}/{index:0{width}}",
                     file_uri=file_uri,
                 )
                 # sqlalchemy.text stripped a slash, which caused windows to fail so we used bound parameters instead
