@@ -10,10 +10,11 @@ import sys
 import threading
 import time
 import typing as t
+from functools import cached_property
 from uuid import uuid4
 
 from singer_sdk.helpers._typing import conform_record_data_types
-from singer_sdk.helpers.conform import TypeConformanceLevel
+from singer_sdk.helpers.conform import DatetimeErrorTreatmentEnum, TypeConformanceLevel
 from singer_sdk.sql.sink import SQLSink
 
 from target_snowflake.connector import SnowflakeConnector
@@ -115,8 +116,8 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         self._acknowledgements = threading.Condition()
         super().__init__(*args, **kwargs)
 
-    # The following four members mirror SnowflakeSink's identifier-formatting
-    # overrides. They're duplicated rather than shared via a common base class,
+    # The following members mirror SnowflakeSink's identifier-formatting and
+    # date-time overrides. They're duplicated rather than shared via a common base class,
     # since they're the only overlap between the two sink types.
 
     @property
@@ -164,6 +165,11 @@ class SnowpipeStreamingSink(SQLSink[SnowflakeConnector]):
         if object_type and object_type != "column":
             return super().conform_name(name=name, object_type=object_type)
         return self.connector.format_identifier(name)
+
+    @override
+    @cached_property
+    def datetime_error_treatment(self):
+        return DatetimeErrorTreatmentEnum(self.config["datetime_error_treatment"])
 
     @override
     def setup(self) -> None:

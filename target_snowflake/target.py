@@ -12,6 +12,7 @@ import click
 from singer_sdk import typing as th
 from singer_sdk.exceptions import ConfigValidationError
 from singer_sdk.helpers.capabilities import CapabilitiesEnum, PluginCapabilities
+from singer_sdk.helpers.conform import DatetimeErrorTreatmentEnum
 from singer_sdk.sql.target import SQLTarget
 
 from target_snowflake.connector import (
@@ -182,6 +183,13 @@ class TargetSnowflake(SQLTarget):
                 "Whether to use raw stream names as table names instead of informal Singer convention as last "
                 "hyphen-separated part of stream name."
             ),
+        ),
+        th.Property(
+            "datetime_error_treatment",
+            th.StringType,
+            allowed_values=[t.value for t in DatetimeErrorTreatmentEnum],
+            default=DatetimeErrorTreatmentEnum.ERROR.value,
+            description="How invalid date-time values should be handled.",
         ),
         th.Property(
             "load_method",
