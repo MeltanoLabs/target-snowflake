@@ -18,6 +18,7 @@ updates:
         dependency-type: development
     cooldown:
       default-days: 7
+      exclude: [singer-sdk]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
